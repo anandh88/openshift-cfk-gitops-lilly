@@ -16,10 +16,17 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install argocd CLI
+        # Installed job-scoped (not /usr/local/bin) so it doesn't collide with
+        # or overwrite whatever argocd version is on the runner host's PATH
+        # for interactive use (e.g. a newer Homebrew install) — must match the
+        # server's v2.10.0 exactly, since client/server gRPC breaks across
+        # major versions even though the plain REST API stays compatible.
         run: |
-          curl -sSL -o /usr/local/bin/argocd \
+          mkdir -p "${RUNNER_TEMP}/argocd-bin"
+          curl -sSL -o "${RUNNER_TEMP}/argocd-bin/argocd" \
             https://github.com/argoproj/argo-cd/releases/download/v2.10.0/argocd-darwin-arm64
-          chmod +x /usr/local/bin/argocd
+          chmod +x "${RUNNER_TEMP}/argocd-bin/argocd"
+          echo "${RUNNER_TEMP}/argocd-bin" >> "$GITHUB_PATH"
 
       - name: Log in to Argo CD
         run: |
