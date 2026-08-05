@@ -59,11 +59,12 @@ sleep 30
 
 # 7. Install sealed-secrets so real credentials never touch git in plaintext.
 echo "==> Step 7: Installing sealed-secrets ${SEALED_SECRETS_VERSION}"
-helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets --force-update
+helm repo add sealed-secrets https://bitnami.github.io/sealed-secrets --force-update
 helm repo update
 helm upgrade --install sealed-secrets sealed-secrets/sealed-secrets \
   --namespace kube-system \
   --version "${SEALED_SECRETS_VERSION}"
+oc rollout status deployment/sealed-secrets -n kube-system --timeout=120s
 
 # 8. Fetch the sealed-secrets controller's public cert for local sealing.
 echo "==> Step 8: Fetching sealed-secrets public cert"
@@ -100,15 +101,19 @@ echo "==> Step 12: Creating argocd namespace"
 oc apply -f bootstrap/argocd-install.yaml
 
 # 13. Apply the upstream Argo CD install manifest for the pinned version.
+# Uses the core (non-HA) manifest deliberately: the HA manifest hard-requires
+# argocd-server/repo-server replicas on different hosts (podAntiAffinity
+# requiredDuringScheduling on kubernetes.io/hostname) and a 3-node redis-ha
+# StatefulSet + HAProxy — none of which can ever schedule on CRC's single node.
 echo "==> Step 13: Installing Argo CD ${ARGOCD_VERSION}"
-oc apply -n argocd -f "https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/ha/install.yaml"
+oc apply -n argocd -f "https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
 
 # 14. Wait for the core Argo CD deployments to roll out.
 echo "==> Step 14: Waiting for Argo CD rollout"
 oc rollout status deployment/argocd-server -n argocd --timeout=300s
 oc rollout status deployment/argocd-repo-server -n argocd --timeout=300s
 oc rollout status deployment/argocd-applicationset-controller -n argocd --timeout=300s
-# argocd-application-controller ships as a StatefulSet in the HA manifest, not a Deployment.
+# argocd-application-controller ships as a StatefulSet even in the core manifest, not a Deployment.
 oc rollout status statefulset/argocd-application-controller -n argocd --timeout=300s
 
 # 15. Layer on our TLS cert, tuning, RBAC and route for Argo CD.

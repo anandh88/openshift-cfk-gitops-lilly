@@ -1,7 +1,10 @@
 # Argo CD core install is vendored from the upstream release manifest
 # (see scripts/bootstrap.sh, step 13, which applies the official
-# cluster-install manifest for ARGOCD_VERSION=v2.10.0 directly from
-# https://raw.githubusercontent.com/argoproj/argo-cd/v2.10.0/manifests/ha/install.yaml).
+# non-HA cluster-install manifest for ARGOCD_VERSION=v2.10.0 directly from
+# https://raw.githubusercontent.com/argoproj/argo-cd/v2.10.0/manifests/install.yaml).
+# Deliberately not the HA manifest: HA hard-requires argocd-server/repo-server
+# replicas on separate hosts and a 3-node redis-ha StatefulSet, neither of
+# which can schedule on CRC's single node.
 # This file only carries the namespace and the OpenShift-specific
 # annotation the operator project needs so `oc apply -f bootstrap/` in
 # any order still creates the namespace before Argo CD's own manifest lands.
