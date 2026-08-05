@@ -8,8 +8,8 @@ metadata:
 spec:
   replicas: 1
   image:
-    application: confluentinc/cp-schema-registry:7.6.0
-    init: confluentinc/confluent-init-container:2.8.0
+    application: confluentinc/cp-schema-registry:8.2.2
+    init: confluentinc/confluent-init-container:3.3.0
   tls:
     secretRef: schemaregistry-tls-secret
   externalAccess:

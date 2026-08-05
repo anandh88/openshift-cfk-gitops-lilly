@@ -8,8 +8,8 @@ metadata:
 spec:
   replicas: 1
   image:
-    application: confluentinc/cp-server-connect:7.6.0
-    init: confluentinc/confluent-init-container:2.8.0
+    application: confluentinc/cp-server-connect:8.2.2
+    init: confluentinc/confluent-init-container:3.3.0
   tls:
     secretRef: connect-tls-secret
   externalAccess:

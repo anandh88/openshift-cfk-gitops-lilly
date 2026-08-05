@@ -10,17 +10,21 @@ patches:
   - path: connect-patch.yaml
   - path: flink-patch.yaml
 images:
-  - name: confluentinc/confluent-server
-    newTag: "7.6.0"
+  - name: confluentinc/cp-server
+    newTag: "8.2.2"
   - name: confluentinc/cp-schema-registry
-    newTag: "7.6.0"
+    newTag: "8.2.2"
   - name: confluentinc/cp-server-connect
-    newTag: "7.6.0"
+    newTag: "8.2.2"
   - name: confluentinc/cp-kafka-rest
-    newTag: "7.6.0"
-  - name: confluentinc/cp-enterprise-control-center
-    newTag: "7.6.0"
+    newTag: "8.2.2"
+  - name: confluentinc/cp-enterprise-control-center-next-gen
+    newTag: "2.5.0"
+  - name: confluentinc/cp-enterprise-prometheus
+    newTag: "2.5.0"
+  - name: confluentinc/cp-enterprise-alertmanager
+    newTag: "2.5.0"
   - name: confluentinc/confluent-init-container
-    newTag: "2.8.0"
+    newTag: "3.3.0"
 commonAnnotations:
   deployment-environment: local-crc

@@ -101,5 +101,13 @@
 | Connect            | 8083  | REST API                       |
 | KafkaRestProxy     | 8082  | REST API                       |
 | ControlCenter      | 9021  | Web UI                         |
+| ControlCenter Prometheus sidecar | 9090 | Metrics scrape (in-cluster only) |
+| ControlCenter Alertmanager sidecar | 9093 | Alert routing (in-cluster only) |
 | Argo CD            | 443   | Server UI/API (https, route)   |
 | Flink JobManager   | 8081  | Flink REST/UI                  |
+
+> Confluent Platform: **8.2.2** (Apache Kafka 4.2). Control Center runs as
+> **Control Center Next Gen 2.5.0** — versioned independently of Confluent
+> Platform since the CP 8.0 split, and deployed with required Prometheus and
+> Alertmanager sidecars (see `base/confluent-platform/controlcenter.yaml`).
+> CFK operator: 3.3.0 (`confluent-init-container:3.3.0`).
