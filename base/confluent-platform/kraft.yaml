@@ -15,9 +15,9 @@ spec:
     name: crc-csi-hostpath-provisioner
   tls:
     secretRef: kafka-tls-secret
-  serviceAccountName: kafka-sa
   podTemplate:
-    securityContext:
+    serviceAccountName: kafka-sa
+    podSecurityContext:
       runAsNonRoot: true
       runAsUser: 1000
       fsGroup: 1000
@@ -29,4 +29,4 @@ spec:
         memory: 512Mi
       limits:
         cpu: 500m
-        memory: 1Gi
+        memory: 5Gi

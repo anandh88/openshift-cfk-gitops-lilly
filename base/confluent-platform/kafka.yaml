@@ -50,6 +50,7 @@ spec:
       clusterRef:
         name: kraftcontroller
   podTemplate:
+    serviceAccountName: kafka-sa
     podSecurityContext:
       runAsNonRoot: true
       runAsUser: 1000
@@ -71,8 +72,7 @@ spec:
         memory: 2Gi
       limits:
         cpu: 2
-        memory: 4Gi
-  serviceAccountName: kafka-sa
+        memory: 10Gi
   configOverrides:
     server:
       - auto.create.topics.enable=false
