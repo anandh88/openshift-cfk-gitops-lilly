@@ -22,7 +22,6 @@ echo "==> Using sealed-secrets public cert at ${CERT_PATH}"
 # --- kafka-internal-sasl (confluent) -----------------------------------
 echo "==> Sealing kafka-internal-sasl"
 kubeseal --cert "${CERT_PATH}" --format yaml \
-  --secret-name kafka-internal-sasl --namespace confluent \
   <<EOF > base/confluent-platform/secrets/kafka-sasl-sealed.yaml
 apiVersion: v1
 kind: Secret
@@ -47,7 +46,6 @@ echo "    -> base/confluent-platform/secrets/kafka-sasl-sealed.yaml created"
 # --- kafka-external-sasl (confluent) -----------------------------------
 echo "==> Sealing kafka-external-sasl"
 kubeseal --cert "${CERT_PATH}" --format yaml \
-  --secret-name kafka-external-sasl --namespace confluent \
   <<EOF > base/confluent-platform/secrets/kafka-external-sasl-sealed.yaml
 apiVersion: v1
 kind: Secret
@@ -65,7 +63,6 @@ echo "    -> base/confluent-platform/secrets/kafka-external-sasl-sealed.yaml cre
 # --- c3-credentials (confluent) -----------------------------------------
 echo "==> Sealing c3-credentials"
 kubeseal --cert "${CERT_PATH}" --format yaml \
-  --secret-name c3-credentials --namespace confluent \
   <<EOF > base/confluent-platform/secrets/c3-credentials-sealed.yaml
 apiVersion: v1
 kind: Secret
@@ -83,7 +80,6 @@ echo "    -> base/confluent-platform/secrets/c3-credentials-sealed.yaml created"
 # --- flink-kafka-sasl (flink-jobs) --------------------------------------
 echo "==> Sealing flink-kafka-sasl"
 kubeseal --cert "${CERT_PATH}" --format yaml \
-  --secret-name flink-kafka-sasl --namespace flink-jobs \
   <<EOF > base/flink-jobs/flink-kafka-sasl-sealed.yaml
 apiVersion: v1
 kind: Secret

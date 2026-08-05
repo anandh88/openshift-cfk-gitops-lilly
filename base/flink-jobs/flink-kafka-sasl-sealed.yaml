@@ -1,5 +1,4 @@
-# Run scripts/seal-secrets.sh to generate real sealed values.
-# Never commit plain Kubernetes Secret objects to this repo.
+---
 apiVersion: bitnami.com/v1alpha1
 kind: SealedSecret
 metadata:
@@ -7,7 +6,7 @@ metadata:
   namespace: flink-jobs
 spec:
   encryptedData:
-    plain.txt: REPLACE_WITH_OUTPUT_OF_seal-secrets.sh
+    plain.txt: AgAKZXkvktL8ynSCqVDEO8fE1GIQcA8gnz1bRYG3Nb2Sw4eFVCR4EvXYUg68uN4OAzw+dBgwk3Bfet9wlpvbXmuIMjU2r7P0dCFPByXLaJ0kU0nVxURlRj26TZ2ukLXDngMq/yCSkgclWxqrJXaCP1ajBfF12G2Iy7BIDx113HX5kqO0fSYA0qOLnPYznJmeURZBMavBG8KiZQWMaZVpwGYPAN1DM69tHaHE1pg0NJ5YssgKpRaPgx5p2r7JCKQXwa2zwlh/pVwog58foIoos4lwqH7pPyFwvTBxqIEOQnUJucPxBSeIK8r1186vdAunIVdum0HC+33rK73qeriX6k+8GejB/gc/4gc9R7Hnufn1AWcPexxDAEyGDocuVL3Uc4Ja/NowXH7pOX9kalBV1PQa9GIppf0GMx5Qf6eBF0y2T7LNw+x0jMWCdS7/sbze9OQK2Yw5YbMZS/DbTPUwBP0T8qhxXEdkH/LbMeHbS5Jy8eUl8Qb37aQdE/iHEaIKlpyBU5HvwCvpvEXptjDmhsDNhR5wzEz3QgDuFmRsUTD/syL20y3TlYz0oO/QOkNdKUW56lQyESua90HD2QKer3EnqrbWAvVlG/NtX3QvDhalaz8MubS14JbWV6rz6/Zj3vM3uEkDYvNlOL8ZdqrmaLf2ObW8zN0AjNFUAHHRLSGIpS/MaQMx/2BPBL9L2lLh+632TSqmMZWvbWgEJnErL03bp4Zt75v6Ox2zArDGAGwXHgGEuoeaHHXSaegKPb512NU6lQ==
   template:
     metadata:
       name: flink-kafka-sasl
