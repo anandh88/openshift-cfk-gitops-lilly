@@ -115,7 +115,7 @@ rules:
   - apiGroups: ["apps"]
     resources: ["deployments", "replicasets"]
     verbs: ["*"]
-  - apiGroups: ["cmf.confluent.io"]
+  - apiGroups: ["platform.confluent.io"]
     resources: ["flinkapplications", "flinkenvironments"]
     verbs: ["get", "list", "watch", "update", "patch"]
 ---

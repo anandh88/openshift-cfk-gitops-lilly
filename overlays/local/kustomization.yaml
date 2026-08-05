@@ -2,13 +2,11 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../base/confluent-platform
-  - ../../base/flink-jobs
 patches:
   - path: kraft-patch.yaml
   - path: kafka-patch.yaml
   - path: sr-patch.yaml
   - path: connect-patch.yaml
-  - path: flink-patch.yaml
 images:
   - name: confluentinc/cp-server
     newTag: "8.2.2"

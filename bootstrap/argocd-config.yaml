@@ -131,28 +131,31 @@ data:
     hs.status = "Progressing"
     hs.message = "Waiting for ControlCenter status"
     return hs
-  resource.customizations.health.cmf.confluent.io_FlinkApplication: |
+  resource.customizations.health.platform.confluent.io_FlinkApplication: |
     hs = {}
-    if obj.status ~= nil and obj.status.lifecycle ~= nil and obj.status.lifecycle.state ~= nil then
-      local state = obj.status.lifecycle.state
-      if state == "RUNNING" then
+    -- FlinkApplication is built on the upstream Apache Flink Kubernetes
+    -- Operator, so status.lifecycleState follows its convention (STABLE,
+    -- UPGRADING, ROLLING_BACK, FAILED, ...), not CFK's own RUNNING/CREATING.
+    if obj.status ~= nil and obj.status.lifecycleState ~= nil then
+      local state = obj.status.lifecycleState
+      if state == "STABLE" then
         hs.status = "Healthy"
-        hs.message = "FlinkApplication is running"
+        hs.message = "FlinkApplication is stable"
         return hs
       end
-      if state == "CREATING" or state == "UPDATING" then
+      if state == "CREATED" or state == "UPGRADING" or state == "ROLLING_BACK" then
         hs.status = "Progressing"
         hs.message = "FlinkApplication is " .. state
         return hs
       end
-      if state == "FAILED" then
+      if state == "FAILED" or state == "ROLLED_BACK" then
         hs.status = "Degraded"
-        hs.message = "FlinkApplication failed"
+        hs.message = "FlinkApplication " .. state
         return hs
       end
     end
     hs.status = "Progressing"
-    hs.message = "Waiting for FlinkApplication lifecycle state"
+    hs.message = "Waiting for FlinkApplication lifecycleState"
     return hs
   resource.customizations.ignoreDifferences.platform.confluent.io_Kafka: |
     jsonPointers:
@@ -172,9 +175,9 @@ data:
   resource.customizations.ignoreDifferences.platform.confluent.io_KafkaRestProxy: |
     jsonPointers:
       - /status
-  resource.customizations.ignoreDifferences.cmf.confluent.io_FlinkApplication: |
+  resource.customizations.ignoreDifferences.platform.confluent.io_FlinkApplication: |
     jsonPointers:
       - /status
-  resource.customizations.ignoreDifferences.cmf.confluent.io_FlinkEnvironment: |
+  resource.customizations.ignoreDifferences.platform.confluent.io_FlinkEnvironment: |
     jsonPointers:
       - /status

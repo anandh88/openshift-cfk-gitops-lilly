@@ -1,6 +1,6 @@
 # TODO: replace with your GitHub username in the ghcr.io image path
 # once claims-processor images are being published from ci-flink-build.yaml.
-apiVersion: cmf.confluent.io/v1beta1
+apiVersion: platform.confluent.io/v1beta1
 kind: FlinkApplication
 metadata:
   name: statefarm-claims-processor

@@ -31,11 +31,11 @@ spec:
         factor: 2
         maxDuration: 5m
   ignoreDifferences:
-    - group: cmf.confluent.io
+    - group: platform.confluent.io
       kind: FlinkApplication
       jsonPointers:
         - /status
-    - group: cmf.confluent.io
+    - group: platform.confluent.io
       kind: FlinkEnvironment
       jsonPointers:
         - /status
