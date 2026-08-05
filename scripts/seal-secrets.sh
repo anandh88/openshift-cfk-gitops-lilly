@@ -40,6 +40,9 @@ stringData:
       "connect-user": "ConnectUser@Local2024!",
       "sr-user": "SchemaRegUser@Local2024!"
     }
+  plain-interbroker.txt: |
+    username=kafka-admin
+    password=KafkaAdmin@Local2024!
 EOF
 echo "    -> base/confluent-platform/secrets/kafka-sasl-sealed.yaml created"
 
