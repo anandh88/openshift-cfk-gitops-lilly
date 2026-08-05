@@ -8,14 +8,17 @@ on:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    # Self-hosted, running on the same Mac as CRC: GitHub-hosted runners can't
+    # resolve *.apps-crc.testing (it only exists in this machine's /etc/hosts),
+    # so this job has to execute locally rather than in GitHub's cloud.
+    runs-on: [self-hosted, crc-local]
     steps:
       - uses: actions/checkout@v4
 
       - name: Install argocd CLI
         run: |
           curl -sSL -o /usr/local/bin/argocd \
-            https://github.com/argoproj/argo-cd/releases/download/v2.10.0/argocd-linux-amd64
+            https://github.com/argoproj/argo-cd/releases/download/v2.10.0/argocd-darwin-arm64
           chmod +x /usr/local/bin/argocd
 
       - name: Log in to Argo CD
