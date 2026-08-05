@@ -29,6 +29,8 @@ supplementalGroups:
       max: 65534
 seLinuxContext:
   type: MustRunAs
+seccompProfiles:
+  - runtime/default
 requiredDropCapabilities:
   - ALL
 allowedCapabilities:
