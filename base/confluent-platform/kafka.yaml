@@ -82,5 +82,3 @@ spec:
       - transaction.state.log.replication.factor=1
       - transaction.state.log.min.isr=1
       - log.retention.hours=168
-  jvmConfig:
-    heapSize: 2g

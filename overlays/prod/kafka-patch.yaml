@@ -20,8 +20,6 @@ spec:
       limits:
         cpu: 4
         memory: 16Gi
-  jvmConfig:
-    heapSize: 8g
   configOverrides:
     server:
       - default.replication.factor=3
