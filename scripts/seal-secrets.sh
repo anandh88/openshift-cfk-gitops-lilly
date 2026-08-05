@@ -57,6 +57,10 @@ stringData:
   plain.txt: |
     username=external-admin
     password=ExternalAdmin@Local2024!
+  plain-users.json: |
+    {
+      "external-admin": "ExternalAdmin@Local2024!"
+    }
 EOF
 echo "    -> base/confluent-platform/secrets/kafka-external-sasl-sealed.yaml created"
 
