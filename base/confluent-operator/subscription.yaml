@@ -1,0 +1,16 @@
+# Manual approval keeps CFK operator upgrades gated behind an explicit
+# `oc patch installplan` step (see docs/runbook.md) instead of Argo CD
+# silently rolling the operator forward on a new catalog publish.
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: confluent-for-kubernetes
+  namespace: confluent-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  channel: stable
+  name: confluent-for-kubernetes
+  source: certified-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Manual

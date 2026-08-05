@@ -1,0 +1,32 @@
+apiVersion: platform.confluent.io/v1beta1
+kind: KRaftController
+metadata:
+  name: kraftcontroller
+  namespace: confluent
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  replicas: 3
+  image:
+    application: confluentinc/confluent-server:7.6.0
+    init: confluentinc/confluent-init-container:2.8.0
+  dataVolumeCapacity: 5Gi
+  storageClass:
+    name: crc-csi-hostpath-provisioner
+  tls:
+    secretRef: kafka-tls-secret
+  serviceAccountName: kafka-sa
+  podTemplate:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi

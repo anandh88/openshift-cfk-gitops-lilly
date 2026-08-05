@@ -1,0 +1,36 @@
+# All namespaces used by this platform. Applied before anything else
+# (Argo CD's own namespace is created in bootstrap/argocd-install.yaml).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: confluent-operator
+  labels:
+    kubernetes.io/metadata.name: confluent-operator
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: confluent
+  labels:
+    kubernetes.io/metadata.name: confluent
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cmf-operator
+  labels:
+    kubernetes.io/metadata.name: cmf-operator
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flink-jobs
+  labels:
+    kubernetes.io/metadata.name: flink-jobs
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    kubernetes.io/metadata.name: cert-manager

@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base/confluent-platform
+  - ../../base/flink-jobs
+patches:
+  - path: kafka-patch.yaml
+  - path: flink-patch.yaml
+commonAnnotations:
+  deployment-environment: production

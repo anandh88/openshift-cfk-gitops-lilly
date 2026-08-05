@@ -1,0 +1,39 @@
+# TODO: replace with your GitHub username in the ghcr.io image path
+# once claims-processor images are being published from ci-flink-build.yaml.
+apiVersion: cmf.confluent.io/v1beta1
+kind: FlinkApplication
+metadata:
+  name: statefarm-claims-processor
+  namespace: flink-jobs
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  environment:
+    name: statefarm-flink-env
+  flinkVersion: "1.19"
+  mode: Application
+  image: ghcr.io/mkurre/flink-jobs/claims-processor:latest
+  serviceAccountName: flink-service-account
+  jobSpec:
+    jarURI: local:///opt/flink/usrlib/claims-processor.jar
+    entryClass: com.statefarm.flink.ClaimsProcessorJob
+    args:
+      - --input-topic=raw-claims
+      - --output-topic=processed-claims
+    parallelism: 1
+    upgradeMode: savepoint
+  jobManager:
+    resource:
+      memory: 1024m
+      cpu: 500m
+  taskManager:
+    replicas: 1
+    resource:
+      memory: 1024m
+      cpu: 1
+  flinkConfiguration:
+    state.backend: hashmap
+    execution.checkpointing.interval: "60000"
+    execution.checkpointing.mode: EXACTLY_ONCE
+    taskmanager.numberOfTaskSlots: "1"
+    rest.port: "8081"

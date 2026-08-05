@@ -1,0 +1,40 @@
+# Bootstrap CA chain for all platform TLS certificates.
+# Order: selfsigned-bootstrap issues the root CA cert, which then
+# backs platform-ca-issuer used by every other Certificate in the repo.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-bootstrap
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: platform-root-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  secretName: platform-root-ca-secret
+  duration: 87600h
+  renewBefore: 720h
+  commonName: platform-root-ca
+  subject:
+    organizations:
+      - statefarm-local
+  privateKey:
+    algorithm: RSA
+    size: 4096
+    encoding: PKCS1
+  issuerRef:
+    name: selfsigned-bootstrap
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: platform-ca-issuer
+spec:
+  ca:
+    secretName: platform-root-ca-secret

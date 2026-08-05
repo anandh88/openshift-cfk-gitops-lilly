@@ -1,0 +1,22 @@
+# TLS certificate for the Argo CD server route, issued off the same
+# platform CA as every other component (see cert-manager-issuers.yaml).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-server-tls
+  namespace: argocd
+spec:
+  secretName: argocd-server-tls-secret
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    encoding: PKCS8
+  issuerRef:
+    name: platform-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+    - argocd-server.apps-crc.testing
+    - argocd-server.argocd.svc.cluster.local

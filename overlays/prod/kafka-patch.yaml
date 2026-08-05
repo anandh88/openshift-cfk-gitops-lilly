@@ -1,0 +1,28 @@
+apiVersion: platform.confluent.io/v1beta1
+kind: Kafka
+metadata:
+  name: kafka
+  namespace: confluent
+spec:
+  replicas: 3
+  podTemplate:
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchLabels:
+                app: kafka
+    resources:
+      requests:
+        cpu: 2
+        memory: 8Gi
+      limits:
+        cpu: 4
+        memory: 16Gi
+  jvmConfig:
+    heapSize: 8g
+  configOverrides:
+    server:
+      - default.replication.factor=3
+      - min.insync.replicas=2

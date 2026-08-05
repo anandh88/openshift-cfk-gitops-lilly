@@ -1,0 +1,108 @@
+# Leaf certificates for every platform component, issued by platform-ca-issuer
+# (see cert-manager-issuers.yaml). All use RSA 2048 PKCS8, 1y validity.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kafka-tls
+  namespace: confluent
+spec:
+  secretName: kafka-tls-secret
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    encoding: PKCS8
+  issuerRef:
+    name: platform-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+    - kafka.confluent.svc.cluster.local
+    - "*.kafka.confluent.svc.cluster.local"
+    - kafka-bootstrap.apps-crc.testing
+    - "*.apps-crc.testing"
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: schemaregistry-tls
+  namespace: confluent
+spec:
+  secretName: schemaregistry-tls-secret
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    encoding: PKCS8
+  issuerRef:
+    name: platform-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+    - schemaregistry.confluent.svc.cluster.local
+    - schemaregistry.apps-crc.testing
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: connect-tls
+  namespace: confluent
+spec:
+  secretName: connect-tls-secret
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    encoding: PKCS8
+  issuerRef:
+    name: platform-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+    - connect.confluent.svc.cluster.local
+    - connect.apps-crc.testing
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: controlcenter-tls
+  namespace: confluent
+spec:
+  secretName: controlcenter-tls-secret
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    encoding: PKCS8
+  issuerRef:
+    name: platform-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+    - controlcenter.confluent.svc.cluster.local
+    - controlcenter.apps-crc.testing
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: restproxy-tls
+  namespace: confluent
+spec:
+  secretName: restproxy-tls-secret
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    encoding: PKCS8
+  issuerRef:
+    name: platform-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+    - kafkarestproxy.confluent.svc.cluster.local
+    - kafkarestproxy.apps-crc.testing

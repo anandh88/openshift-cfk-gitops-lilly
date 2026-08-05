@@ -1,0 +1,32 @@
+# TODO: replace with your GitHub username in repoURL below
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cmf-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mkurre/openshift-cfk-gitops.git
+    targetRevision: main
+    path: base/cmf-operator
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cmf-operator
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

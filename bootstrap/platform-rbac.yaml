@@ -1,0 +1,159 @@
+# Service accounts, roles and bindings for CFK, Kafka pods, Flink jobs, and Argo CD.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: confluent-for-kubernetes
+  namespace: confluent-operator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kafka-sa
+  namespace: confluent
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flink-service-account
+  namespace: flink-jobs
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: confluent-operator-role
+rules:
+  - apiGroups: ["platform.confluent.io"]
+    resources: ["*"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["nodes", "namespaces", "persistentvolumes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources:
+      - pods
+      - services
+      - endpoints
+      - configmaps
+      - secrets
+      - serviceaccounts
+      - events
+      - persistentvolumeclaims
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "replicasets"]
+    verbs: ["*"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["*"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies", "ingresses"]
+    verbs: ["*"]
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes", "routes/custom-host"]
+    verbs: ["*"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates", "issuers", "clusterissuers"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: confluent-operator-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: confluent-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: confluent-for-kubernetes
+    namespace: confluent-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kafka-pod-role
+  namespace: confluent
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["kafka-tls-secret", "kafka-internal-sasl"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kafka-pod-binding
+  namespace: confluent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kafka-pod-role
+subjects:
+  - kind: ServiceAccount
+    name: kafka-sa
+    namespace: confluent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: flink-role
+  namespace: flink-jobs
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "events"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["flink-kafka-sasl"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["*"]
+  - apiGroups: ["cmf.confluent.io"]
+    resources: ["flinkapplications", "flinkenvironments"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: flink-binding
+  namespace: flink-jobs
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: flink-role
+subjects:
+  - kind: ServiceAccount
+    name: flink-service-account
+    namespace: flink-jobs
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argocd-deploy-role
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-deploy-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argocd-deploy-role
+subjects:
+  - kind: ServiceAccount
+    name: argocd-application-controller
+    namespace: argocd
+  - kind: ServiceAccount
+    name: argocd-server
+    namespace: argocd

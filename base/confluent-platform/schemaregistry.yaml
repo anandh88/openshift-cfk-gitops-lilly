@@ -1,0 +1,42 @@
+apiVersion: platform.confluent.io/v1beta1
+kind: SchemaRegistry
+metadata:
+  name: schemaregistry
+  namespace: confluent
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  replicas: 1
+  image:
+    application: confluentinc/cp-schema-registry:7.6.0
+    init: confluentinc/confluent-init-container:2.8.0
+  tls:
+    secretRef: schemaregistry-tls-secret
+  externalAccess:
+    type: route
+    route:
+      domain: apps-crc.testing
+  dependencies:
+    kafka:
+      bootstrapEndpoint: kafka:9092
+      authentication:
+        type: plain
+        jaasConfig:
+          secretRef: kafka-internal-sasl
+      tls:
+        enabled: true
+        secretRef: kafka-tls-secret
+  podTemplate:
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi

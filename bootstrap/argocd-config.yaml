@@ -1,0 +1,180 @@
+# Argo CD server/controller tuning plus CRD health checks so the UI can
+# tell RUNNING/CREATING/UPDATING/FAILED apart for every CFK and CMF kind.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cmd-params-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: argocd
+data:
+  server.insecure: "false"
+  server.enable.gzip: "true"
+  controller.status.processors: "20"
+  controller.operation.processors: "10"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: argocd
+data:
+  resource.customizations.health.platform.confluent.io_Kafka: |
+    hs = {}
+    if obj.status ~= nil and obj.status.phase ~= nil then
+      if obj.status.phase == "RUNNING" then
+        hs.status = "Healthy"
+        hs.message = "Kafka cluster is running"
+        return hs
+      end
+      if obj.status.phase == "CREATING" or obj.status.phase == "UPDATING" then
+        hs.status = "Progressing"
+        hs.message = "Kafka cluster is " .. obj.status.phase
+        return hs
+      end
+      if obj.status.phase == "FAILED" then
+        hs.status = "Degraded"
+        hs.message = "Kafka cluster failed"
+        return hs
+      end
+    end
+    hs.status = "Progressing"
+    hs.message = "Waiting for Kafka status"
+    return hs
+  resource.customizations.health.platform.confluent.io_KRaftController: |
+    hs = {}
+    if obj.status ~= nil and obj.status.phase ~= nil then
+      if obj.status.phase == "RUNNING" then
+        hs.status = "Healthy"
+        hs.message = "KRaftController is running"
+        return hs
+      end
+      if obj.status.phase == "CREATING" or obj.status.phase == "UPDATING" then
+        hs.status = "Progressing"
+        hs.message = "KRaftController is " .. obj.status.phase
+        return hs
+      end
+      if obj.status.phase == "FAILED" then
+        hs.status = "Degraded"
+        hs.message = "KRaftController failed"
+        return hs
+      end
+    end
+    hs.status = "Progressing"
+    hs.message = "Waiting for KRaftController status"
+    return hs
+  resource.customizations.health.platform.confluent.io_SchemaRegistry: |
+    hs = {}
+    if obj.status ~= nil and obj.status.phase ~= nil then
+      if obj.status.phase == "RUNNING" then
+        hs.status = "Healthy"
+        hs.message = "SchemaRegistry is running"
+        return hs
+      end
+      if obj.status.phase == "CREATING" or obj.status.phase == "UPDATING" then
+        hs.status = "Progressing"
+        hs.message = "SchemaRegistry is " .. obj.status.phase
+        return hs
+      end
+      if obj.status.phase == "FAILED" then
+        hs.status = "Degraded"
+        hs.message = "SchemaRegistry failed"
+        return hs
+      end
+    end
+    hs.status = "Progressing"
+    hs.message = "Waiting for SchemaRegistry status"
+    return hs
+  resource.customizations.health.platform.confluent.io_Connect: |
+    hs = {}
+    if obj.status ~= nil and obj.status.phase ~= nil then
+      if obj.status.phase == "RUNNING" then
+        hs.status = "Healthy"
+        hs.message = "Connect is running"
+        return hs
+      end
+      if obj.status.phase == "CREATING" or obj.status.phase == "UPDATING" then
+        hs.status = "Progressing"
+        hs.message = "Connect is " .. obj.status.phase
+        return hs
+      end
+      if obj.status.phase == "FAILED" then
+        hs.status = "Degraded"
+        hs.message = "Connect failed"
+        return hs
+      end
+    end
+    hs.status = "Progressing"
+    hs.message = "Waiting for Connect status"
+    return hs
+  resource.customizations.health.platform.confluent.io_ControlCenter: |
+    hs = {}
+    if obj.status ~= nil and obj.status.phase ~= nil then
+      if obj.status.phase == "RUNNING" then
+        hs.status = "Healthy"
+        hs.message = "ControlCenter is running"
+        return hs
+      end
+      if obj.status.phase == "CREATING" or obj.status.phase == "UPDATING" then
+        hs.status = "Progressing"
+        hs.message = "ControlCenter is " .. obj.status.phase
+        return hs
+      end
+      if obj.status.phase == "FAILED" then
+        hs.status = "Degraded"
+        hs.message = "ControlCenter failed"
+        return hs
+      end
+    end
+    hs.status = "Progressing"
+    hs.message = "Waiting for ControlCenter status"
+    return hs
+  resource.customizations.health.cmf.confluent.io_FlinkApplication: |
+    hs = {}
+    if obj.status ~= nil and obj.status.lifecycle ~= nil and obj.status.lifecycle.state ~= nil then
+      local state = obj.status.lifecycle.state
+      if state == "RUNNING" then
+        hs.status = "Healthy"
+        hs.message = "FlinkApplication is running"
+        return hs
+      end
+      if state == "CREATING" or state == "UPDATING" then
+        hs.status = "Progressing"
+        hs.message = "FlinkApplication is " .. state
+        return hs
+      end
+      if state == "FAILED" then
+        hs.status = "Degraded"
+        hs.message = "FlinkApplication failed"
+        return hs
+      end
+    end
+    hs.status = "Progressing"
+    hs.message = "Waiting for FlinkApplication lifecycle state"
+    return hs
+  resource.customizations.ignoreDifferences.platform.confluent.io_Kafka: |
+    jsonPointers:
+      - /status
+  resource.customizations.ignoreDifferences.platform.confluent.io_KRaftController: |
+    jsonPointers:
+      - /status
+  resource.customizations.ignoreDifferences.platform.confluent.io_SchemaRegistry: |
+    jsonPointers:
+      - /status
+  resource.customizations.ignoreDifferences.platform.confluent.io_Connect: |
+    jsonPointers:
+      - /status
+  resource.customizations.ignoreDifferences.platform.confluent.io_ControlCenter: |
+    jsonPointers:
+      - /status
+  resource.customizations.ignoreDifferences.platform.confluent.io_KafkaRestProxy: |
+    jsonPointers:
+      - /status
+  resource.customizations.ignoreDifferences.cmf.confluent.io_FlinkApplication: |
+    jsonPointers:
+      - /status
+  resource.customizations.ignoreDifferences.cmf.confluent.io_FlinkEnvironment: |
+    jsonPointers:
+      - /status

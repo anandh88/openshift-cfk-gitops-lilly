@@ -1,0 +1,50 @@
+name: cd-argocd-sync
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install argocd CLI
+        run: |
+          curl -sSL -o /usr/local/bin/argocd \
+            https://github.com/argoproj/argo-cd/releases/download/v2.10.0/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+
+      - name: Log in to Argo CD
+        run: |
+          argocd login "$ARGOCD_SERVER" \
+            --username "$ARGOCD_USERNAME" \
+            --password "$ARGOCD_PASSWORD" \
+            --insecure --grpc-web
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+          ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
+          ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+
+      - name: Refresh app-of-apps
+        run: argocd app get platform-root --refresh
+
+      - name: Sync confluent-operator
+        run: |
+          argocd app sync confluent-operator --async
+          argocd app wait confluent-operator --health --timeout 300
+
+      - name: Sync confluent-platform
+        run: |
+          argocd app sync confluent-platform --async
+          argocd app wait confluent-platform --health --timeout 600
+
+      - name: Sync flink-jobs
+        run: argocd app sync flink-jobs --async
+
+      - name: List Argo CD applications
+        if: always()
+        run: argocd app list

@@ -1,0 +1,26 @@
+# Argo CD RBAC: default-deny (readonly), with platform-admin/developer/viewer
+# roles and mkurre bound to platform-admin for full local-cluster control.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: argocd
+data:
+  policy.default: role:readonly
+  policy.csv: |
+    p, role:platform-admin, applications, *, */*, allow
+    p, role:platform-admin, clusters, *, *, allow
+    p, role:platform-admin, repositories, *, *, allow
+    p, role:platform-admin, projects, *, *, allow
+    p, role:platform-admin, accounts, *, *, allow
+    p, role:platform-admin, certificates, *, *, allow
+    p, role:platform-admin, logs, get, */*, allow
+    p, role:platform-admin, exec, create, */*, allow
+    p, role:developer, applications, get, */*, allow
+    p, role:developer, applications, sync, */*, allow
+    p, role:developer, logs, get, */*, allow
+    p, role:viewer, applications, get, */*, allow
+    g, mkurre, role:platform-admin
+  scopes: "[groups, email]"

@@ -1,0 +1,102 @@
+name: ci-validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install yamllint
+        run: pip install yamllint
+      - name: Lint all YAML
+        run: |
+          cat <<'EOF' > /tmp/yamllint-config.yaml
+          extends: default
+          rules:
+            line-length:
+              max: 200
+              level: warning
+            document-start: disable
+            truthy: disable
+          EOF
+          yamllint -c /tmp/yamllint-config.yaml .
+
+  kustomize-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+      - name: Build overlays/local
+        run: kustomize build overlays/local
+      - name: Build base/confluent-platform
+        run: kustomize build base/confluent-platform
+      - name: Build base/flink-jobs
+        run: kustomize build base/flink-jobs
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail on plain Secret objects
+        run: |
+          # SealedSecret manifests are fine; a raw "kind: Secret" is not.
+          matches=$(grep -rn '^kind: Secret$' --include='*.yaml' . || true)
+          if [ -n "$matches" ]; then
+            echo "Found plain Kubernetes Secret objects, which must never be committed:"
+            echo "$matches"
+            exit 1
+          fi
+          echo "No plain Secret objects found."
+      - name: Run trufflehog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --only-verified
+
+  argocd-app-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pyyaml
+        run: pip install pyyaml
+      - name: Validate Application CRs
+        run: |
+          cat <<'EOF' > /tmp/validate_apps.py
+          import sys
+          import glob
+          import yaml
+
+          failures = []
+          for path in sorted(glob.glob("apps/*.yaml")):
+              with open(path) as f:
+                  docs = list(yaml.safe_load_all(f))
+              for doc in docs:
+                  if not doc or doc.get("kind") != "Application":
+                      continue
+                  spec = doc.get("spec", {})
+                  if "syncPolicy" not in spec:
+                      failures.append(f"{path}: missing spec.syncPolicy")
+                  if not spec.get("source", {}).get("repoURL"):
+                      failures.append(f"{path}: missing spec.source.repoURL")
+                  if not spec.get("destination", {}).get("server"):
+                      failures.append(f"{path}: missing spec.destination.server")
+
+          if failures:
+              print("Application CR validation failed:")
+              for failure in failures:
+                  print(f"  - {failure}")
+              sys.exit(1)
+          print("All Application CRs are valid.")
+          EOF
+          python3 /tmp/validate_apps.py

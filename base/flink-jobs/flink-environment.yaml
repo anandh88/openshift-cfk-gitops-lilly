@@ -1,0 +1,19 @@
+apiVersion: cmf.confluent.io/v1beta1
+kind: FlinkEnvironment
+metadata:
+  name: statefarm-flink-env
+  namespace: flink-jobs
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  flink:
+    version: "1.19"
+  kubernetes:
+    namespace: flink-jobs
+  kafkaClusters:
+    - name: local-kafka
+      bootstrapServers: kafka.confluent.svc.cluster.local:9092
+      authentication:
+        type: plain
+        jaasConfig:
+          secretRef: flink-kafka-sasl

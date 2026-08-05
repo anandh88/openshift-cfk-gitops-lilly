@@ -1,0 +1,9 @@
+*.pem
+*.key
+sealed-secrets-master-key*.yaml
+.kube/
+*.bak
+*.tmp
+*.log
+.DS_Store
+.claude

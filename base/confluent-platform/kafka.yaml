@@ -1,0 +1,86 @@
+apiVersion: platform.confluent.io/v1beta1
+kind: Kafka
+metadata:
+  name: kafka
+  namespace: confluent
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: 3
+  image:
+    application: confluentinc/confluent-server:7.6.0
+    init: confluentinc/confluent-init-container:2.8.0
+  dataVolumeCapacity: 10Gi
+  storageClass:
+    name: crc-csi-hostpath-provisioner
+  tls:
+    secretRef: kafka-tls-secret
+  listeners:
+    internal:
+      tls:
+        enabled: true
+        secretRef: kafka-tls-secret
+      authentication:
+        type: plain
+        jaasConfig:
+          secretRef: kafka-internal-sasl
+    external:
+      tls:
+        enabled: true
+        secretRef: kafka-tls-secret
+      authentication:
+        type: plain
+        jaasConfig:
+          secretRef: kafka-external-sasl
+      externalAccess:
+        type: route
+        route:
+          domain: apps-crc.testing
+  metricReporter:
+    enabled: true
+    bootstrapEndpoint: kafka:9092
+    authentication:
+      type: plain
+      jaasConfig:
+        secretRef: kafka-internal-sasl
+    tls:
+      enabled: true
+  dependencies:
+    kRaftController:
+      clusterRef:
+        name: kraftcontroller
+  podTemplate:
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: kafka
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
+  serviceAccountName: kafka-sa
+  configOverrides:
+    server:
+      - auto.create.topics.enable=false
+      - default.replication.factor=1
+      - min.insync.replicas=1
+      - offsets.topic.replication.factor=1
+      - transaction.state.log.replication.factor=1
+      - transaction.state.log.min.isr=1
+      - log.retention.hours=168
+  jvmConfig:
+    heapSize: 2g

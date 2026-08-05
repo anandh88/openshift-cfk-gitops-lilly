@@ -1,0 +1,16 @@
+# Argo CD core install is vendored from the upstream release manifest
+# (see scripts/bootstrap.sh, step 13, which applies the official
+# cluster-install manifest for ARGOCD_VERSION=v2.10.0 directly from
+# https://raw.githubusercontent.com/argoproj/argo-cd/v2.10.0/manifests/ha/install.yaml).
+# This file only carries the namespace and the OpenShift-specific
+# annotation the operator project needs so `oc apply -f bootstrap/` in
+# any order still creates the namespace before Argo CD's own manifest lands.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    kubernetes.io/metadata.name: argocd
+    argocd.argoproj.io/managed-by: argocd
+  annotations:
+    openshift.io/node-selector: ""

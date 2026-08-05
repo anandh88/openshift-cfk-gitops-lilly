@@ -1,0 +1,67 @@
+apiVersion: platform.confluent.io/v1beta1
+kind: ControlCenter
+metadata:
+  name: controlcenter
+  namespace: confluent
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  replicas: 1
+  image:
+    application: confluentinc/cp-enterprise-control-center:7.6.0
+    init: confluentinc/confluent-init-container:2.8.0
+  dataVolumeCapacity: 5Gi
+  storageClass:
+    name: crc-csi-hostpath-provisioner
+  tls:
+    secretRef: controlcenter-tls-secret
+  externalAccess:
+    type: route
+    route:
+      domain: apps-crc.testing
+  dependencies:
+    kafka:
+      bootstrapEndpoint: kafka:9092
+      authentication:
+        type: plain
+        jaasConfig:
+          secretRef: kafka-internal-sasl
+      tls:
+        enabled: true
+        secretRef: kafka-tls-secret
+    schemaRegistry:
+      url: https://schemaregistry.confluent.svc.cluster.local:8081
+      authentication:
+        type: basic
+        jaasConfig:
+          secretRef: c3-credentials
+      tls:
+        enabled: true
+        secretRef: schemaregistry-tls-secret
+    connect:
+      - name: connect
+        url: https://connect.confluent.svc.cluster.local:8083
+        authentication:
+          type: basic
+          jaasConfig:
+            secretRef: c3-credentials
+        tls:
+          enabled: true
+          secretRef: connect-tls-secret
+  podTemplate:
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: 1
+        memory: 2Gi
+  configOverrides:
+    server:
+      - confluent.metrics.topic.max.retention.ms=259200000
