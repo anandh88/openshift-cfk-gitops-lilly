@@ -51,24 +51,46 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: kraft-to-kafka
+  name: kafka-to-kraft
+  namespace: confluent
+spec:
+  # Kafka brokers connect OUT to the KRaft controller quorum (to register,
+  # fetch metadata, etc.) on its controller listener port - confirmed against
+  # the live KRaftController status (.status.listeners.controller), which is
+  # 9074, not 9092/9093 as originally assumed.
+  podSelector:
+    matchLabels:
+      app: kafka
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kraftcontroller
+      ports:
+        - protocol: TCP
+          port: 9074
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kraft-from-kafka
   namespace: confluent
 spec:
   podSelector:
     matchLabels:
-      app: kafka
+      app: kraftcontroller
   policyTypes:
     - Ingress
   ingress:
     - from:
         - podSelector:
             matchLabels:
-              app: kraftcontroller
+              app: kafka
       ports:
         - protocol: TCP
-          port: 9093
-        - protocol: TCP
-          port: 9092
+          port: 9074
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
