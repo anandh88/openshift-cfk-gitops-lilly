@@ -84,3 +84,42 @@ spec:
   configOverrides:
     server:
       - confluent.metrics.topic.max.retention.ms=259200000
+      - confluent.controlcenter.internal.topics.replication=1
+      - confluent.controlcenter.command.topic.replication=1
+---
+# CFK's generated controlcenter.properties hardcodes the prometheus/alertmanager
+# URLs to <name>-prometheus/<name>-alertmanager regardless of the
+# prometheusClient/alertManagerClient.url values above - these aliases give
+# those hostnames somewhere real to resolve to, since both sidecars actually
+# run as extra containers in the same controlcenter-0 pod/service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: controlcenter-prometheus
+  namespace: confluent
+spec:
+  selector:
+    app: controlcenter
+    clusterId: confluent
+    confluent-platform: "true"
+    type: controlcenter
+  ports:
+    - protocol: TCP
+      port: 9090
+      targetPort: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: controlcenter-alertmanager
+  namespace: confluent
+spec:
+  selector:
+    app: controlcenter
+    clusterId: confluent
+    confluent-platform: "true"
+    type: controlcenter
+  ports:
+    - protocol: TCP
+      port: 9093
+      targetPort: 9093

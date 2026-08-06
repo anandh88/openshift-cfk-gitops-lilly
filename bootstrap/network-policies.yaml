@@ -156,6 +156,32 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: controlcenter-self
+  namespace: confluent
+spec:
+  # ControlCenter calls its own prometheus/alertmanager sidecar containers via
+  # the controlcenter-prometheus/-alertmanager Service aliases (ClusterIP),
+  # which routes back to the same pod through the network stack rather than
+  # a raw loopback - still subject to ingress NetworkPolicy.
+  podSelector:
+    matchLabels:
+      app: controlcenter
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: controlcenter
+      ports:
+        - protocol: TCP
+          port: 9090
+        - protocol: TCP
+          port: 9093
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: controlcenter-egress
   namespace: confluent
 spec:
