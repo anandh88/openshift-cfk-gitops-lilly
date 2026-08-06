@@ -108,11 +108,21 @@ oc apply -f bootstrap/argocd-install.yaml
 echo "==> Step 13: Installing Argo CD ${ARGOCD_VERSION}"
 oc apply -n argocd -f "https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
 
+# The upstream manifest hardcodes argocd-redis's runAsUser to 999, which no
+# OpenShift SCC (including confluent-platform-scc, range 1000-65534) allows.
+# Without this, the redis pod never schedules - ReplicaFailure/FailedCreate -
+# and repo-server silently degrades (git-sourced Applications keep working
+# off cache, but any operation needing a fresh cache entry, e.g. a Helm chart
+# repo source seen for the first time, fails with a redis connection error).
+oc patch deployment argocd-redis -n argocd --type=json \
+  -p='[{"op":"remove","path":"/spec/template/spec/securityContext/runAsUser"}]'
+
 # 14. Wait for the core Argo CD deployments to roll out.
 echo "==> Step 14: Waiting for Argo CD rollout"
 oc rollout status deployment/argocd-server -n argocd --timeout=300s
 oc rollout status deployment/argocd-repo-server -n argocd --timeout=300s
 oc rollout status deployment/argocd-applicationset-controller -n argocd --timeout=300s
+oc rollout status deployment/argocd-redis -n argocd --timeout=300s
 # argocd-application-controller ships as a StatefulSet even in the core manifest, not a Deployment.
 oc rollout status statefulset/argocd-application-controller -n argocd --timeout=300s
 
