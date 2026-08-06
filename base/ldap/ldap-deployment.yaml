@@ -54,6 +54,28 @@ spec:
       # admitted under anyuid, confirmed live across many repeated pod
       # recreations.
       securityContext: {}
+      # ConfigMap volumes are always mounted read-only, regardless of any
+      # volumeMounts.readOnly setting - that's a hard Kubernetes platform
+      # behavior, not something this manifest controls. osixia/openldap's
+      # ldap_add_or_modify function runs `sed -i` (in-place edit, which
+      # needs to write a temp file in the same directory) on every
+      # bootstrap LDIF it processes, including custom ones - confirmed
+      # live: `sed: couldn't open temporary file .../sedIRBOX9: Read-only
+      # file system`, failing before any of our schema/structure LDIF ever
+      # got applied. This initContainer copies the ConfigMap's content
+      # into a writable emptyDir, which the main container mounts at the
+      # same custom-bootstrap path instead of the ConfigMap directly.
+      initContainers:
+        - name: copy-ldap-seed
+          image: osixia/openldap:1.5.0
+          command: ["/bin/sh", "-c", "cp /ldap-seed-ro/*.ldif /ldap-seed-rw/"]
+          volumeMounts:
+            - name: ldap-seed-configmap
+              mountPath: /ldap-seed-ro
+            - name: ldap-seed
+              mountPath: /ldap-seed-rw
+          securityContext:
+            allowPrivilegeEscalation: false
       containers:
         - name: ldap
           image: osixia/openldap:1.5.0
@@ -134,9 +156,11 @@ spec:
         - name: ldap-data
           persistentVolumeClaim:
             claimName: ldap-data
-        - name: ldap-seed
+        - name: ldap-seed-configmap
           configMap:
             name: ldap-seed
+        - name: ldap-seed
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
