@@ -77,6 +77,61 @@ correct, usually because CFK's operator writes back into `.status`.
    need its PVC deleted and recreated to rejoin cleanly (data loss on that
    replica only, assuming `replication.factor` covers it).
 
+## ControlCenter pod stuck Pending: PVC storageclass "dummy" not found
+
+**Symptoms:** `controlcenter-0` stuck `Pending`; `oc describe pvc
+data0-controlcenter-0 -n confluent` (and/or `prometheus-data-controlcenter-0`)
+shows `storageclass.storage.k8s.io "dummy" not found`.
+
+**Confirmed root cause (CFK 3.3.0, ControlCenter Next Gen):** the operator's
+StatefulSet reconciler generates `volumeClaimTemplates` with a hardcoded
+placeholder `storageClassName: dummy` and `storage: 1Gi`, **regardless of**
+the CR's actual `spec.dataVolumeCapacity`/`spec.storageClass.name` and
+`spec.services.prometheus.pvc.*` values — verified by checking the live CR
+(correct values present) against the generated StatefulSet
+(`oc get statefulset controlcenter -n confluent -o jsonpath='{.spec.volumeClaimTemplates}'`,
+still `dummy`/`1Gi` after a full CR resync and a full StatefulSet
+delete-and-recreate). This is an operator bug, not a manifest problem —
+nothing in `base/confluent-platform/controlcenter.yaml` can fix it.
+
+**Workaround** (StatefulSets bind to an existing same-named PVC instead of
+creating one from `volumeClaimTemplates` if one already exists):
+```bash
+oc delete pvc data0-controlcenter-0 prometheus-data-controlcenter-0 -n confluent --ignore-not-found
+cat <<'EOF' | oc apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data0-controlcenter-0
+  namespace: confluent
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: crc-csi-hostpath-provisioner
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data-controlcenter-0
+  namespace: confluent
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: crc-csi-hostpath-provisioner
+EOF
+```
+**This is not durable.** `volumeClaimTemplates` on a StatefulSet is immutable
+— the broken template persists. If `controlcenter-0` is ever deleted while
+its current PVCs are also gone (e.g. both deleted together, or the PVCs
+finish terminating after a pod delete), the StatefulSet will regenerate new
+`dummy`-classed PVCs from the same broken template and you'll need to
+re-run this workaround. Deleting *only* the pod (leaving the PVCs alone) is
+safe and won't trigger this.
+
 ## Flink job not starting: CMF and JM log diagnosis
 
 **Symptoms:** `FlinkApplication` stuck in `CREATING`/`FAILED`.
