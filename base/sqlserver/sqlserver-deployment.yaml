@@ -23,8 +23,6 @@ kind: Deployment
 metadata:
   name: sqlserver
   namespace: sqlserver
-  annotations:
-    argocd.argoproj.io/sync-wave: "-2"
 spec:
   replicas: 1
   selector:
@@ -144,7 +142,9 @@ metadata:
   name: sqlserver-init
   namespace: sqlserver
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"
+    # PostSync already guarantees this runs after every non-hook resource in
+    # this Application (including the sqlserver Deployment above) has synced
+    # and reported healthy - no sync-wave annotation needed on top of that.
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
