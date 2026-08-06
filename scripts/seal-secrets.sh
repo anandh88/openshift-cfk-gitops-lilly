@@ -78,7 +78,7 @@ metadata:
   namespace: confluent
 type: Opaque
 stringData:
-  bearer.txt: |
+  basic.txt: |
     username=admin
     password=C3Admin@Local2024!
 EOF
