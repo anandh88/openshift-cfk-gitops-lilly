@@ -19,7 +19,7 @@ spec:
   cmfRestClassRef:
     name: default
   flinkEnvironment: statefarm-flink-env
-  flinkVersion: "1.19"
+  flinkVersion: "v1_19"
   mode: native
   image: ghcr.io/mkurre/flink-jobs/claims-processor:latest
   serviceAccount: flink-service-account
