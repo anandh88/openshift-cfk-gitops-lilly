@@ -24,6 +24,33 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: confluent-operator-management
+  namespace: confluent
+spec:
+  # The CFK operator polls every component's Jolokia/JMX/Prometheus endpoints
+  # for status (e.g. Kafka URP counts, KRaft log-end-offset) to compute CR
+  # status.phase/conditions. Without this, those queries time out and the CR
+  # sits ApplyFailed/Progressing forever even though the pod itself is
+  # healthy: 'failed URP query to kafka-0...:7777/jolokia/: i/o timeout'.
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: confluent-operator
+      ports:
+        - protocol: TCP
+          port: 7777
+        - protocol: TCP
+          port: 7778
+        - protocol: TCP
+          port: 7203
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: kafka-internal-replication
   namespace: confluent
 spec:
