@@ -38,7 +38,7 @@ spec:
           domain: apps-crc.testing
   metricReporter:
     enabled: true
-    bootstrapEndpoint: kafka:9092
+    bootstrapEndpoint: kafka:9071
     authentication:
       type: plain
       jaasConfig:

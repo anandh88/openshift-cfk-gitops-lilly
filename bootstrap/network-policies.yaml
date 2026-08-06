@@ -33,6 +33,8 @@ spec:
   policyTypes:
     - Ingress
     - Egress
+  # Real listener ports confirmed from the running broker's advertised.listeners:
+  # INTERNAL=9071, REPLICATION=9072, EXTERNAL=9092, CONTROLLER(kraft)=9074.
   ingress:
     - from:
         - podSelector:
@@ -40,11 +42,9 @@ spec:
               app: kafka
       ports:
         - protocol: TCP
-          port: 9092
+          port: 9071
         - protocol: TCP
-          port: 9093
-        - protocol: TCP
-          port: 9094
+          port: 9072
   egress:
     - to:
         - podSelector:
@@ -111,7 +111,7 @@ spec:
               app: schemaregistry
       ports:
         - protocol: TCP
-          port: 9092
+          port: 9071
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -131,7 +131,7 @@ spec:
               app: connect
       ports:
         - protocol: TCP
-          port: 9092
+          port: 9071
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -151,7 +151,7 @@ spec:
               kubernetes.io/metadata.name: flink-jobs
       ports:
         - protocol: TCP
-          port: 9092
+          port: 9071
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

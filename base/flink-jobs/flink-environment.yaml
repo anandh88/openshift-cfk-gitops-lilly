@@ -12,7 +12,7 @@ spec:
     namespace: flink-jobs
   kafkaClusters:
     - name: local-kafka
-      bootstrapServers: kafka.confluent.svc.cluster.local:9092
+      bootstrapServers: kafka.confluent.svc.cluster.local:9071
       authentication:
         type: plain
         jaasConfig:

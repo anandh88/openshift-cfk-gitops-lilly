@@ -27,7 +27,7 @@ spec:
       domain: apps-crc.testing
   dependencies:
     kafka:
-      bootstrapEndpoint: kafka:9092
+      bootstrapEndpoint: kafka:9071
       authentication:
         type: plain
         jaasConfig:
