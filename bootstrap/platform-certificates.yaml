@@ -18,6 +18,7 @@ spec:
     kind: ClusterIssuer
     group: cert-manager.io
   dnsNames:
+    - kafka
     - kafka.confluent.svc.cluster.local
     - "*.kafka.confluent.svc.cluster.local"
     - kafka-bootstrap.apps-crc.testing
