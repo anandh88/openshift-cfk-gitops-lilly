@@ -1,5 +1,13 @@
 # TODO: replace with your GitHub username in the ghcr.io image path
 # once claims-processor images are being published from ci-flink-build.yaml.
+#
+# Rewritten against the actual CFK 3.3 FlinkApplication CRD schema, which
+# differs substantially from the CMF-as-a-separate-product model originally
+# assumed: flinkEnvironment is a plain string (not environment.name), job
+# replaces jobSpec, serviceAccount replaces serviceAccountName, mode is
+# native/standalone (Flink Kubernetes Operator's own terminology, not
+# "Application"), and resource.memory must be a real memory quantity (Mi/Gi),
+# not a CPU-style "m" suffix.
 apiVersion: platform.confluent.io/v1beta1
 kind: FlinkApplication
 metadata:
@@ -8,13 +16,14 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
-  environment:
-    name: statefarm-flink-env
+  cmfRestClassRef:
+    name: default
+  flinkEnvironment: statefarm-flink-env
   flinkVersion: "1.19"
-  mode: Application
+  mode: native
   image: ghcr.io/mkurre/flink-jobs/claims-processor:latest
-  serviceAccountName: flink-service-account
-  jobSpec:
+  serviceAccount: flink-service-account
+  job:
     jarURI: local:///opt/flink/usrlib/claims-processor.jar
     entryClass: com.statefarm.flink.ClaimsProcessorJob
     args:
@@ -24,13 +33,25 @@ spec:
     upgradeMode: savepoint
   jobManager:
     resource:
-      memory: 1024m
+      memory: 1024Mi
       cpu: 500m
   taskManager:
     replicas: 1
     resource:
-      memory: 1024m
+      memory: 1024Mi
       cpu: 1
+    podTemplate:
+      spec:
+        containers:
+          - name: flink-main-container
+            volumeMounts:
+              - name: flink-kafka-sasl
+                mountPath: /mnt/secrets/flink-kafka-sasl
+                readOnly: true
+        volumes:
+          - name: flink-kafka-sasl
+            secret:
+              secretName: flink-kafka-sasl
   flinkConfiguration:
     state.backend: hashmap
     execution.checkpointing.interval: "60000"

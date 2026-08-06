@@ -1,0 +1,14 @@
+# Points CFK's Flink CRs (FlinkEnvironment/FlinkApplication) at the CMF REST
+# API deployed by the cmf-operator Application (base/cmf-operator, sourced
+# directly from Confluent's Helm chart repo). CMF ships with authentication
+# disabled by default, so no authentication block is needed here for local use.
+apiVersion: platform.confluent.io/v1beta1
+kind: CMFRestClass
+metadata:
+  name: default
+  namespace: flink-jobs
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  cmfRest:
+    endpoint: http://cmf-service.cmf-operator.svc.cluster.local

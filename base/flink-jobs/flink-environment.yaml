@@ -1,3 +1,8 @@
+# kubernetesNamespace is the only required field on this CRD; Kafka
+# connectivity for actual jobs is configured per-FlinkApplication (or via a
+# separate FlinkKafkaCatalog/FlinkKafkaDatabase resource for Flink SQL use
+# cases), not declared here as a kafkaClusters list like earlier CFK/CMF
+# versions - that field doesn't exist on this CRD.
 apiVersion: platform.confluent.io/v1beta1
 kind: FlinkEnvironment
 metadata:
@@ -6,14 +11,6 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
-  flink:
-    version: "1.19"
-  kubernetes:
-    namespace: flink-jobs
-  kafkaClusters:
-    - name: local-kafka
-      bootstrapServers: kafka.confluent.svc.cluster.local:9071
-      authentication:
-        type: plain
-        jaasConfig:
-          secretRef: flink-kafka-sasl
+  kubernetesNamespace: flink-jobs
+  cmfRestClassRef:
+    name: default
