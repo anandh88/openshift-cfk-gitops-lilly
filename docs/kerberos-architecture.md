@@ -161,6 +161,84 @@ than a custom image - verify the pinned version (`kafka-connect-jdbc
 10.7.4`) against Confluent Hub before relying on it, it was not
 re-verified live in this pass.
 
+## Known limitation: SQL Server does not run on this arm64 CRC node
+
+`mcr.microsoft.com/mssql/server` (all editions, including Express) is
+**amd64-only** - confirmed via `docker inspect --format
+'{{.Architecture}}'` on the pulled image (`amd64`) against this node's own
+architecture (`oc get nodes -o jsonpath='{.items[0].status.nodeInfo.architecture}'`
+-> `arm64`, since CRC on Apple Silicon runs its guest VM as native arm64).
+No manifest, SCC, or capabilities change fixes this - it's a CPU
+architecture mismatch, not a permissions problem. This was confirmed with
+a full investigation before concluding that, documented here so it isn't
+re-litigated from scratch:
+
+**The chain, and where it breaks:**
+```
+Apple Silicon (arm64 host)
+  -> vfkit (Apple Virtualization.framework - hardware-virtualized arm64 guest)
+    -> CRC's Linux VM (arm64, no Rosetta wired up)
+      -> binfmt_misc -> qemu-x86_64 (generic TCG software binary translation)
+        -> sqlservr (x86_64 ELF)  ->  SIGSEGV, immediately, every time
+```
+CRC's VM tool (`vfkit`) uses Apple's `Virtualization.framework` to run a
+*real*, hardware-virtualized arm64 Linux guest - there is no x86 hardware
+anywhere in this path. The only available translation is QEMU's TCG
+(software instruction-by-instruction emulation), registered on the node
+via a one-time privileged Job running `tonistiigi/binfmt --install amd64`
+(the same tool `docker/setup-qemu-action` uses in GitHub Actions).
+
+**What was ruled out, in order:**
+1. **Kubernetes/SCC/securityContext** - ruled out definitively. Reproduced
+   the identical `Segmentation fault (core dumped)` (exit 139/SIGSEGV) via
+   `podman run` directly on the CRC node's host (`oc debug node/crc`),
+   completely bypassing Kubernetes, CRI-O, and every SCC/securityContext
+   setting. Still, `sqlserver-deployment.yaml`'s `anyuid` binding and
+   dropped capabilities restriction (see `bootstrap/auth-services-scc.yaml`)
+   are kept as committed - they're independently necessary for *this*
+   cluster's restricted-v2 default regardless of the arch issue, and
+   correct/harmless on real amd64 hardware too.
+2. **QEMU emulation being broken in general** - ruled out. A plain test
+   pod pinned to an amd64-only image digest (`alpine@sha256:...`)
+   correctly reported `uname -m` -> `x86_64` inside a real CRI-O-launched
+   pod. Emulation works; `sqlservr` specifically does not survive it.
+3. **SQL Server version** (2017 vs 2019 vs 2022) - ruled out. Tested all
+   three directly via `podman` on the node; all three crash identically
+   (exit 139), with 2017/2019 crashing even earlier (no log output at all)
+   than 2022. This rules out "newer AVX2-heavy codepath" as the specific
+   mechanism - SQLPAL (the Linux hosting layer shared by all three
+   versions since SQL Server first shipped on Linux in 2017) is doing
+   something at a more fundamental level in early startup that QEMU's TCG
+   can't correctly emulate, not a version-specific instruction gap.
+4. **Rosetta instead of QEMU** - not available today. `vfkit` does support
+   a Rosetta-share device (Apple's `VZLinuxRosettaDirectoryShare`, the same
+   mechanism Docker Desktop uses), but CRC itself has an open, unmerged
+   feature request for it
+   ([crc-org/crc#4881](https://github.com/crc-org/crc/issues/4881)) -
+   checked against the latest available release (2.62.0) at time of
+   writing, still not shipped. A manual workaround exists (mount the
+   Rosetta share via virtiofs, register its binfmt handler in place of
+   qemu-x86_64) but requires bypassing CRC's own VM lifecycle management,
+   and Rosetta itself has a documented gap in x86_64-v3 instruction
+   support under vfkit
+   ([crc-org/vfkit#265](https://github.com/crc-org/vfkit/issues/265)) that
+   could still cause failures even if wired up.
+5. **Azure SQL Edge as an arm64-native substitute** - disqualified on
+   three independent counts, per Microsoft's own (now-archived) feature
+   docs: it's retired (EOL 2025-09-30), it **no longer supports the ARM64
+   platform** at all, and it explicitly does **not support Active
+   Directory/Kerberos integration** - the last point alone would defeat
+   the purpose of this entire feature even if the other two didn't apply.
+
+**Bottom line:** this is a genuine, confirmed CPU-architecture/emulation
+limitation of running SQL Server inside CRC on Apple Silicon specifically,
+not a bug in this repo's manifests. `base/sqlserver/` is written correctly
+for real amd64 hardware (a real cluster, CI runner, or an amd64 VM under
+UTM/Parallels/VMware Fusion with proper hardware-assisted virtualization)
+and should be validated there. On this machine, validate the rest of the
+chain instead - LDAP, KDC, and Connect's keytab/JAAS/krb5.conf wiring all
+work independently of whether a live SQL Server is reachable.
+
 ## Known limitations / what a production build should change
 
 1. **KDC image**: bake `krb5-kdc`/`krb5-kdc-ldap` into a custom image

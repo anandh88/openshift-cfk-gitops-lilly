@@ -5,6 +5,12 @@ behind each choice. This is the operational sequence only.
 
 ## First-time setup
 
+Steps 3-9 below (realm init through validation) can be run one at a time
+as shown, or all at once via `./scripts/kerberos/run-all.sh`, which chains
+01-05 and validate-kerberos.sh in order and stops on the first failure.
+Use the individual scripts instead when re-running only part of the flow
+(e.g. the keytab-rotation flow further down only needs steps 4-6).
+
 1. **Deploy the manifests.** If Argo CD's app-of-apps is already running
    this repo, `git push` is enough - it picks up `apps/auth-services-app.yaml`,
    `apps/kerberos-kdc-app.yaml`, and `apps/sqlserver-app.yaml` automatically.

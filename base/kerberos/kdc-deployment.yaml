@@ -88,11 +88,16 @@ spec:
               port: 749
             initialDelaySeconds: 20
             periodSeconds: 10
-          livenessProbe:
-            tcpSocket:
-              port: 749
-            initialDelaySeconds: 40
-            periodSeconds: 20
+          # No livenessProbe. Confirmed live: before scripts/kerberos/
+          # 01-init-kdc.sh has run, this container legitimately sits at
+          # `sleep infinity` with nothing listening on 749 (see the startup
+          # script) - by design, not a hang. A livenessProbe on that same
+          # port fails immediately and Kubernetes restarts the container
+          # (unlike a failed readinessProbe, which just withholds Ready),
+          # discarding the just-installed apt packages and repeating
+          # forever - CrashLoopBackOff on a container that was never
+          # actually broken. readinessProbe alone still correctly signals
+          # not-ready during this wait, without the destructive restart.
       volumes:
         - name: krb5-conf
           configMap:

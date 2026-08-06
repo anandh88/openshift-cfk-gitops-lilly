@@ -169,7 +169,15 @@ spec:
           type: RuntimeDefault
       containers:
         - name: sqlserver-init
-          image: mcr.microsoft.com/mssql-tools18/mssql-tools18:latest
+          # Reuses the server image rather than a separate tools image -
+          # mcr.microsoft.com/mssql-tools18/mssql-tools18:latest does not
+          # exist (confirmed live: ErrImagePull, "manifest unknown").
+          # Since SQL Server 2022 CU14, mssql-tools18 ships bundled inside
+          # the server image itself at /opt/mssql-tools18/bin (confirmed
+          # live: sqlcmd/bcp present there) - `command:` below fully
+          # replaces the image's own ENTRYPOINT, so this container never
+          # launches sqlservr itself, only sqlcmd.
+          image: mcr.microsoft.com/mssql/server:2022-latest
           command: ["/bin/bash", "-c"]
           args:
             - |
