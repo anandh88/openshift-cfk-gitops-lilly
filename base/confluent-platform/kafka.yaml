@@ -53,8 +53,6 @@ spec:
     serviceAccountName: kafka-sa
     podSecurityContext:
       runAsNonRoot: true
-      runAsUser: 1000
-      fsGroup: 1000
       seccompProfile:
         type: RuntimeDefault
     affinity:

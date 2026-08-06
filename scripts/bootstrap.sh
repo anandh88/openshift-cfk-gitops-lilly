@@ -77,24 +77,14 @@ kubeseal --fetch-cert \
 echo "==> Step 9: Run scripts/seal-secrets.sh next to generate real SealedSecret manifests"
 echo "    e.g. ./scripts/seal-secrets.sh"
 
-# 10. Platform-wide RBAC, SCC and default-deny NetworkPolicies.
-echo "==> Step 10: Applying platform RBAC, SCC and NetworkPolicies"
+# 10. Platform-wide RBAC and default-deny NetworkPolicies.
+# No custom SCC: every CFK CR's podTemplate.podSecurityContext omits
+# runAsUser/fsGroup entirely, so OpenShift's built-in restricted-v2 SCC
+# assigns UIDs from each namespace's own allocated range at admission -
+# no custom SecurityContextConstraints or per-SA SCC binding needed.
+echo "==> Step 10: Applying platform RBAC and NetworkPolicies"
 oc apply -f bootstrap/platform-rbac.yaml
-oc apply -f bootstrap/platform-scc.yaml
 oc apply -f bootstrap/network-policies.yaml
-
-# 11. Bind the SCC to every service account that needs it.
-echo "==> Step 11: Assigning confluent-platform-scc to service accounts"
-for sa in \
-  "system:serviceaccount:confluent-operator:confluent-for-kubernetes" \
-  "system:serviceaccount:confluent:default" \
-  "system:serviceaccount:confluent:kafka-sa" \
-  "system:serviceaccount:flink-jobs:flink-service-account" \
-  "system:serviceaccount:argocd:argocd-application-controller" \
-  "system:serviceaccount:argocd:argocd-server"; do
-  echo "    -> ${sa}"
-  oc adm policy add-scc-to-user confluent-platform-scc "${sa}"
-done
 
 # 12. Argo CD gets its own namespace before the install manifest is applied.
 echo "==> Step 12: Creating argocd namespace"

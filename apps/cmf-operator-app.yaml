@@ -28,6 +28,12 @@ spec:
           limits:
             cpu: 1
             memory: 2Gi
+        # Suppress the chart's hardcoded podSecurityContext (fsGroup: 1001,
+        # runAsUser: 1001). On OpenShift, the restricted-v2 SCC assigns UIDs
+        # from the namespace's allowed range at admission - fixed UIDs trip
+        # SCC validation outright unless a custom SCC widens the range.
+        podSecurity:
+          enabled: false
   destination:
     server: https://kubernetes.default.svc
     namespace: cmf-operator

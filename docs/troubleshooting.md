@@ -4,18 +4,33 @@
 
 **Symptoms:** Pod stuck in `CreateContainerConfigError` or never scheduled;
 `oc describe pod` shows `unable to validate against any security context
-constraint`.
+constraint`, often listing a specific rejected `runAsUser`/`fsGroup` value
+against every built-in SCC's allowed range.
 
-1. Check the pod's events: `oc describe pod <pod> -n confluent`.
-2. Confirm the pod's service account has `confluent-platform-scc` bound:
-   ```
-   oc get scc confluent-platform-scc -o jsonpath='{.users}'
-   ```
-3. If missing, add it: `oc adm policy add-scc-to-user confluent-platform-scc system:serviceaccount:<ns>:<sa>`.
-4. Confirm the pod spec matches the SCC's constraints — `runAsUser` in
-   1000-65534, `fsGroup`/`supplementalGroups` in the same range, no
-   `allowPrivilegeEscalation`, capabilities dropped to `ALL` with only
-   `NET_BIND_SERVICE` allowed back.
+This repo carries **no custom SecurityContextConstraints** by design — every
+CFK CR's `podTemplate.podSecurityContext` (and the CMF chart's
+`podSecurity.enabled: false`) deliberately omits `runAsUser`/`fsGroup` so
+OpenShift's built-in `restricted-v2` SCC can assign both from the
+namespace's own allocated range at admission. If you see this symptom:
+
+1. Check the pod's events: `oc describe pod <pod> -n <namespace>`. The
+   message enumerates every SCC tried and why each failed - look for a
+   `runAsUser`/`fsGroup` value that doesn't fall in `restricted-v2`'s
+   namespace range (`oc get ns <namespace> -o jsonpath='{.metadata.annotations}'`
+   shows the allocated range under `openshift.io/sa.scc.uid-range`).
+2. If the rejected value is a small fixed number (e.g. `999`, `1001`) rather
+   than something in that namespace range, a workload's manifest or Helm
+   chart is hardcoding a UID/GID. Fix it at the source - add/adjust
+   `podTemplate.podSecurityContext` (CFK CRs) or the equivalent chart value
+   (e.g. `podSecurity.enabled: false` for CMF) so nothing sets `runAsUser`/
+   `fsGroup` explicitly, rather than reaching for a custom SCC to widen the
+   allowed range.
+3. Confirm the container-level fields `restricted-v2` actually requires are
+   still present: `allowPrivilegeEscalation: false`, `capabilities.drop:
+   [ALL]`, a `seccompProfile`. CFK sets these automatically on the pods it
+   generates regardless of your CR's podTemplate; third-party charts (like
+   the upstream Argo CD `redis` Deployment) may need a manual
+   `securityContext` added if they don't.
 
 ## PVC not binding: storage class mismatch
 
