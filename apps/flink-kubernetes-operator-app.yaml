@@ -1,0 +1,75 @@
+# Sourced directly from Confluent's Helm chart repo via Argo CD's native Helm
+# support, same pattern as apps/cmf-operator-app.yaml. Chart version confirmed
+# live against https://packages.confluent.io/helm (`helm search repo
+# confluent/flink-kubernetes-operator --versions`) - 1.150.2 is the latest,
+# matching the version constraint ("~1.150.0") in Confluent's official
+# install docs for CP 8.2.x/Flink 1.19.
+#
+# Must sync before cmf-operator: per Confluent docs, "You must install the
+# Confluent Platform for Apache Flink Kubernetes operator before you install
+# CMF" - this Application uses sync-wave "0" (same as confluent-operator),
+# strictly earlier than cmf-operator's wave "1".
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flink-kubernetes-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://packages.confluent.io/helm
+    chart: flink-kubernetes-operator
+    targetRevision: 1.150.2
+    helm:
+      values: |
+        watchNamespaces:
+          - flink-jobs
+        # Suppress the chart's hardcoded podSecurityContext (runAsUser: 9999,
+        # runAsGroup: 9999). On OpenShift, the restricted-v2 SCC assigns UIDs
+        # from the namespace's allocated range at admission - fixed UIDs trip
+        # SCC validation outright unless a custom SCC widens the range. See
+        # docs/troubleshooting.md "Pod not starting: SCC violation".
+        podSecurityContext:
+          runAsUser: null
+          runAsGroup: null
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: flink-operator
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+  ignoreDifferences:
+    # The API server defaults additionalPrinterColumns[].priority to 0 on the
+    # live CRD; the chart's rendered manifest omits it, so this is permanent
+    # apiserver-defaulting drift, not a real diff - same class of issue as
+    # the /status ignoreDifferences entries in apps/confluent-platform-app.yaml.
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jqPathExpressions:
+        - '.spec.versions[].additionalPrinterColumns[].priority'
+    # cert-manager injects the webhook CA into caBundle via the
+    # cert-manager.io/inject-ca-from annotation on these two objects; the
+    # chart's rendered manifest leaves caBundle empty, so this is the same
+    # class of controller-writeback drift as the CRD priority field above.
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - '.webhooks[].clientConfig.caBundle'
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - '.webhooks[].clientConfig.caBundle'

@@ -144,23 +144,73 @@ safe and won't trigger this.
    secret missing/misnamed, or `FlinkEnvironment` not yet `RUNNING` (Flink
    apps depend on their environment, sync-wave 1 vs 2).
 
-**Known gap as of CFK 3.3.0 (certified-operators catalog):** `CMFRestClass`,
+**Status as of CFK 3.3.0 (certified-operators catalog):** `CMFRestClass`,
 `FlinkEnvironment`, and `FlinkApplication` all pass schema validation and sync
-cleanly, and CMF itself (`cmf-operator` Application, deployed via Argo CD's
-native Helm support from `https://packages.confluent.io/helm`) runs fine —
-but no JobManager/TaskManager pods ever get created, and the CFK operator
-shows zero log activity for these CRs. Confirmed:
-  - `oc get deployment confluent-operator -n confluent-operator -o jsonpath='{.spec.template.spec.containers[0].env}'`
-    has a `RELATED_IMAGE_<component>` env var for every other component
-    (Kafka, Connect, SchemaRegistry, ksqlDB, ...) but **none for Flink**.
-  - `oc get pods,deployment -A | grep -i flink` shows only the CMF pod itself —
-    no separate Flink Kubernetes Operator anywhere on the cluster.
+cleanly. Two real root causes were found and fixed; one gap remains open.
 
-Working theory: this operator bundle doesn't ship a live Flink reconciler,
-and CFK's Flink integration needs an additional operator component (a Flink
-Kubernetes Operator that CMF drives) not provisioned by this repo. Confirm
-against official CFK 3.3 Flink-architecture docs before assuming this is
-fixable by further CR changes alone.
+**Fixed: Flink Kubernetes Operator (FKO) was never installed.** CMF drives
+Flink workloads through the community Flink Kubernetes Operator, which is a
+separate component from CMF itself and from the CFK operator. `apps/flink-kubernetes-operator-app.yaml`
+now installs it the same way as `cmf-operator` (Argo CD native Helm source,
+`https://packages.confluent.io/helm`, chart `flink-kubernetes-operator`
+`1.150.2` - confirmed as the latest via `helm search repo
+confluent/flink-kubernetes-operator --versions`, matching the `~1.150.0`
+constraint in Confluent's official docs). Per those docs, FKO must sync
+before CMF - it runs at `sync-wave: "0"`, one wave earlier than
+`cmf-operator`'s `"1"`. Its `watchNamespaces` is set to `[flink-jobs]` (so
+RBAC is namespace-scoped, not cluster-wide) and its chart's hardcoded
+`podSecurityContext` (`runAsUser`/`runAsGroup: 9999`) is nulled out for the
+same restricted-v2/no-custom-SCC reason as everywhere else in this repo -
+confirmed via `helm template ... --set podSecurityContext.runAsUser=null`
+that this renders `securityContext: {}`, matching the official OpenShift
+guidance exactly. Verified live: `flink-kubernetes-operator-*` pod reaches
+`2/2 Running`, Argo CD Application `Synced`/`Healthy`.
+
+**Fixed: `ENABLE_CMF_DAY2_OPS` defaults to `false` in this OLM bundle.** The
+CFK operator logs a single diagnostic line on every startup:
+`"Flink controller registration","cmfDay2OpsEnabled":false,"flinkSQLControllersEnabled":false`
+(`oc logs -n confluent-operator deploy/confluent-operator | grep -i "flink controller registration"`).
+Cross-checked against the **exact matching chart version** for live
+verification (`helm show values confluent/confluent-for-kubernetes --version
+0.1718.10`, which is CFK 3.3.0's own Helm chart from
+`https://packages.confluent.io/helm` - the same operator version as the OLM
+bundle): `enableCMFDay2Ops` defaults to `true` there and its comment says
+*"When true (default), the operator registers the CFK 2.10 Flink
+controllers (CMFRestClass, FlinkEnvironment, FlinkApplication)"* - i.e. the
+exact CRs this repo uses. The **OLM CSV simply never sets this env var**, so
+it silently stays at the compiled-in `false` default. Fixed by adding it to
+`base/confluent-operator/subscription.yaml`'s `spec.config.env`, the
+supported way to inject env vars into an OLM-managed Deployment without OLM
+reverting them on the next CSV reconcile:
+```yaml
+spec:
+  config:
+    env:
+      - name: ENABLE_CMF_DAY2_OPS
+        value: "true"
+      - name: DEFAULT_DAY2_WORKER
+        value: "3"
+```
+Verified live: after `oc apply` + operator rollout, the same log line reads
+`"cmfDay2OpsEnabled":true` on the new pod. (`enableFlinkSQL`/
+`flinkSQLControllersEnabled` is a **separate, unrelated** preview feature -
+RFC 68 SQL CRDs like `FlinkComputePool`/`FlinkStatement` - and correctly
+stays `false`; it does not gate `FlinkEnvironment`/`FlinkApplication`.)
+
+**Still open: zero reconcile activity even with both fixes applied.** With
+FKO installed and healthy, and `cmfDay2OpsEnabled` confirmed `true` in the
+operator's own log, the `FlinkEnvironment`/`FlinkApplication` CRs still show
+an empty `.status`, generate zero events, and produce zero further log lines
+from the CFK operator - even after forcing a watch event
+(`oc annotate flinkenvironment ... force-reconcile=... --overwrite`). RBAC
+was checked and ruled out (`oc auth can-i list/watch
+flinkenvironments.platform.confluent.io --as=system:serviceaccount:confluent-operator:confluent-for-kubernetes`
+→ `yes`). `DEFAULT_DAY2_WORKER=3` was tried as a "zero-worker-pool" theory
+and made no observable difference. This now looks like a binary-level gap
+specific to the `registry.connect.redhat.com` OLM-bundle image (vs. the
+Docker Hub image the Helm chart pulls by default) rather than anything
+fixable from GitOps manifests - worth a Confluent support ticket given it
+contradicts the vendor's own chart-documented default behavior.
 
 ## cert-manager cert not issuing: issuer readiness checks
 

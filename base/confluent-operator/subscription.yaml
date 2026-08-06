@@ -14,3 +14,23 @@ spec:
   source: certified-operators
   sourceNamespace: openshift-marketplace
   installPlanApproval: Manual
+  config:
+    env:
+      # The operator's own Helm chart defaults this to true ("Starting from
+      # 3.0.0 this is always enabled" per its values.yaml) and it gates the
+      # Flink CR controllers entirely - confirmed live via the operator's
+      # startup log line `"Flink controller registration",
+      # "cmfDay2OpsEnabled":false,"flinkSQLControllersEnabled":false`. The
+      # certified-operators OLM bundle's CSV does not set this env var, so
+      # it stays false unless injected here via Subscription.spec.config.env
+      # (the supported way to add env vars to an OLM-managed Deployment
+      # without them being reverted on the next CSV reconcile).
+      - name: ENABLE_CMF_DAY2_OPS
+        value: "true"
+      # "Set number of day2 workers" (chart's numDay2Worker) - matches the
+      # vendor chart's documented pairing with ENABLE_CMF_DAY2_OPS. Tried as
+      # a hypothesis for the zero-worker-pool theory below; did not visibly
+      # change reconcile behavior on its own, but kept since it's the
+      # documented companion setting and is otherwise harmless.
+      - name: DEFAULT_DAY2_WORKER
+        value: "3"
