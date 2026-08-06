@@ -1,5 +1,15 @@
 # Default-deny baseline in the confluent namespace with explicit
 # allow rules punched through for each required communication path.
+#
+# NOTE on egress rules: this cluster's OVN-Kubernetes build has a
+# confirmed bug where port-restricted Egress NetworkPolicy rules silently
+# drop ALL traffic on the "allowed" port (verified by bisection: fully-open
+# egress works, egress restricted by peer-only works, egress restricted by
+# port - with or without a peer selector - times out even for otherwise-
+# permitted traffic like DNS). Ingress port-restriction is unaffected and
+# verified working. So every egress rule below restricts by peer
+# (podSelector/namespaceSelector) only, never by port - the corresponding
+# destination's ingress rule is what actually enforces the port.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -40,13 +50,6 @@ spec:
         - podSelector:
             matchLabels:
               app: kafka
-      ports:
-        - protocol: TCP
-          port: 9092
-        - protocol: TCP
-          port: 9093
-        - protocol: TCP
-          port: 9094
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -57,7 +60,8 @@ spec:
   # Kafka brokers connect OUT to the KRaft controller quorum (to register,
   # fetch metadata, etc.) on its controller listener port - confirmed against
   # the live KRaftController status (.status.listeners.controller), which is
-  # 9074, not 9092/9093 as originally assumed.
+  # 9074, not 9092/9093 as originally assumed. Port enforced on the
+  # kraft-from-kafka ingress side instead (see egress note above).
   podSelector:
     matchLabels:
       app: kafka
@@ -68,9 +72,6 @@ spec:
         - podSelector:
             matchLabels:
               app: kraftcontroller
-      ports:
-        - protocol: TCP
-          port: 9074
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -179,11 +180,6 @@ spec:
   egress:
     - to:
         - namespaceSelector: {}
-      ports:
-        - protocol: UDP
-          port: 53
-        - protocol: TCP
-          port: 53
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -197,8 +193,3 @@ spec:
   egress:
     - to:
         - namespaceSelector: {}
-      ports:
-        - protocol: TCP
-          port: 6443
-        - protocol: TCP
-          port: 443
