@@ -17,11 +17,11 @@ auth-services namespace              sqlserver namespace       confluent namespa
                           Kerberos    │        ┌───────────┐         │
                           ticket      └───────►│  Connect  │◄────────┘
                           exchange             │  & SQL    │  krb5.conf +
-                                                │  Server   │  keytab +
-                                                │  both     │  jaas.conf
-                                                │  request  │
-                                                │  tickets  │
-                                                └───────────┘
+                                               │  Server   │  keytab +
+                                               │  both     │  jaas.conf
+                                               │  request  │
+                                               │  tickets  │
+                                               └───────────┘
                                                       │ 1433/tcp (SPNEGO
                                                       │  embedded in TDS)
                                                       ▼
