@@ -14,10 +14,22 @@
 # calls after that fails, per the same tutorial's guidance for non-SSSD
 # hosts.
 #
-# Runs under the repo's standard no-custom-SCC/restricted-v2 pattern -
-# Microsoft's mssql-server image is documented to run under an OpenShift-
-# assigned arbitrary non-root UID as long as fsGroup grants write access to
-# /var/opt/mssql, same as every other component here.
+# This cluster's node is arm64; mssql/server:2022 is amd64-only and runs
+# via QEMU user-mode emulation (binfmt_misc registered on the node - see
+# docs/kerberos-architecture.md). On real amd64 hardware, Microsoft's image
+# is documented to run fine under an OpenShift-assigned arbitrary non-root
+# UID (restricted-v2) as long as fsGroup grants write access to
+# /var/opt/mssql - the no-custom-SCC pattern used everywhere else in this
+# repo.
+#
+# On THIS arm64 node, that pattern breaks: confirmed live that QEMU's
+# emulation of the sqlservr binary segfaults immediately under
+# restricted-v2's forced capabilities.drop:[ALL] (the exact same failure
+# class as osixia/openldap's s6-overlay in base/ldap/ldap-deployment.yaml -
+# both need capabilities restricted-v2 cannot grant, since it only allows
+# adding back NET_BIND_SERVICE). No pod-level runAsNonRoot here, same fix
+# as ldap - see bootstrap/auth-services-scc.yaml for the anyuid binding
+# this depends on.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,10 +46,7 @@ spec:
         app: sqlserver
     spec:
       serviceAccountName: sqlserver-sa
-      securityContext:
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
+      enableServiceLinks: false
       containers:
         - name: sqlserver
           image: mcr.microsoft.com/mssql/server:2022-latest
@@ -74,10 +83,11 @@ spec:
             - name: sqlserver-keytab
               mountPath: /var/opt/mssql/secrets
               readOnly: true
+          # No capabilities drop - see the file header comment. Confirmed
+          # live: QEMU's user-mode emulation of sqlservr segfaults
+          # immediately under capabilities.drop:[ALL].
           securityContext:
             allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
           resources:
             requests:
               cpu: 500m
