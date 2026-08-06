@@ -54,6 +54,10 @@ spec:
         tls:
           enabled: true
           secretRef: connect-tls-secret
+    prometheusClient:
+      url: http://controlcenter-prometheus.confluent.svc.cluster.local:9090
+    alertManagerClient:
+      url: http://controlcenter-alertmanager.confluent.svc.cluster.local:9093
   services:
     prometheus:
       image: confluentinc/cp-enterprise-prometheus:2.5.0
