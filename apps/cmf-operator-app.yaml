@@ -1,4 +1,9 @@
-# TODO: replace with your GitHub username in repoURL below
+# Sourced directly from Confluent's Helm chart repo via Argo CD's native Helm
+# support - no Flux required. Flux (source-controller/helm-controller) was
+# never installed on this cluster, so the original HelmRelease/HelmRepository
+# approach (base/cmf-operator/helmrelease.yaml) could never actually apply.
+# Chart version confirmed live against https://packages.confluent.io/helm -
+# latest at time of writing is 2.4.1, not the originally assumed 1.2.0.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -11,9 +16,18 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/mkurre/openshift-cfk-gitops.git
-    targetRevision: main
-    path: base/cmf-operator
+    repoURL: https://packages.confluent.io/helm
+    chart: confluent-manager-for-apache-flink
+    targetRevision: 2.4.1
+    helm:
+      values: |
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 1
+            memory: 2Gi
   destination:
     server: https://kubernetes.default.svc
     namespace: cmf-operator

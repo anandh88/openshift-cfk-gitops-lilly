@@ -47,5 +47,6 @@ users:
   - system:serviceaccount:confluent:default
   - system:serviceaccount:confluent:kafka-sa
   - system:serviceaccount:flink-jobs:flink-service-account
+  - system:serviceaccount:cmf-operator:confluent-manager-for-apache-flink
   - system:serviceaccount:argocd:argocd-application-controller
   - system:serviceaccount:argocd:argocd-server
