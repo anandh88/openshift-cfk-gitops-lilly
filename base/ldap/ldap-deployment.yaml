@@ -39,10 +39,21 @@ spec:
       # value got concatenated straight into the URL. enableServiceLinks:
       # false is the standard fix for this whole class of collision.
       enableServiceLinks: false
-      securityContext:
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
+      # No runAsNonRoot/seccompProfile here (unlike every other workload in
+      # this repo). Confirmed live this is load-bearing, not cosmetic:
+      # SCC admission tries SCCs in priority order and skips any SCC that
+      # can't *guarantee* what the pod requests. `anyuid` (priority 10,
+      # bound to auth-services-sa via bootstrap/auth-services-scc.yaml) uses
+      # runAsUser.type: RunAsAny - it does not itself force a non-root UID.
+      # Requesting runAsNonRoot: true here therefore isn't guaranteed by
+      # anyuid, so admission falls through to restricted-v2 instead (which
+      # *does* force an assigned non-root range) - and restricted-v2's
+      # forced capabilities.drop:[ALL] is exactly what breaks this image's
+      # s6-overlay startup (see the container securityContext comment
+      # below). Removing runAsNonRoot here is what actually keeps this pod
+      # admitted under anyuid, confirmed live across many repeated pod
+      # recreations.
+      securityContext: {}
       containers:
         - name: ldap
           image: osixia/openldap:1.5.0
@@ -90,16 +101,17 @@ spec:
             - name: ldap-seed
               mountPath: /container/service/slapd/assets/config/bootstrap/ldif/custom
           securityContext:
-            # Deliberately does NOT drop capabilities (unlike every other
-            # container in this repo). Confirmed live: with
-            # capabilities.drop:[ALL] set, this image's s6-overlay process
+            # Confirmed live: with capabilities.drop:[ALL] (this repo's
+            # default everywhere else), this image's s6-overlay process
             # supervisor fails silently and near-instantly during its own
             # startup - no application-level log output at all, just
             # "Run commands before finish..." then exit 0 within the same
-            # second. Removing the capabilities drop (keeping
-            # allowPrivilegeEscalation: false) was the fix; DISABLE_CHOWN
-            # above still means the app itself never needs root-only
-            # capabilities like CAP_CHOWN once running.
+            # second. restricted-v2 only allows adding back NET_BIND_SERVICE
+            # (`oc get scc restricted-v2 -o jsonpath='{.allowedCapabilities}'`),
+            # so there's no capabilities.add combination that both satisfies
+            # restricted-v2 and gives this image what it needs - it has to
+            # run under a less restrictive SCC instead (see the pod-level
+            # securityContext comment below for why/how).
             allowPrivilegeEscalation: false
           resources:
             requests:
