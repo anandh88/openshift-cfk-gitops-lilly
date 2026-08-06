@@ -5,9 +5,18 @@
 # top level of spec, confirmed against the live CRD schema:
 # `oc get crd connects.platform.confluent.io -o jsonpath=...spec.podTemplate.properties`).
 #
-# Points at the Samba AD DC (base/samba-ad/) rather than a plain MIT KDC -
-# see base/samba-ad/samba-ad-deployment.yaml's header comment for why:
-# SQL Server's login-mapping only trusts a real AD-schema directory.
+# Points at the Samba AD DC running in Docker Desktop, alongside SQL
+# Server - not an in-cluster Service. SQL Server's login-mapping (sssd's
+# ad provider) needs a real AD domain controller reachable over full
+# TCP+UDP (CLDAP pings, DNS SRV records) to trust a domain at all; that
+# only works reliably when the DC and SQL Server share a real network
+# (Docker Desktop's bridge), not tunneled - confirmed live that an
+# in-cluster AD DC hit an unresolvable UDP wall (ssh -L/-R can't carry
+# UDP) for exactly that traffic. Connect's own traffic to the DC (this
+# config) only ever needs Kerberos AS-REQ/TGS-REQ, which is TCP-only and
+# tunnels fine - same reverse-tunnel mechanism already used for SQL
+# Server's own TDS traffic (see docs/kerberos-architecture.md), just a
+# second `-R` forwarding the DC's port 88 instead of SQL Server's 1433.
 # admin_server here is Samba's kpasswd port (464), not a kadmin protocol
 # port (749) - Samba has no kadmin service, administration goes through
 # LDAP/samba-tool instead - but this client only ever does AS-REQ/TGS-REQ,
@@ -28,8 +37,8 @@ data:
 
     [realms]
         PSYNCOPATE.COM = {
-            kdc = samba-ad.auth-services.svc.cluster.local:88
-            admin_server = samba-ad.auth-services.svc.cluster.local:464
+            kdc = 192.168.126.11:18088
+            admin_server = 192.168.126.11:18088
         }
 
     [domain_realm]

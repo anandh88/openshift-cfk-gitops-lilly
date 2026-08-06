@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# Runs 01-init-kdc.sh through 05-deploy-connector.sh in order, then
-# validate-kerberos.sh. Individual scripts still exist and are still the
-# right tool for a partial re-run (e.g. docs/kerberos-runbook.md's keytab
-# rotation flow only needs 02-04) - this is just the convenience path for
-# a first-time, start-to-finish run.
+# Runs 02-create-principals.sh through 05-deploy-connector.sh in order,
+# then validate-kerberos.sh. Individual scripts still exist and are still
+# the right tool for a partial re-run (e.g. docs/kerberos-runbook.md's
+# keytab rotation flow only needs 02-04) - this is just the convenience
+# path for a first-time, start-to-finish run. No init step: base/samba-ad/
+# self-provisions its AD domain on first container startup, unlike the
+# old MIT-KDC-on-LDAP setup this replaced, which needed a manual
+# kdb5_ldap_util step before it could start.
 #
 # Requires SQLSERVER_HOST (and optionally SQLSERVER_PORT, default 1433) -
 # SQL Server runs outside this cluster (see docs/kerberos-architecture.md),
@@ -17,7 +20,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 steps=(
-  "01-init-kdc.sh"
   "02-create-principals.sh"
   "03-export-keytabs.sh"
   "04-seal-keytabs.sh"
