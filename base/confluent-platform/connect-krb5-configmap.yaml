@@ -1,0 +1,30 @@
+# Client-only krb5.conf for Kafka Connect's JDBC Source Connector to
+# authenticate to SQL Server via Kerberos/SPNEGO. Mounted into the Connect
+# CR via connect-kerberos-patch.yaml's mountedVolumes (the Connect CRD has
+# no podTemplate.volumes field - only mountedSecrets/mountedVolumes at the
+# top level of spec, confirmed against the live CRD schema:
+# `oc get crd connects.platform.confluent.io -o jsonpath=...spec.podTemplate.properties`).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: connect-krb5-conf
+  namespace: confluent
+data:
+  krb5.conf: |
+    [libdefaults]
+        default_realm = PSYNCOPATE.COM
+        dns_lookup_realm = false
+        dns_lookup_kdc = false
+        udp_preference_limit = 0
+        rdns = false
+
+    [realms]
+        PSYNCOPATE.COM = {
+            kdc = kdc.auth-services.svc.cluster.local:88
+            admin_server = kdc.auth-services.svc.cluster.local:749
+        }
+
+    [domain_realm]
+        .psyncopate.com = PSYNCOPATE.COM
+        psyncopate.com = PSYNCOPATE.COM
+        .confluent.svc.cluster.local = PSYNCOPATE.COM

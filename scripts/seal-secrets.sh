@@ -101,4 +101,46 @@ stringData:
 EOF
 echo "    -> base/flink-jobs/flink-kafka-sasl-sealed.yaml created"
 
+# --- ldap-credentials (auth-services) -----------------------------------
+echo "==> Sealing ldap-credentials"
+kubeseal --cert "${CERT_PATH}" --format yaml \
+  <<EOF > base/ldap/ldap-credentials-sealed.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ldap-credentials
+  namespace: auth-services
+type: Opaque
+stringData:
+  LDAP_ADMIN_PASSWORD: LdapAdmin@Psyncopate2024!
+  LDAP_CONFIG_PASSWORD: LdapConfig@Psyncopate2024!
+  LDAP_KDC_BIND_PASSWORD: LdapKdcBind@Psyncopate2024!
+EOF
+echo "    -> base/ldap/ldap-credentials-sealed.yaml created"
+
+# --- sqlserver-credentials (sqlserver) -----------------------------------
+echo "==> Sealing sqlserver-credentials"
+kubeseal --cert "${CERT_PATH}" --format yaml \
+  <<EOF > base/sqlserver/sqlserver-credentials-sealed.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sqlserver-credentials
+  namespace: sqlserver
+type: Opaque
+stringData:
+  MSSQL_SA_PASSWORD: SqlSrvSA@Psyncopate2024!
+EOF
+echo "    -> base/sqlserver/sqlserver-credentials-sealed.yaml created"
+
+# --- sqlserver-keytab (sqlserver) and connect-keytab (confluent) --------
+# These two are NOT regenerated here - they hold binary Kerberos keytabs,
+# not passwords, and this script only ever seals plaintext stringData.
+# Their real values come from scripts/kerberos/04-seal-keytabs.sh after
+# scripts/kerberos/01-03 have run against a live KDC. Re-running this
+# script will NOT touch base/sqlserver/sqlserver-keytab-sealed.yaml or
+# base/confluent-platform/secrets/connect-keytab-sealed.yaml - leave the
+# real keytabs (or the empty-keytab placeholders) in place.
+echo "==> Skipping sqlserver-keytab / connect-keytab - see scripts/kerberos/04-seal-keytabs.sh"
+
 echo "==> All secrets sealed. Review the diffs, then git add/commit/push."

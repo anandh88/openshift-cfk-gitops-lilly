@@ -1,0 +1,39 @@
+# SQL Server lives in its own namespace (separate from auth-services per
+# the LDAP/KDC vs SQL Server namespace split), so it needs its own
+# ServiceAccount - a SA name only resolves within its own namespace.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sqlserver-sa
+  namespace: sqlserver
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sqlserver-role
+  namespace: sqlserver
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["sqlserver-credentials", "sqlserver-keytab"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["pods", "services"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sqlserver-binding
+  namespace: sqlserver
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: sqlserver-role
+subjects:
+  - kind: ServiceAccount
+    name: sqlserver-sa
+    namespace: sqlserver

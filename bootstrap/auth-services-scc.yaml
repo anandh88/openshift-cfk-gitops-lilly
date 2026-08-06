@@ -1,0 +1,32 @@
+# This repo deliberately carries no custom SecurityContextConstraints (see
+# docs/troubleshooting.md "Pod not starting: SCC violation" and the removal
+# of the former confluent-platform-scc) - every workload's
+# podSecurityContext omits runAsUser/fsGroup so OpenShift's built-in
+# restricted-v2 SCC can assign both from the namespace's own allocated
+# range. That pattern holds for ldap (DISABLE_CHOWN=true) and sqlserver
+# (Microsoft's own documented OpenShift/fsGroup support) in this feature.
+#
+# The one exception is the KDC (base/kerberos/kdc-deployment.yaml): it
+# installs Debian packages via apt-get at container startup, and dpkg's
+# post-install scripts need real root capabilities (CAP_CHOWN/CAP_FOWNER),
+# which restricted-v2's non-root UID cannot provide regardless of the UID
+# value. Rather than defining a brand-new custom SCC, this binds
+# OpenShift's own built-in `anyuid` SCC - narrowly, to auth-services-sa in
+# the auth-services namespace only, via the same RoleBinding-to-system-
+# ClusterRole mechanism `oc adm policy add-scc-to-user anyuid -z
+# auth-services-sa -n auth-services` would create. ldap and sqlserver do
+# not need this and continue to get restricted-v2 like everything else -
+# only pods actually running as auth-services-sa are affected.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: auth-services-sa-anyuid
+  namespace: auth-services
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:anyuid
+subjects:
+  - kind: ServiceAccount
+    name: auth-services-sa
+    namespace: auth-services

@@ -357,3 +357,44 @@ spec:
   egress:
     - to:
         - namespaceSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: connect-to-auth-services
+  namespace: confluent
+spec:
+  # Connect's JDBC Source Connector requests Kerberos tickets from the KDC
+  # (bootstrap/auth-services-network-policies.yaml's kdc-ingress enforces
+  # port 88 on the receiving end - see that file's header for why this
+  # side stays peer-only).
+  podSelector:
+    matchLabels:
+      app: connect
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: auth-services
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: connect-to-sqlserver
+  namespace: confluent
+spec:
+  # Connect's JDBC Source Connector reads from SQL Server over TDS
+  # (bootstrap/auth-services-network-policies.yaml's sqlserver-ingress
+  # enforces port 1433 on the receiving end).
+  podSelector:
+    matchLabels:
+      app: connect
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: sqlserver

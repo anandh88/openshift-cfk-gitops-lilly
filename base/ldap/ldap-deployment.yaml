@@ -1,0 +1,129 @@
+# osixia/openldap:1.5.0, LDAP-backed Kerberos principal store for realm
+# PSYNCOPATE.COM (see ldap-seed-configmap.yaml for the schema/structure it
+# bootstraps). DISABLE_CHOWN=true lets the image skip its internal
+# ownership-fixing step, which needs root - this is the documented way to
+# run this image fully non-root, matching the rest of this repo's no-
+# custom-SCC/restricted-v2 pattern (podSecurityContext below sets no fixed
+# runAsUser/fsGroup, same as base/confluent-platform/*.yaml).
+#
+# LDAP_REMOVE_CONFIG_AFTER_SETUP=false: the image's default first-start
+# cleanup does `rm -rf .../bootstrap` (the ConfigMap-mounted directory).
+# Confirmed live: this doesn't just fail to delete the mount point - it
+# recursively deletes the mounted files *first*, silently losing the seed
+# LDIFs from the volume on next reference. Disabling this cleanup keeps the
+# ConfigMap mount intact.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ldap
+  namespace: auth-services
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ldap
+  template:
+    metadata:
+      labels:
+        app: ldap
+    spec:
+      serviceAccountName: auth-services-sa
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: ldap
+          image: osixia/openldap:1.5.0
+          args: ["--copy-service"]
+          ports:
+            - name: ldap
+              containerPort: 389
+              protocol: TCP
+          env:
+            - name: LDAP_ORGANISATION
+              value: "Psyncopate"
+            - name: LDAP_DOMAIN
+              value: "psyncopate.com"
+            - name: LDAP_BASE_DN
+              value: "dc=psyncopate,dc=com"
+            - name: LDAP_TLS
+              value: "false"
+            - name: DISABLE_CHOWN
+              value: "true"
+            - name: LDAP_REMOVE_CONFIG_AFTER_SETUP
+              value: "false"
+            - name: LDAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ldap-credentials
+                  key: LDAP_ADMIN_PASSWORD
+            - name: LDAP_CONFIG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ldap-credentials
+                  key: LDAP_CONFIG_PASSWORD
+          volumeMounts:
+            - name: ldap-data
+              mountPath: /var/lib/ldap
+              subPath: data
+            - name: ldap-data
+              mountPath: /etc/ldap/slapd.d
+              subPath: config
+            - name: ldap-seed
+              mountPath: /container/service/slapd/assets/config/bootstrap/ldif/custom
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            tcpSocket:
+              port: 389
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 389
+            initialDelaySeconds: 30
+            periodSeconds: 20
+      volumes:
+        - name: ldap-data
+          persistentVolumeClaim:
+            claimName: ldap-data
+        - name: ldap-seed
+          configMap:
+            name: ldap-seed
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ldap-data
+  namespace: auth-services
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: crc-csi-hostpath-provisioner
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ldap
+  namespace: auth-services
+spec:
+  selector:
+    app: ldap
+  ports:
+    - name: ldap
+      port: 389
+      targetPort: 389

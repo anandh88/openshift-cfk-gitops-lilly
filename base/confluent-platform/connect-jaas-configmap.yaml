@@ -1,0 +1,24 @@
+# JAAS login config for the JDBC Source Connector's Kerberos auth to SQL
+# Server (mssql-jdbc's authenticationScheme=JavaKerberos). "SQLJDBCDriver"
+# is mssql-jdbc's default JAAS entry name when the connection property
+# jaasConfigurationName is not set (see scripts/kerberos/05-deploy-connector.sh).
+# keyTab path matches where connect-kerberos-patch.yaml's mountedSecrets
+# places the connect-keytab Secret (default mount convention:
+# /mnt/secrets/<secret-name>/<key>).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: connect-jaas-conf
+  namespace: confluent
+data:
+  jaas.conf: |
+    SQLJDBCDriver {
+        com.sun.security.auth.module.Krb5LoginModule required
+        useKeyTab=true
+        keyTab="/mnt/secrets/connect-keytab/connect.keytab"
+        principal="connect/connect.confluent.svc.cluster.local@PSYNCOPATE.COM"
+        doNotPrompt=true
+        useTicketCache=false
+        storeKey=true
+        isInitiator=true;
+    };

@@ -1,9 +1,11 @@
 *.pem
 *.key
 sealed-secrets-master-key*.yaml
+bootstrap/argocd-repo-creds.yaml
 .kube/
 *.bak
 *.tmp
 *.log
 .DS_Store
 .claude
+.kerberos-keytabs/

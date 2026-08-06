@@ -1,0 +1,31 @@
+# Template for registering this private repo's credentials with Argo CD.
+# This is a bootstrap-time, cluster-only resource — it is NOT applied by
+# Argo CD itself (chicken-and-egg: Argo CD needs this secret to exist
+# before it can even read the repo that would otherwise deliver it).
+#
+# One-time setup (per cluster lifetime — redo only after a teardown/rebuild
+# or when the PAT expires):
+#   cp bootstrap/argocd-repo-creds.yaml.example bootstrap/argocd-repo-creds.yaml
+#   # edit bootstrap/argocd-repo-creds.yaml and replace REPLACE_WITH_GITHUB_PAT
+#   oc apply -f bootstrap/argocd-repo-creds.yaml
+#
+# Keep bootstrap/argocd-repo-creds.yaml around locally — it's gitignored
+# (never committed) and you can just re-apply the same file next time you
+# rebuild the cluster, no need to recreate it from the template again unless
+# the PAT itself changes. This is a plain Secret, not a SealedSecret, because
+# it never needs to round-trip through git: it's applied once, directly,
+# against this specific cluster.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-repo-creds
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+type: Opaque
+stringData:
+  type: git
+  url: https://github.com/mkurre/openshift-cfk-gitops.git
+  username: mkurre
+  password: ${GITHUB_PAT}
+

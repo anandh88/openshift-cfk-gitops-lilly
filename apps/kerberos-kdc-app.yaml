@@ -1,0 +1,37 @@
+# MIT krb5 KDC (LDAP-backed) for realm PSYNCOPATE.COM. Same namespace as
+# auth-services (LDAP) but a separate Application, since it's a distinct
+# base/ directory with no resource-name overlap. Sync-wave -2, same as
+# auth-services - no apply-order dependency between them (the KDC's actual
+# dependency on LDAP being reachable is operational, handled by
+# scripts/kerberos/01-init-kdc.sh, not by Argo CD sync-wave ordering).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kerberos-kdc
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mkurre/openshift-cfk-gitops.git
+    targetRevision: main
+    path: base/kerberos
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: auth-services
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

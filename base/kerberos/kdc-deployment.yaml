@@ -1,0 +1,138 @@
+# MIT krb5 KDC (krb5kdc + kadmind) for realm PSYNCOPATE.COM, backed by the
+# LDAP principal store in base/ldap/ via kdb5_ldap_util.
+#
+# There is no maintained public image that ships MIT krb5 built with LDAP
+# KDB support, so this installs the Debian krb5-kdc/krb5-admin-server/
+# krb5-kdc-ldap packages at container startup on top of debian:12-slim -
+# confirmed live that these packages install cleanly with no interactive
+# prompts and provide kdb5_ldap_util/krb5kdc/kadmind. This is a pragmatic
+# choice for this environment, not a production recommendation: it needs
+# outbound package-mirror access (see bootstrap/auth-services-network-
+# policies.yaml) and re-downloads on every pod restart. A production build
+# should bake a custom image with these packages pre-installed, which would
+# also remove the root requirement below entirely.
+#
+# Runs as root (no runAsNonRoot, capabilities not dropped): apt-get/dpkg's
+# post-install scripts need real root capabilities (CAP_CHOWN/CAP_FOWNER
+# etc.), which a UID-0-but-capabilities-dropped process does not have.
+# Bound to the built-in `anyuid` SCC via bootstrap/auth-services-scc.yaml
+# (auth-services-sa only) rather than restricted-v2's auto-assigned
+# non-root UID used everywhere else in this repo.
+#
+# First boot waits (does not auto-initialize): scripts/kerberos/01-init-kdc.sh
+# runs `kdb5_ldap_util create` once via `oc exec`, then restarts this
+# Deployment so the startup script finds the stash file already on the PVC
+# and proceeds to start krb5kdc/kadmind normally.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kdc
+  namespace: auth-services
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kdc
+  template:
+    metadata:
+      labels:
+        app: kdc
+    spec:
+      serviceAccountName: auth-services-sa
+      containers:
+        - name: kdc
+          image: debian:12-slim
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -euo pipefail
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -qq
+              apt-get install -y -qq krb5-kdc krb5-admin-server krb5-kdc-ldap ldap-utils
+              mkdir -p /var/lib/krb5kdc
+              cp /etc/krb5-conf/krb5.conf /etc/krb5.conf
+              cp /etc/krb5-conf/kdc.conf /var/lib/krb5kdc/kdc.conf
+              cp /etc/krb5-conf/kadm5.acl /var/lib/krb5kdc/kadm5.acl
+              if [ ! -f /var/lib/krb5kdc/.k5.PSYNCOPATE.COM ]; then
+                echo "KDC LDAP backend not yet initialized."
+                echo "Run scripts/kerberos/01-init-kdc.sh, which restarts this pod when done."
+                sleep infinity
+              fi
+              echo "Stash file present, starting krb5kdc + kadmind"
+              krb5kdc -n &
+              exec kadmind -nofork
+          ports:
+            - name: kdc-tcp
+              containerPort: 88
+              protocol: TCP
+            - name: kdc-udp
+              containerPort: 88
+              protocol: UDP
+            - name: kadmin
+              containerPort: 749
+              protocol: TCP
+          volumeMounts:
+            - name: krb5-conf
+              mountPath: /etc/krb5-conf
+            - name: kdc-data
+              mountPath: /var/lib/krb5kdc
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            tcpSocket:
+              port: 749
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 749
+            initialDelaySeconds: 40
+            periodSeconds: 20
+      volumes:
+        - name: krb5-conf
+          configMap:
+            name: krb5-conf
+        - name: kdc-data
+          persistentVolumeClaim:
+            claimName: kdc-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kdc-data
+  namespace: auth-services
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: crc-csi-hostpath-provisioner
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kdc
+  namespace: auth-services
+spec:
+  selector:
+    app: kdc
+  ports:
+    - name: kdc-tcp
+      port: 88
+      protocol: TCP
+      targetPort: 88
+    - name: kdc-udp
+      port: 88
+      protocol: UDP
+      targetPort: 88
+    - name: kadmin
+      port: 749
+      protocol: TCP
+      targetPort: 749

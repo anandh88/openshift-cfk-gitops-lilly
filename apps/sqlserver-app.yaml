@@ -1,0 +1,38 @@
+# SQL Server 2022 Express, Kerberos-enabled, in its own sqlserver
+# namespace (separate from auth-services per the namespace split - LDAP/
+# KDC vs SQL Server). Sync-wave -2, same as auth-services/kerberos-kdc:
+# no resource-apply-order dependency between them: it needs the KDC
+# reachable at runtime for its keytab to actually authenticate, which is
+# an operational dependency handled by scripts/kerberos/*.sh, not by wave
+# ordering.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sqlserver
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mkurre/openshift-cfk-gitops.git
+    targetRevision: main
+    path: base/sqlserver
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sqlserver
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

@@ -31,6 +31,27 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: flink-operator
+  labels:
+    kubernetes.io/metadata.name: flink-operator
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: cert-manager
   labels:
     kubernetes.io/metadata.name: cert-manager
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: auth-services
+  labels:
+    kubernetes.io/metadata.name: auth-services
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sqlserver
+  labels:
+    kubernetes.io/metadata.name: sqlserver

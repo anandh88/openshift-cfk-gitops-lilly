@@ -1,0 +1,35 @@
+# LDAP-backed Kerberos principal store (osixia/openldap:1.5.0) for realm
+# PSYNCOPATE.COM. Sync-wave -2: independent of confluent-operator (wave 0)/
+# confluent-platform (wave 1) at the resource level, but should exist
+# before scripts/kerberos/*.sh are run against it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: auth-services
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mkurre/openshift-cfk-gitops.git
+    targetRevision: main
+    path: base/ldap
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: auth-services
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

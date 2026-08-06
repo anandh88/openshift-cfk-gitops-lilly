@@ -1,0 +1,19 @@
+# Placeholder: encrypts a structurally-valid but empty keytab (just the
+# 2-byte MIT keytab format-version magic, 0x0502 - confirmed klist reads it
+# as a valid keytab with zero entries). scripts/kerberos/04-seal-keytabs.sh
+# overwrites this file with the real MSSQLSvc/... keytab once
+# scripts/kerberos/03-export-keytabs.sh has extracted it from the KDC.
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: sqlserver-keytab
+  namespace: sqlserver
+spec:
+  encryptedData:
+    mssql.keytab: AgB+9MqEsU0a7tWLT62ZuRySA0hYcZm/7VfNyxEuVMCateKKwYP5zS3ofaY6U+pCn0+hmXT99J/7FRZzN4duE2ZCGdBqVukHtWFmQ7DR2Da9pgbXcKEAbpzWpYdQz3wdf9V5fAmogwGml3LDrvrnBjqS/zLPfgJvSx9yEI25pdIq3xgYZ3n0FN4hXcBhDW45tC/Co+qbxqq6fUH89CQbLM5TXkGu+cLUBxcsSOP9fgS8MNZLQ+HAGzxBx1DQ4PgYACpZ00DCj5oqCjoI+0SUteQuBIRUxAP8I3WnxY64DcG6ZE9Lm886uEIpggcUq+sLoa7dcMtsQQpCTtXBXFQ6bZiMT79Sh/7ltZteX4NpGdLpaTVDVvB9EJZgrOMJRmUaF7nulBxiR9xTn4+fdjSx0ezjHMnD86yGdgb8XnlDqGoTnfVUB/CXbaMwam3OB7pd7HzWZvf5XSanIlVTy/yy3redvGv7XDz7tAktiqAF4K/A/tHHayiYqJyCIC3EmPU1EAayHkbbUvuseEcwhB9Oq1czvHrPEcK4fJwv/Mf0OM6khaB7/5yCBV98EuqF+2ikPAZ0Px/PqWgDT1ycBNxf8AAeQt/7Rj7qfvkMU7HLW9/q1dHJ1mIlJhEYvvoJt3mTzgdSuXU93Ed6snO7rZNZ8VEtwVFEtJ4WiEtBGEXy0EZGdYjf6lmuSdwqkztkv2EifhJvew==
+  template:
+    metadata:
+      name: sqlserver-keytab
+      namespace: sqlserver
+    type: Opaque

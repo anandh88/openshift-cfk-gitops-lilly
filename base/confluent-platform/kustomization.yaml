@@ -4,9 +4,17 @@ resources:
   - secrets/kafka-sasl-sealed.yaml
   - secrets/kafka-external-sasl-sealed.yaml
   - secrets/c3-credentials-sealed.yaml
+  - secrets/connect-keytab-sealed.yaml
   - kraft.yaml
   - kafka.yaml
   - schemaregistry.yaml
   - connect.yaml
   - restproxy.yaml
   - controlcenter.yaml
+  - connect-krb5-configmap.yaml
+  - connect-jaas-configmap.yaml
+patches:
+  # Adds Kerberos keytab/krb5.conf/jaas.conf mounts and JVM opts to the
+  # Connect CR above without editing connect.yaml directly - see
+  # connect-kerberos-patch.yaml for details.
+  - path: connect-kerberos-patch.yaml

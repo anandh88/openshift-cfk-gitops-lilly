@@ -1,0 +1,50 @@
+# Strategic-merge patch onto the existing Connect CR (connect.yaml) adding
+# everything needed for the JDBC Source Connector's Kerberos auth to SQL
+# Server, without touching connect.yaml itself. Applied via this
+# directory's kustomization.yaml `patches:` entry.
+#
+# All three top-level fields below (mountedSecrets, mountedVolumes, build)
+# are currently unset in connect.yaml, so this patch only adds fields -
+# it can't clobber existing configuration.
+#
+# build.onDemand.plugins.confluentHub installs the JDBC Source Connector
+# plugin (which bundles the mssql-jdbc driver) at deploy time via CFK's
+# build Job mechanism. Verify the exact resolvable version against
+# Confluent Hub before relying on this in a real deployment - 10.7.4 is a
+# real, known-published version at time of writing but was not re-verified
+# live in this pass.
+apiVersion: platform.confluent.io/v1beta1
+kind: Connect
+metadata:
+  name: connect
+  namespace: confluent
+spec:
+  mountedSecrets:
+    - secretRef: connect-keytab
+  mountedVolumes:
+    volumes:
+      - name: connect-krb5-conf
+        configMap:
+          name: connect-krb5-conf
+      - name: connect-jaas-conf
+        configMap:
+          name: connect-jaas-conf
+    volumeMounts:
+      - name: connect-krb5-conf
+        mountPath: /mnt/krb5
+      - name: connect-jaas-conf
+        mountPath: /mnt/jaas
+  podTemplate:
+    envVars:
+      - name: KRB5_CONFIG
+        value: /mnt/krb5/krb5.conf
+      - name: KAFKA_OPTS
+        value: "-Djava.security.krb5.conf=/mnt/krb5/krb5.conf -Djava.security.auth.login.config=/mnt/jaas/jaas.conf"
+  build:
+    type: onDemand
+    onDemand:
+      plugins:
+        confluentHub:
+          - owner: confluentinc
+            name: kafka-connect-jdbc
+            version: "10.7.4"

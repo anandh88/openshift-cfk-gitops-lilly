@@ -1,0 +1,251 @@
+# Default-deny baseline for auth-services and sqlserver, with explicit
+# allow rules punched through - same house style as bootstrap/network-
+# policies.yaml (see that file's header comment for the full explanation).
+#
+# Reminder of the confirmed OVN-Kubernetes egress bug this cluster has:
+# port-restricted Egress rules silently drop all traffic on the "allowed"
+# port, even with a matching peer selector. Every Egress rule below
+# restricts by peer only, never by port (including the "DNS egress"
+# rules - conceptually port 53, but implemented peer-only for the same
+# reason bootstrap/network-policies.yaml's allow-dns-egress is peer-only).
+# Ingress port-restriction is unaffected and used everywhere below.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: auth-services
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: sqlserver
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# LDAP only ever receives connections from the KDC (kdb5_ldap_util) within
+# the same namespace - nothing outside auth-services talks to LDAP
+# directly (see docs/kerberos-architecture.md for why: SQL Server has no
+# native LDAP-bind auth mode, so Connect/SQL Server only ever speak
+# Kerberos, never LDAP).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ldap-ingress
+  namespace: auth-services
+spec:
+  podSelector:
+    matchLabels:
+      app: ldap
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: kdc
+      ports:
+        - protocol: TCP
+          port: 389
+---
+# KDC receives Kerberos ticket requests (port 88, tcp+udp) from Kafka
+# Connect (confluent namespace) and SQL Server (sqlserver namespace).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kdc-ingress
+  namespace: auth-services
+spec:
+  podSelector:
+    matchLabels:
+      app: kdc
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: confluent
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: sqlserver
+      ports:
+        - protocol: TCP
+          port: 88
+        - protocol: UDP
+          port: 88
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kdc-egress
+  namespace: auth-services
+spec:
+  # kdb5_ldap_util binds to LDAP (port enforced by ldap-ingress above, not
+  # here - see the OVN egress-port bug note at the top of this file).
+  podSelector:
+    matchLabels:
+      app: kdc
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: ldap
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kdc-package-mirror-egress
+  namespace: auth-services
+spec:
+  # The KDC installs krb5-kdc/krb5-kdc-ldap via apt-get at container
+  # startup (see base/kerberos/kdc-deployment.yaml for why no pre-built
+  # image exists) - this needs real internet egress, unlike every other
+  # rule in this repo which only ever allows in-cluster peers. Scoped to
+  # the kdc pod only; ldap and sqlserver pods get no such rule and cannot
+  # reach the internet.
+  podSelector:
+    matchLabels:
+      app: kdc
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 169.254.169.254/32
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: auth-services
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-apiserver-egress
+  namespace: auth-services
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: argocd-access
+  namespace: auth-services
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: argocd
+---
+# SQL Server receives TDS connections (port 1433) from Kafka Connect's
+# JDBC Source Connector (confluent namespace) and from the same-namespace
+# sqlserver-init Job (a `from` entry with no namespaceSelector matches the
+# policy's own namespace only).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sqlserver-ingress
+  namespace: sqlserver
+spec:
+  podSelector:
+    matchLabels:
+      app: sqlserver
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: confluent
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 1433
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sqlserver-to-kdc-egress
+  namespace: sqlserver
+spec:
+  # SQL Server's Kerberos/SPNEGO validation calls out to the KDC (port
+  # enforced by kdc-ingress above).
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: auth-services
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: sqlserver
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-apiserver-egress
+  namespace: sqlserver
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: argocd-access
+  namespace: sqlserver
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: argocd

@@ -1,0 +1,68 @@
+# The KDC's own krb5.conf - includes [dbmodules] wiring the LDAP-backed
+# principal store (kldap), since this realm's principal database lives in
+# OpenLDAP (base/ldap/) rather than the default local file-based KDB.
+# Client-only copies of this file (no [dbmodules] needed) live in
+# base/sqlserver/sqlserver-krb5-configmap.yaml and
+# base/confluent-platform/connect-krb5-configmap.yaml - ConfigMaps are
+# namespace-scoped so each namespace needs its own copy.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: krb5-conf
+  namespace: auth-services
+data:
+  krb5.conf: |
+    [libdefaults]
+        default_realm = PSYNCOPATE.COM
+        dns_lookup_realm = false
+        dns_lookup_kdc = false
+        ticket_lifetime = 24h
+        renew_lifetime = 7d
+        forwardable = true
+        rdns = false
+
+    [realms]
+        PSYNCOPATE.COM = {
+            kdc = kdc.auth-services.svc.cluster.local:88
+            admin_server = kdc.auth-services.svc.cluster.local:749
+            database_module = openldap_ldapconf
+        }
+
+    [domain_realm]
+        .psyncopate.com = PSYNCOPATE.COM
+        psyncopate.com = PSYNCOPATE.COM
+        .auth-services.svc.cluster.local = PSYNCOPATE.COM
+        .confluent.svc.cluster.local = PSYNCOPATE.COM
+        .sqlserver.svc.cluster.local = PSYNCOPATE.COM
+
+    [dbmodules]
+        openldap_ldapconf = {
+            db_library = kldap
+            ldap_kerberos_container_dn = "cn=PSYNCOPATE.COM,ou=kerberos,dc=psyncopate,dc=com"
+            ldap_kdc_dn = "cn=admin,dc=psyncopate,dc=com"
+            ldap_kadmind_dn = "cn=admin,dc=psyncopate,dc=com"
+            ldap_service_password_file = /var/lib/krb5kdc/ldap_service_password
+            ldap_servers = ldap://ldap.auth-services.svc.cluster.local
+            ldap_conns_per_server = 5
+        }
+
+    [logging]
+        kdc = STDERR
+        admin_server = STDERR
+        default = STDERR
+  kdc.conf: |
+    [kdcdefaults]
+        kdc_ports = 88
+        kdc_tcp_ports = 88
+
+    [realms]
+        PSYNCOPATE.COM = {
+            database_module = openldap_ldapconf
+            acl_file = /var/lib/krb5kdc/kadm5.acl
+            admin_keytab = /var/lib/krb5kdc/kadm5.keytab
+            max_life = 24h 0m 0s
+            max_renewable_life = 7d 0h 0m 0s
+            supported_enctypes = aes256-cts-hmac-sha384-192:normal aes128-cts-hmac-sha256-128:normal
+        }
+  kadm5.acl: |
+    */admin@PSYNCOPATE.COM *
