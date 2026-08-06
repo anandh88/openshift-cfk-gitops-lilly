@@ -15,8 +15,10 @@ mkdir -p "${OUT_DIR}"
 
 NAMESPACE="auth-services"
 REALM="PSYNCOPATE.COM"
+SQLSERVER_HOST="${SQLSERVER_HOST:?Set SQLSERVER_HOST to the same value used in 02-create-principals.sh}"
+SQLSERVER_PORT="${SQLSERVER_PORT:-1433}"
 CONNECT_PRINC="connect/connect.confluent.svc.cluster.local@${REALM}"
-SQLSERVER_PRINC="MSSQLSvc/sqlserver.sqlserver.svc.cluster.local:1433@${REALM}"
+SQLSERVER_PRINC="MSSQLSvc/${SQLSERVER_HOST}:${SQLSERVER_PORT}@${REALM}"
 
 KDC_POD="$(oc get pod -l app=kdc -n "${NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')"
 
@@ -28,8 +30,10 @@ echo "==> Exporting mssql.keytab"
 oc exec "${KDC_POD}" -n "${NAMESPACE}" -- kadmin.local -q "ktadd -k /tmp/mssql.keytab ${SQLSERVER_PRINC}"
 oc cp "${NAMESPACE}/${KDC_POD}:/tmp/mssql.keytab" "${OUT_DIR}/mssql.keytab"
 
-echo "==> Removing keytabs from inside the pod (they now only need to exist sealed in git)"
+echo "==> Removing keytabs from inside the pod"
 oc exec "${KDC_POD}" -n "${NAMESPACE}" -- rm -f /tmp/connect.keytab /tmp/mssql.keytab
 
 echo "==> Keytabs written to ${OUT_DIR}/ (gitignored - never commit raw keytabs)."
-echo "    Next: ./scripts/kerberos/04-seal-keytabs.sh"
+echo "    connect.keytab: sealed into git next, via ./scripts/kerberos/04-seal-keytabs.sh"
+echo "    mssql.keytab: SQL Server runs outside this cluster - mount ${OUT_DIR}/mssql.keytab"
+echo "    directly into its container (e.g. docker run -v), it is never sealed into git."

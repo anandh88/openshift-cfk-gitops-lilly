@@ -48,10 +48,3 @@ metadata:
   name: auth-services
   labels:
     kubernetes.io/metadata.name: auth-services
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: sqlserver
-  labels:
-    kubernetes.io/metadata.name: sqlserver

@@ -382,37 +382,21 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: connect-to-sqlserver
+  name: connect-external-egress
   namespace: confluent
 spec:
-  # Connect's JDBC Source Connector reads from SQL Server over TDS
-  # (bootstrap/auth-services-network-policies.yaml's sqlserver-ingress
-  # enforces port 1433 on the receiving end).
-  podSelector:
-    matchLabels:
-      app: connect
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: sqlserver
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: connect-confluenthub-egress
-  namespace: confluent
-spec:
-  # connect-kerberos-patch.yaml's spec.build.onDemand.plugins.confluentHub
-  # installs the JDBC Source Connector plugin via a real internet download
-  # (Confluent Hub) at pod-init time - unlike every other rule in this repo,
-  # which only ever allows in-cluster peers. Confirmed live: without this,
-  # config-init-container's `confluent connect plugin install` step hangs
-  # for its full ~3 minute connect timeout and fails, leaving connect-0
-  # stuck at Init:0/1 in a permanent CrashLoopBackOff. Scoped to the
-  # connect pod only.
+  # Two reasons this pod needs real internet/external egress, unlike every
+  # other rule in this repo which only ever allows in-cluster peers:
+  # 1. connect-kerberos-patch.yaml's spec.build.onDemand.plugins.confluentHub
+  #    installs the JDBC Source Connector plugin via a real internet
+  #    download (Confluent Hub) at pod-init time. Confirmed live: without
+  #    this, config-init-container's `confluent connect plugin install`
+  #    step hangs for its full ~3 minute connect timeout and fails, leaving
+  #    connect-0 stuck at Init:0/1 in a permanent CrashLoopBackOff.
+  # 2. SQL Server itself runs outside this cluster (see
+  #    docs/kerberos-architecture.md - mssql/server is amd64-only and this
+  #    node is arm64), reachable only via an external address, not an
+  #    in-cluster Service. Scoped to the connect pod only.
   podSelector:
     matchLabels:
       app: connect

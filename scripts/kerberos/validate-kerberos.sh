@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# End-to-end health check for the LDAP/Kerberos/SQL Server stack. Run after
+# End-to-end health check for the LDAP/Kerberos/Connect stack. Run after
 # 01-05 have all completed. Non-destructive - read-only checks throughout.
+# SQL Server itself runs outside this cluster (see
+# docs/kerberos-architecture.md) and isn't checked here - validate it
+# directly against wherever it's actually running.
 set -uo pipefail
 
 pass() { echo "  OK: $1"; }
@@ -8,12 +11,11 @@ fail() { echo "  FAIL: $1"; }
 
 echo "=== Pod status ==="
 oc get pods -n auth-services
-oc get pods -n sqlserver
 oc get pods -n confluent -l app=connect
 
 echo
 echo "=== Argo CD Application health ==="
-oc get application auth-services kerberos-kdc sqlserver -n argocd -o wide 2>/dev/null
+oc get application auth-services kerberos-kdc -n argocd -o wide 2>/dev/null
 
 echo
 echo "=== LDAP: kerberos schema loaded? ==="
@@ -61,12 +63,15 @@ fi
 
 echo
 echo "=== SQL Server: TDS port reachable from Connect? ==="
-if [[ -n "${CONNECT_POD:-}" ]]; then
-  if oc exec "${CONNECT_POD}" -n confluent -- bash -c "exec 3<>/dev/tcp/sqlserver.sqlserver.svc.cluster.local/1433" 2>/dev/null; then
-    pass "TCP 1433 reachable from connect pod"
+if [[ -n "${CONNECT_POD:-}" && -n "${SQLSERVER_HOST:-}" ]]; then
+  SQLSERVER_PORT="${SQLSERVER_PORT:-1433}"
+  if oc exec "${CONNECT_POD}" -n confluent -- bash -c "exec 3<>/dev/tcp/${SQLSERVER_HOST}/${SQLSERVER_PORT}" 2>/dev/null; then
+    pass "TCP ${SQLSERVER_PORT} reachable from connect pod"
   else
-    fail "cannot reach sqlserver:1433 from connect - check bootstrap/auth-services-network-policies.yaml"
+    fail "cannot reach ${SQLSERVER_HOST}:${SQLSERVER_PORT} from connect - check bootstrap/network-policies.yaml's connect-external-egress"
   fi
+else
+  echo "  SKIPPED: set SQLSERVER_HOST (and optionally SQLSERVER_PORT) to check this"
 fi
 
 echo

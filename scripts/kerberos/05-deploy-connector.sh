@@ -9,17 +9,24 @@
 # mssql-jdbc's Kerberos mode; jaasConfigurationName defaults to
 # "SQLJDBCDriver" (see base/confluent-platform/connect-jaas-configmap.yaml),
 # so it's left unset here rather than repeated.
+# SQL Server runs outside this cluster (see docs/kerberos-architecture.md
+# - mssql/server is amd64-only and this cluster's node is arm64), so its
+# address is environment-specific - must match SQLSERVER_HOST/
+# SQLSERVER_PORT used when creating its principal in
+# 02-create-principals.sh, not an in-cluster Service DNS name.
 set -euo pipefail
 
 CONNECT_URL="${CONNECT_URL:-https://connect.apps-crc.testing}"
 CONNECTOR_NAME="sqlserver-claims-source"
+SQLSERVER_HOST="${SQLSERVER_HOST:?Set SQLSERVER_HOST to the same value used in 02-create-principals.sh}"
+SQLSERVER_PORT="${SQLSERVER_PORT:-1433}"
 
 echo "==> Registering ${CONNECTOR_NAME} against ${CONNECT_URL}"
 curl -sk -X PUT "${CONNECT_URL}/connectors/${CONNECTOR_NAME}/config" \
   -H "Content-Type: application/json" \
   -d '{
     "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
-    "connection.url": "jdbc:sqlserver://sqlserver.sqlserver.svc.cluster.local:1433;databaseName=ClaimsDB;integratedSecurity=true;authenticationScheme=JavaKerberos;encrypt=false;",
+    "connection.url": "jdbc:sqlserver://'"${SQLSERVER_HOST}"':'"${SQLSERVER_PORT}"';databaseName=ClaimsDB;integratedSecurity=true;authenticationScheme=JavaKerberos;encrypt=false;",
     "table.whitelist": "Claims",
     "mode": "timestamp+incrementing",
     "incrementing.column.name": "ClaimId",

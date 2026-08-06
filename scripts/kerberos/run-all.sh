@@ -5,6 +5,11 @@
 # rotation flow only needs 02-04) - this is just the convenience path for
 # a first-time, start-to-finish run.
 #
+# Requires SQLSERVER_HOST (and optionally SQLSERVER_PORT, default 1433) -
+# SQL Server runs outside this cluster (see docs/kerberos-architecture.md),
+# so its address is environment-specific. 02/03/05 all fail fast with a
+# clear error if unset.
+#
 # Stops on the first failure (set -e) rather than continuing into a step
 # whose prerequisites didn't succeed.
 set -euo pipefail
@@ -34,11 +39,10 @@ echo "############################################################"
 
 echo
 echo "==> All steps complete."
-echo "    04-seal-keytabs.sh only writes local files - commit and push them:"
-echo "      git add base/confluent-platform/secrets/connect-keytab-sealed.yaml base/sqlserver/sqlserver-keytab-sealed.yaml"
-echo "      git commit -m 'seal real Kerberos keytabs for connect and sqlserver'"
+echo "    04-seal-keytabs.sh only writes a local file - commit and push it:"
+echo "      git add base/confluent-platform/secrets/connect-keytab-sealed.yaml"
+echo "      git commit -m 'seal real Kerberos keytab for connect'"
 echo "      git push"
-echo "    Or, to see the real keytabs take effect immediately on this cluster without"
-echo "    waiting for Argo CD's next sync, apply them directly:"
+echo "    Or, to see the real keytab take effect immediately on this cluster without"
+echo "    waiting for Argo CD's next sync, apply it directly:"
 echo "      oc apply -f base/confluent-platform/secrets/connect-keytab-sealed.yaml"
-echo "      oc apply -f base/sqlserver/sqlserver-keytab-sealed.yaml"

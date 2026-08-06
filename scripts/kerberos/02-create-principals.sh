@@ -6,9 +6,14 @@
 #   connect/connect.confluent.svc.cluster.local@PSYNCOPATE.COM
 #     - Kafka Connect's client principal (JDBC Source Connector's Kerberos
 #       identity when authenticating to SQL Server).
-#   MSSQLSvc/sqlserver.sqlserver.svc.cluster.local:1433@PSYNCOPATE.COM
+#   MSSQLSvc/<SQLSERVER_HOST>:<SQLSERVER_PORT>@PSYNCOPATE.COM
 #     - SQL Server's own service principal (SPN format confirmed against
 #       Microsoft's AD-authentication tutorial: MSSQLSvc/<fqdn>:<port>).
+#       SQL Server runs outside this cluster (see
+#       docs/kerberos-architecture.md - mssql/server is amd64-only and
+#       this cluster's node is arm64), so its address is environment-
+#       specific - override SQLSERVER_HOST/SQLSERVER_PORT rather than
+#       assuming an in-cluster Service DNS name.
 #
 # -randkey: no human ever needs to know these passwords - both principals
 # only ever get used via keytab (see 03-export-keytabs.sh), matching the
@@ -20,8 +25,10 @@ set -euo pipefail
 
 NAMESPACE="auth-services"
 REALM="PSYNCOPATE.COM"
+SQLSERVER_HOST="${SQLSERVER_HOST:?Set SQLSERVER_HOST to the address Connect will use to reach SQL Server, e.g. a host.crc.testing tunnel address or real hostname}"
+SQLSERVER_PORT="${SQLSERVER_PORT:-1433}"
 CONNECT_PRINC="connect/connect.confluent.svc.cluster.local@${REALM}"
-SQLSERVER_PRINC="MSSQLSvc/sqlserver.sqlserver.svc.cluster.local:1433@${REALM}"
+SQLSERVER_PRINC="MSSQLSvc/${SQLSERVER_HOST}:${SQLSERVER_PORT}@${REALM}"
 
 KDC_POD="$(oc get pod -l app=kdc -n "${NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')"
 

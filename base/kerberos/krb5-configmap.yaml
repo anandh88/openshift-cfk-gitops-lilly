@@ -1,10 +1,11 @@
 # The KDC's own krb5.conf - includes [dbmodules] wiring the LDAP-backed
 # principal store (kldap), since this realm's principal database lives in
 # OpenLDAP (base/ldap/) rather than the default local file-based KDB.
-# Client-only copies of this file (no [dbmodules] needed) live in
-# base/sqlserver/sqlserver-krb5-configmap.yaml and
+# A client-only copy of this file (no [dbmodules] needed) lives in
 # base/confluent-platform/connect-krb5-configmap.yaml - ConfigMaps are
-# namespace-scoped so each namespace needs its own copy.
+# namespace-scoped so each namespace needs its own copy. SQL Server itself
+# runs outside this cluster (see docs/kerberos-architecture.md) and gets
+# its own krb5.conf outside this repo.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -33,7 +34,6 @@ data:
         psyncopate.com = PSYNCOPATE.COM
         .auth-services.svc.cluster.local = PSYNCOPATE.COM
         .confluent.svc.cluster.local = PSYNCOPATE.COM
-        .sqlserver.svc.cluster.local = PSYNCOPATE.COM
 
     [dbmodules]
         openldap_ldapconf = {
