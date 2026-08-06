@@ -156,6 +156,117 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: controlcenter-egress
+  namespace: confluent
+spec:
+  # ControlCenter is a client to kafka, schemaregistry, and connect - peer-only
+  # per the egress note above, ports enforced by each destination's ingress rule.
+  podSelector:
+    matchLabels:
+      app: controlcenter
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kafka
+        - podSelector:
+            matchLabels:
+              app: schemaregistry
+        - podSelector:
+            matchLabels:
+              app: connect
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: controlcenter-to-kafka
+  namespace: confluent
+spec:
+  podSelector:
+    matchLabels:
+      app: kafka
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: controlcenter
+      ports:
+        - protocol: TCP
+          port: 9071
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: schemaregistry-ingress
+  namespace: confluent
+spec:
+  podSelector:
+    matchLabels:
+      app: schemaregistry
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: controlcenter
+        - podSelector:
+            matchLabels:
+              app: connect
+        - podSelector:
+            matchLabels:
+              app: kafkarestproxy
+      ports:
+        - protocol: TCP
+          port: 8081
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: restproxy-to-kafka
+  namespace: confluent
+spec:
+  podSelector:
+    matchLabels:
+      app: kafka
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: kafkarestproxy
+      ports:
+        - protocol: TCP
+          port: 9071
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: controlcenter-to-connect
+  namespace: confluent
+spec:
+  podSelector:
+    matchLabels:
+      app: connect
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: controlcenter
+      ports:
+        - protocol: TCP
+          port: 8083
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: argocd-access
   namespace: confluent
 spec:
