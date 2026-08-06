@@ -28,6 +28,17 @@ spec:
         app: ldap
     spec:
       serviceAccountName: auth-services-sa
+      # Kubernetes auto-injects Docker-links-style `<SERVICE>_PORT` env vars
+      # into every pod for every reachable Service - since our own Service
+      # is named "ldap", that means `LDAP_PORT=tcp://<clusterIP>:389` gets
+      # injected automatically. osixia/openldap's entrypoint *also* uses an
+      # env var literally named LDAP_PORT internally to build slapd's listen
+      # URL, and the Kubernetes-injected value collides with and corrupts
+      # it. Confirmed live: slapd failed with `listen URL
+      # "ldap://<pod>:tcp://<ip>:389" parse error=5` - the k8s-injected
+      # value got concatenated straight into the URL. enableServiceLinks:
+      # false is the standard fix for this whole class of collision.
+      enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
         seccompProfile:
@@ -35,7 +46,13 @@ spec:
       containers:
         - name: ldap
           image: osixia/openldap:1.5.0
-          args: ["--copy-service"]
+          # No args. `--copy-service` is NOT a startup modifier - it's a
+          # separate one-shot mode of this image's entrypoint that copies
+          # service files and exits (confirmed live via --loglevel debug:
+          # "Run commands before finish..." then "Killing all processes",
+          # exit code 0, immediately - not the long-running slapd process at
+          # all). The custom-bootstrap-ldif mount below works the same way
+          # verified locally without this flag.
           ports:
             - name: ldap
               containerPort: 389
@@ -73,9 +90,17 @@ spec:
             - name: ldap-seed
               mountPath: /container/service/slapd/assets/config/bootstrap/ldif/custom
           securityContext:
+            # Deliberately does NOT drop capabilities (unlike every other
+            # container in this repo). Confirmed live: with
+            # capabilities.drop:[ALL] set, this image's s6-overlay process
+            # supervisor fails silently and near-instantly during its own
+            # startup - no application-level log output at all, just
+            # "Run commands before finish..." then exit 0 within the same
+            # second. Removing the capabilities drop (keeping
+            # allowPrivilegeEscalation: false) was the fix; DISABLE_CHOWN
+            # above still means the app itself never needs root-only
+            # capabilities like CAP_CHOWN once running.
             allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
           resources:
             requests:
               cpu: 100m
