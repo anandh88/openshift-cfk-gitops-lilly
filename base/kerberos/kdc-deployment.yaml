@@ -51,8 +51,21 @@ spec:
               apt-get install -y -qq krb5-kdc krb5-admin-server krb5-kdc-ldap ldap-utils
               mkdir -p /var/lib/krb5kdc
               cp /etc/krb5-conf/krb5.conf /etc/krb5.conf
-              cp /etc/krb5-conf/kdc.conf /var/lib/krb5kdc/kdc.conf
-              cp /etc/krb5-conf/kadm5.acl /var/lib/krb5kdc/kadm5.acl
+              # kdb5_ldap_util/krb5kdc/kadmind read their profile from
+              # /etc/krb5kdc/kdc.conf by default (Debian's compiled-in
+              # path, not configurable via a mounted file at a different
+              # location) - confirmed live that copying kdc.conf to
+              # /var/lib/krb5kdc/ instead was silently ignored, and
+              # key_stash_file kept landing at the *default* profile's
+              # own /etc/krb5kdc/.k5.REALM regardless of what our
+              # (unread) copy said. /etc/krb5kdc/ itself is ephemeral
+              # (wiped every restart, recreated fresh here), but the
+              # *paths this config points at* (key_stash_file, acl_file,
+              # admin_keytab, all under /var/lib/krb5kdc) are the actual
+              # PVC-backed persistent ones, so state still survives
+              # restarts even though the config file itself doesn't.
+              cp /etc/krb5-conf/kdc.conf /etc/krb5kdc/kdc.conf
+              cp /etc/krb5-conf/kadm5.acl /etc/krb5kdc/kadm5.acl
               if [ ! -f /var/lib/krb5kdc/.k5.PSYNCOPATE.COM ]; then
                 echo "KDC LDAP backend not yet initialized."
                 echo "Run scripts/kerberos/01-init-kdc.sh, which restarts this pod when done."
