@@ -39,7 +39,7 @@ spec:
       url: https://schemaregistry.confluent.svc.cluster.local:8081
       authentication:
         type: basic
-        jaasConfig:
+        basic:
           secretRef: c3-credentials
       tls:
         enabled: true
@@ -49,7 +49,7 @@ spec:
         url: https://connect.confluent.svc.cluster.local:8083
         authentication:
           type: basic
-          jaasConfig:
+          basic:
             secretRef: c3-credentials
         tls:
           enabled: true
