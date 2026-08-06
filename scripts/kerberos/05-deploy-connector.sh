@@ -26,7 +26,7 @@ curl -sk -X PUT "${CONNECT_URL}/connectors/${CONNECTOR_NAME}/config" \
   -H "Content-Type: application/json" \
   -d '{
     "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
-    "connection.url": "jdbc:sqlserver://'"${SQLSERVER_HOST}"':'"${SQLSERVER_PORT}"';databaseName=ClaimsDB;integratedSecurity=true;authenticationScheme=JavaKerberos;encrypt=false;",
+    "connection.url": "jdbc:sqlserver://'"${SQLSERVER_HOST}"':'"${SQLSERVER_PORT}"';databaseName=Dev-Lily;integratedSecurity=true;authenticationScheme=JavaKerberos;encrypt=false;",
     "table.whitelist": "Claims",
     "mode": "timestamp+incrementing",
     "incrementing.column.name": "ClaimId",

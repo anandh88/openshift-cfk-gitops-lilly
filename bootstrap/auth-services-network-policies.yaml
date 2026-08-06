@@ -20,45 +20,28 @@ spec:
     - Ingress
     - Egress
 ---
-# LDAP only ever receives connections from the KDC (kdb5_ldap_util) within
-# the same namespace - nothing outside auth-services talks to LDAP
-# directly (see docs/kerberos-architecture.md for why: SQL Server has no
-# native LDAP-bind auth mode, so Connect/SQL Server only ever speak
-# Kerberos, never LDAP).
+# Samba AD DC (replaces the old separate LDAP+KDC pair - it's a single
+# process implementing LDAP, Kerberos KDC, and SMB/RPC together, so there's
+# no more internal ldap<->kdc traffic to allow between two pods).
+#
+# Ingress: Kafka Connect (confluent namespace) only ever needs Kerberos
+# ticket requests (port 88) - it never binds to LDAP or changes its own
+# password, so 389/464 aren't opened to it. SQL Server itself (Docker
+# Desktop, reached via an SSH reverse tunnel through the CRC node - see
+# docs/kerberos-architecture.md) needs real domain-join access (88, 389,
+# 445, 464) for sssd's ad provider to trust this realm; that traffic
+# arrives via the node's own network path, not as a normal cluster peer,
+# so it can't be expressed with a podSelector/namespaceSelector the way
+# the confluent-namespace rule below is.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: ldap-ingress
+  name: samba-ad-ingress
   namespace: auth-services
 spec:
   podSelector:
     matchLabels:
-      app: ldap
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app: kdc
-      ports:
-        - protocol: TCP
-          port: 389
----
-# KDC receives Kerberos ticket requests (port 88, tcp+udp) from Kafka
-# Connect (confluent namespace). SQL Server runs outside this cluster (see
-# docs/kerberos-architecture.md) and reaches the KDC via whatever egress
-# path its own host/network provides - not something this cluster's
-# NetworkPolicies can express, since it's not a cluster peer.
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: kdc-ingress
-  namespace: auth-services
-spec:
-  podSelector:
-    matchLabels:
-      app: kdc
+      app: samba-ad
   policyTypes:
     - Ingress
   ingress:
@@ -69,42 +52,20 @@ spec:
       ports:
         - protocol: TCP
           port: 88
-        - protocol: UDP
-          port: 88
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: kdc-egress
+  name: samba-ad-package-mirror-egress
   namespace: auth-services
 spec:
-  # kdb5_ldap_util binds to LDAP (port enforced by ldap-ingress above, not
-  # here - see the OVN egress-port bug note at the top of this file).
+  # samba-ad installs the samba/krb5-user/winbind packages via apt-get at
+  # container startup (see base/samba-ad/samba-ad-deployment.yaml for why
+  # no pre-built image exists) - this needs real internet egress, unlike
+  # every other rule in this repo which only ever allows in-cluster peers.
   podSelector:
     matchLabels:
-      app: kdc
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              app: ldap
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: kdc-package-mirror-egress
-  namespace: auth-services
-spec:
-  # The KDC installs krb5-kdc/krb5-kdc-ldap via apt-get at container
-  # startup (see base/kerberos/kdc-deployment.yaml for why no pre-built
-  # image exists) - this needs real internet egress, unlike every other
-  # rule in this repo which only ever allows in-cluster peers. Scoped to
-  # the kdc pod only; ldap gets no such rule and cannot reach the internet.
-  podSelector:
-    matchLabels:
-      app: kdc
+      app: samba-ad
   policyTypes:
     - Egress
   egress:

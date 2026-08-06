@@ -1,6 +1,7 @@
-# Shared service account for auth-services namespace workloads (LDAP + KDC).
-# Matches the platform-rbac.yaml pattern: one ServiceAccount per namespace,
-# a narrowly-scoped Role covering only what the pods actually touch.
+# Shared service account for auth-services namespace workloads (Samba AD
+# DC). Same name/shape as the old LDAP+KDC RBAC it replaces - kept as
+# auth-services-sa so bootstrap/auth-services-scc.yaml's existing anyuid
+# binding for this SA needs no changes.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -18,7 +19,7 @@ rules:
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["secrets"]
-    resourceNames: ["ldap-credentials"]
+    resourceNames: ["samba-ad-credentials"]
     verbs: ["get"]
   - apiGroups: [""]
     resources: ["pods", "services"]

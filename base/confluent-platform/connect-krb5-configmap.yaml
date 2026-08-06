@@ -4,6 +4,14 @@
 # no podTemplate.volumes field - only mountedSecrets/mountedVolumes at the
 # top level of spec, confirmed against the live CRD schema:
 # `oc get crd connects.platform.confluent.io -o jsonpath=...spec.podTemplate.properties`).
+#
+# Points at the Samba AD DC (base/samba-ad/) rather than a plain MIT KDC -
+# see base/samba-ad/samba-ad-deployment.yaml's header comment for why:
+# SQL Server's login-mapping only trusts a real AD-schema directory.
+# admin_server here is Samba's kpasswd port (464), not a kadmin protocol
+# port (749) - Samba has no kadmin service, administration goes through
+# LDAP/samba-tool instead - but this client only ever does AS-REQ/TGS-REQ,
+# never a password change, so admin_server is unused in practice either way.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -20,8 +28,8 @@ data:
 
     [realms]
         PSYNCOPATE.COM = {
-            kdc = kdc.auth-services.svc.cluster.local:88
-            admin_server = kdc.auth-services.svc.cluster.local:749
+            kdc = samba-ad.auth-services.svc.cluster.local:88
+            admin_server = samba-ad.auth-services.svc.cluster.local:464
         }
 
     [domain_realm]

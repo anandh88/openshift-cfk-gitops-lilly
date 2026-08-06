@@ -1,7 +1,12 @@
-# LDAP-backed Kerberos principal store (osixia/openldap:1.5.0) for realm
-# PSYNCOPATE.COM. Sync-wave -2: independent of confluent-operator (wave 0)/
-# confluent-platform (wave 1) at the resource level, but should exist
-# before scripts/kerberos/*.sh are run against it.
+# Samba4 Active Directory Domain Controller for realm/domain
+# PSYNCOPATE.COM / PSYNCOPATE (base/samba-ad/), replacing the old separate
+# LDAP+MIT-KDC pair (base/ldap/ + base/kerberos/'s KDC half, and the
+# now-deleted kerberos-kdc Application that used to sync the latter) - see
+# base/samba-ad/samba-ad-deployment.yaml's header comment for why: SQL
+# Server's Kerberos login-mapping only trusts a real AD-schema directory,
+# which a generic LDAP+MIT-KDC pair isn't. Sync-wave -2: independent of
+# confluent-operator (wave 0)/confluent-platform (wave 1) at the resource
+# level, but should exist before scripts/kerberos/*.sh are run against it.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -16,7 +21,7 @@ spec:
   source:
     repoURL: https://github.com/mkurre/openshift-cfk-gitops.git
     targetRevision: main
-    path: base/ldap
+    path: base/samba-ad
   destination:
     server: https://kubernetes.default.svc
     namespace: auth-services
