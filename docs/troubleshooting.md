@@ -74,6 +74,24 @@ correct, usually because CFK's operator writes back into `.status`.
    secret missing/misnamed, or `FlinkEnvironment` not yet `RUNNING` (Flink
    apps depend on their environment, sync-wave 1 vs 2).
 
+**Known gap as of CFK 3.3.0 (certified-operators catalog):** `CMFRestClass`,
+`FlinkEnvironment`, and `FlinkApplication` all pass schema validation and sync
+cleanly, and CMF itself (`cmf-operator` Application, deployed via Argo CD's
+native Helm support from `https://packages.confluent.io/helm`) runs fine —
+but no JobManager/TaskManager pods ever get created, and the CFK operator
+shows zero log activity for these CRs. Confirmed:
+  - `oc get deployment confluent-operator -n confluent-operator -o jsonpath='{.spec.template.spec.containers[0].env}'`
+    has a `RELATED_IMAGE_<component>` env var for every other component
+    (Kafka, Connect, SchemaRegistry, ksqlDB, ...) but **none for Flink**.
+  - `oc get pods,deployment -A | grep -i flink` shows only the CMF pod itself —
+    no separate Flink Kubernetes Operator anywhere on the cluster.
+
+Working theory: this operator bundle doesn't ship a live Flink reconciler,
+and CFK's Flink integration needs an additional operator component (a Flink
+Kubernetes Operator that CMF drives) not provisioned by this repo. Confirm
+against official CFK 3.3 Flink-architecture docs before assuming this is
+fixable by further CR changes alone.
+
 ## cert-manager cert not issuing: issuer readiness checks
 
 **Symptoms:** `Certificate` stuck `False` on `Ready`; secret never appears.
