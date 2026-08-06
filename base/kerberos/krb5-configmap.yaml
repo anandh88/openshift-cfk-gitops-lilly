@@ -60,6 +60,17 @@ data:
             database_module = openldap_ldapconf
             acl_file = /var/lib/krb5kdc/kadm5.acl
             admin_keytab = /var/lib/krb5kdc/kadm5.keytab
+            # Debian's krb5-kdc package defaults the master-key stash file
+            # to /etc/krb5kdc/.k5.REALM - confirmed live. That path is on
+            # this container's ephemeral root filesystem (wiped every
+            # restart, since the KDC image reinstalls its packages fresh
+            # each boot - see kdc-deployment.yaml), not the persistent
+            # /var/lib/krb5kdc PVC mount. Without this override,
+            # `kdb5_ldap_util create -s` silently stashes the master key
+            # somewhere that doesn't survive a restart, and the next boot's
+            # `[ -f /var/lib/krb5kdc/.k5.PSYNCOPATE.COM ]` initialization
+            # check in kdc-deployment.yaml would never find it.
+            key_stash_file = /var/lib/krb5kdc/.k5.PSYNCOPATE.COM
             max_life = 24h 0m 0s
             max_renewable_life = 7d 0h 0m 0s
             supported_enctypes = aes256-cts-hmac-sha384-192:normal aes128-cts-hmac-sha256-128:normal

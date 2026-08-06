@@ -42,10 +42,17 @@ ${MASTER_PW}
 EOF
 
 echo "==> Stashing the KDC's own LDAP bind password (for krb5kdc/kadmind's runtime binds)"
+# Three prompts, in order: the bind password to authenticate this
+# stashsrvpw operation itself, then the value being stashed (entered
+# twice to confirm) - since ldap_kdc_dn/ldap_kadmind_dn both equal
+# ${BIND_DN}, all three are the same LDAP admin password. Confirmed live:
+# feeding only two lines here fails with "Cannot read password while
+# setting service object password" (short stdin, third prompt unmet).
 oc exec -i "${KDC_POD}" -n "${NAMESPACE}" -- bash -c "
   kdb5_ldap_util -D '${BIND_DN}' -H '${LDAP_URI}' stashsrvpw \
     -f /var/lib/krb5kdc/ldap_service_password '${BIND_DN}'
 " <<EOF
+${LDAP_ADMIN_PASSWORD}
 ${LDAP_ADMIN_PASSWORD}
 ${LDAP_ADMIN_PASSWORD}
 EOF
