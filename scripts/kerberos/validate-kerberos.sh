@@ -1,44 +1,52 @@
 #!/usr/bin/env bash
-# End-to-end health check for the Samba AD/Kerberos/Connect stack. Run
-# after 02-05 have all completed. Non-destructive - read-only checks
-# throughout. SQL Server itself runs outside this cluster (see
-# docs/kerberos-architecture.md) and isn't checked here - validate it
-# directly against wherever it's actually running.
+# End-to-end health check for the Samba AD (Docker Desktop)/Kerberos/
+# Connect/SQL Server stack. Run after 01-07 have all completed.
+# Non-destructive - read-only checks throughout.
 set -uo pipefail
 
 pass() { echo "  OK: $1"; }
 fail() { echo "  FAIL: $1"; }
 
-echo "=== Pod status ==="
-oc get pods -n auth-services
-oc get pods -n confluent -l app=connect
+ADMIN_PASSWORD="${SAMBA_ADMIN_PASSWORD:-SambaAdmin@Psyncopate2024!}"
+
+echo "=== Docker containers ==="
+docker ps --filter name=sambaad --filter name=sqltest2 --format '{{.Names}}: {{.Status}}'
 
 echo
-echo "=== Argo CD Application health ==="
-oc get application auth-services -n argocd -o wide 2>/dev/null
-
-echo
-echo "=== Samba AD: domain provisioned and service accounts present? ==="
-SAMBA_ADMIN_PASSWORD="$(oc get secret samba-ad-credentials -n auth-services -o jsonpath='{.data.SAMBA_ADMIN_PASSWORD}' 2>/dev/null | base64 -d)"
-SAMBA_POD="$(oc get pod -l app=samba-ad -n auth-services -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)"
-if [[ -n "${SAMBA_POD}" ]]; then
-  if oc exec "${SAMBA_POD}" -n auth-services -- test -f /var/lib/samba/private/sam.ldb 2>/dev/null; then
-    pass "sam.ldb present (domain provisioned)"
-  else
-    fail "no sam.ldb - domain never provisioned, check pod logs"
-  fi
-  echo "  Service accounts:"
-  oc exec "${SAMBA_POD}" -n auth-services -- samba-tool user list -U "administrator%${SAMBA_ADMIN_PASSWORD}" 2>/dev/null | sed 's/^/    /'
+echo "=== Samba AD DC: domain provisioned and accounts present? ==="
+if docker exec sambaad test -f /var/lib/samba/private/sam.ldb 2>/dev/null; then
+  pass "sam.ldb present (domain provisioned)"
+  docker exec sambaad samba-tool user list -U "administrator%${ADMIN_PASSWORD}" 2>/dev/null | grep -E "connect-svc|mssql-svc" | sed 's/^/    /'
 else
-  fail "no samba-ad pod found"
+  fail "no sam.ldb - run scripts/kerberos/01-setup-docker-ad.sh"
 fi
+
+echo
+echo "=== SQL Server: sssd resolving AD identities? ==="
+if docker exec sqltest2 getent passwd connect-svc@psyncopate.com >/dev/null 2>&1; then
+  pass "sssd resolves connect-svc@psyncopate.com - SQL Server trusts the domain"
+else
+  fail "sssd cannot resolve AD identities - run scripts/kerberos/06-join-sqlserver-domain.sh (note: docker restart wipes this, re-run after any restart)"
+fi
+
+echo
+echo "=== Connect tunnel: node reachable on the Kerberos port? ==="
+if pgrep -f "ssh.*-R 0.0.0.0:18088" >/dev/null 2>&1; then
+  pass "reverse tunnel process running"
+else
+  fail "no tunnel process found - run scripts/kerberos/07-setup-connect-tunnel.sh"
+fi
+
+echo
+echo "=== Pod status ==="
+oc get pods -n confluent -l app=connect
 
 echo
 echo "=== Connect: keytab mounted and non-empty? ==="
 CONNECT_POD="$(oc get pod -l app=connect -n confluent -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)"
 if [[ -n "${CONNECT_POD}" ]]; then
-  SIZE="$(oc exec "${CONNECT_POD}" -n confluent -- stat -c%s /mnt/secrets/connect-keytab/connect.keytab 2>/dev/null || echo 0)"
-  if [[ "${SIZE}" -gt 2 ]]; then
+  SIZE="$(oc exec "${CONNECT_POD}" -n confluent -c connect -- wc -c /mnt/secrets/connect-keytab/connect.keytab 2>/dev/null | awk '{print $1}')"
+  if [[ -n "${SIZE}" && "${SIZE}" -gt 2 ]]; then
     pass "connect.keytab is ${SIZE} bytes (real keytab, not the 2-byte placeholder)"
   else
     fail "connect.keytab is still the empty placeholder - run scripts/kerberos/03-04"
@@ -48,23 +56,12 @@ else
 fi
 
 echo
-echo "=== SQL Server: TDS port reachable from Connect? ==="
-if [[ -n "${CONNECT_POD:-}" && -n "${SQLSERVER_HOST:-}" ]]; then
-  SQLSERVER_PORT="${SQLSERVER_PORT:-1433}"
-  if oc exec "${CONNECT_POD}" -n confluent -- bash -c "exec 3<>/dev/tcp/${SQLSERVER_HOST}/${SQLSERVER_PORT}" 2>/dev/null; then
-    pass "TCP ${SQLSERVER_PORT} reachable from connect pod"
-  else
-    fail "cannot reach ${SQLSERVER_HOST}:${SQLSERVER_PORT} from connect - check bootstrap/network-policies.yaml's connect-external-egress"
-  fi
-else
-  echo "  SKIPPED: set SQLSERVER_HOST (and optionally SQLSERVER_PORT) to check this"
-fi
-
-echo
 echo "=== Connect REST API: connector status ==="
 CONNECT_URL="${CONNECT_URL:-https://connect.apps-crc.testing}"
-if curl -sk "${CONNECT_URL}/connectors/sqlserver-claims-source/status" 2>/dev/null | grep -q '"state"'; then
-  curl -sk "${CONNECT_URL}/connectors/sqlserver-claims-source/status" | python3 -m json.tool
+STATUS_JSON="$(curl -sk "${CONNECT_URL}/connectors/sqlserver-claims-source/status" 2>/dev/null)"
+if echo "${STATUS_JSON}" | grep -q '"state":"RUNNING"'; then
+  pass "connector and task RUNNING"
 else
-  fail "connector not registered yet - run scripts/kerberos/05-deploy-connector.sh"
+  fail "connector not RUNNING - run scripts/kerberos/05-deploy-connector.sh"
 fi
+echo "${STATUS_JSON}" | python3 -m json.tool 2>/dev/null || echo "${STATUS_JSON}"

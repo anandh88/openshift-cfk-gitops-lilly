@@ -41,10 +41,3 @@ metadata:
   name: cert-manager
   labels:
     kubernetes.io/metadata.name: cert-manager
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: auth-services
-  labels:
-    kubernetes.io/metadata.name: auth-services

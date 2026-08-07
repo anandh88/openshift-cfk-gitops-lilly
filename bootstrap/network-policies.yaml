@@ -32,6 +32,9 @@ spec:
   # status.phase/conditions. Without this, those queries time out and the CR
   # sits ApplyFailed/Progressing forever even though the pod itself is
   # healthy: 'failed URP query to kafka-0...:7777/jolokia/: i/o timeout'.
+  # Port 8090 is Kafka's own REST Admin API, which the operator also calls
+  # to reconcile KafkaTopic CRs - confirmed live that a KafkaTopic sits in
+  # ERROR ('dial tcp ...:8090: i/o timeout') without this port open too.
   podSelector: {}
   policyTypes:
     - Ingress
@@ -47,6 +50,8 @@ spec:
           port: 7778
         - protocol: TCP
           port: 7203
+        - protocol: TCP
+          port: 8090
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -357,27 +362,6 @@ spec:
   egress:
     - to:
         - namespaceSelector: {}
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: connect-to-auth-services
-  namespace: confluent
-spec:
-  # Connect's JDBC Source Connector requests Kerberos tickets from the KDC
-  # (bootstrap/auth-services-network-policies.yaml's kdc-ingress enforces
-  # port 88 on the receiving end - see that file's header for why this
-  # side stays peer-only).
-  podSelector:
-    matchLabels:
-      app: connect
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: auth-services
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

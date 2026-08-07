@@ -5,6 +5,13 @@
 # keyTab path matches where connect-kerberos-patch.yaml's mountedSecrets
 # places the connect-keytab Secret (default mount convention:
 # /mnt/secrets/<secret-name>/<key>).
+#
+# principal is the AD ACCOUNT identity (connect-svc@PSYNCOPATE.COM), not
+# a service-style "connect/host@REALM" string - confirmed live that AD
+# rejects the latter for kinit/AS-REQ with "Client not found in Kerberos
+# database". Unlike MIT Kerberos, AD only lets an account's own identity
+# authenticate as a client; SPNs are service-lookup aliases, not separate
+# client identities. See scripts/kerberos/02-create-principals.sh.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -16,7 +23,7 @@ data:
         com.sun.security.auth.module.Krb5LoginModule required
         useKeyTab=true
         keyTab="/mnt/secrets/connect-keytab/connect.keytab"
-        principal="connect/connect.confluent.svc.cluster.local@PSYNCOPATE.COM"
+        principal="connect-svc@PSYNCOPATE.COM"
         doNotPrompt=true
         useTicketCache=false
         storeKey=true

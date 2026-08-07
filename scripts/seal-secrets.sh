@@ -101,23 +101,6 @@ stringData:
 EOF
 echo "    -> base/flink-jobs/flink-kafka-sasl-sealed.yaml created"
 
-# --- ldap-credentials (auth-services) -----------------------------------
-echo "==> Sealing ldap-credentials"
-kubeseal --cert "${CERT_PATH}" --format yaml \
-  <<EOF > base/ldap/ldap-credentials-sealed.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: ldap-credentials
-  namespace: auth-services
-type: Opaque
-stringData:
-  LDAP_ADMIN_PASSWORD: LdapAdmin@Psyncopate2024!
-  LDAP_CONFIG_PASSWORD: LdapConfig@Psyncopate2024!
-  LDAP_KDC_BIND_PASSWORD: LdapKdcBind@Psyncopate2024!
-EOF
-echo "    -> base/ldap/ldap-credentials-sealed.yaml created"
-
 # --- connect-keytab (confluent) ------------------------------------------
 # NOT regenerated here - it holds a binary Kerberos keytab, not a password,
 # and this script only ever seals plaintext stringData. Its real value

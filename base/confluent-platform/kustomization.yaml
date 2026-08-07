@@ -13,6 +13,8 @@ resources:
   - controlcenter.yaml
   - connect-krb5-configmap.yaml
   - connect-jaas-configmap.yaml
+  - connect-truststore-configmap.yaml
+  - sqlserver-claims-topic.yaml
 patches:
   # Adds Kerberos keytab/krb5.conf/jaas.conf mounts and JVM opts to the
   # Connect CR above without editing connect.yaml directly - see

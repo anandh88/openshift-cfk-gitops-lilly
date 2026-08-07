@@ -1,0 +1,15 @@
+# Topic for the JDBC Source Connector's records (base/confluent-platform/
+# connect-kerberos-patch.yaml). Auto topic creation is disabled on this
+# cluster (standard governance default), so the connector's own producer
+# gets UNKNOWN_TOPIC_OR_PARTITION until the topic exists - confirmed live.
+apiVersion: platform.confluent.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: sqlserver-claims
+  namespace: confluent
+spec:
+  name: sqlserver-Claims
+  replicas: 1
+  partitionCount: 1
+  kafkaClusterRef:
+    name: kafka

@@ -1,43 +1,39 @@
 #!/usr/bin/env bash
-# Creates the two AD service accounts this feature needs, via samba-tool
-# (runs locally on the samba-ad pod - no remote auth needed for user
-# create/spn add when run directly against the local sam.ldb).
+# Creates the two AD accounts this feature needs, on the Docker Desktop AD
+# DC (see 01-setup-docker-ad.sh).
 #
-#   connect-svc, SPN connect/connect.confluent.svc.cluster.local
-#     - Kafka Connect's client principal (JDBC Source Connector's Kerberos
-#       identity when authenticating to SQL Server).
-#   mssql-svc, SPN MSSQLSvc/<SQLSERVER_HOST>:<SQLSERVER_PORT>
-#     - SQL Server's own service principal (SPN format confirmed against
-#       Microsoft's AD-authentication tutorial: MSSQLSvc/<fqdn>:<port>).
-#       SQL Server runs outside this cluster (see
-#       docs/kerberos-architecture.md - mssql/server is amd64-only and
-#       this cluster's node is arm64), so its address is environment-
-#       specific - override SQLSERVER_HOST/SQLSERVER_PORT rather than
-#       assuming an in-cluster Service DNS name.
+#   connect-svc  - Kafka Connect's own Kerberos identity. Its keytab must
+#     be exported for the ACCOUNT principal "connect-svc@PSYNCOPATE.COM",
+#     not a service-style "connect/host@REALM" string - confirmed live
+#     that AD rejects the latter with "Client not found in Kerberos
+#     database" when used for kinit/AS-REQ. Unlike MIT Kerberos (where any
+#     string can be a client principal), AD only lets an account's own
+#     identity authenticate; SPNs are lookup aliases for services, not
+#     separate client identities.
+#   mssql-svc  - SQL Server's own service identity, with an SPN attached
+#     matching exactly the host:port Connect uses to reach it
+#     (MSSQLSvc/<SQLSERVER_HOST>:<SQLSERVER_PORT> - SPN format confirmed
+#     against Microsoft's AD-authentication tutorial).
 #
 # Safe to re-run: samba-tool user create on an existing user fails ("User
 # ... already exists") rather than resetting its password; spn add on an
 # already-attached SPN likewise fails without side effects.
 set -uo pipefail
 
-NAMESPACE="auth-services"
-REALM="PSYNCOPATE.COM"
-SQLSERVER_HOST="${SQLSERVER_HOST:?Set SQLSERVER_HOST to the address Connect will use to reach SQL Server, e.g. a host.crc.testing tunnel address or real hostname}"
+CONTAINER="sambaad"
+ADMIN_PASSWORD="${SAMBA_ADMIN_PASSWORD:-SambaAdmin@Psyncopate2024!}"
+SQLSERVER_HOST="${SQLSERVER_HOST:?Set SQLSERVER_HOST to the address Connect will use to reach SQL Server (see docs/kerberos-architecture.md for the reverse-tunnel address)}"
 SQLSERVER_PORT="${SQLSERVER_PORT:-1433}"
-ADMIN_PASSWORD="$(oc get secret samba-ad-credentials -n "${NAMESPACE}" -o jsonpath='{.data.SAMBA_ADMIN_PASSWORD}' | base64 -d)"
 
-SAMBA_POD="$(oc get pod -l app=samba-ad -n "${NAMESPACE}" -o jsonpath='{.items[0].metadata.name}')"
-
-echo "==> Creating connect-svc (SPN connect/connect.confluent.svc.cluster.local)"
-oc exec "${SAMBA_POD}" -n "${NAMESPACE}" -- samba-tool user create connect-svc "ConnectSvc@Psyncopate2024!" -U "administrator%${ADMIN_PASSWORD}"
-oc exec "${SAMBA_POD}" -n "${NAMESPACE}" -- samba-tool spn add "connect/connect.confluent.svc.cluster.local" connect-svc -U "administrator%${ADMIN_PASSWORD}"
+echo "==> Creating connect-svc"
+docker exec "${CONTAINER}" samba-tool user create connect-svc "ConnectSvc@Psyncopate2024!" -U "administrator%${ADMIN_PASSWORD}"
 
 echo "==> Creating mssql-svc (SPN MSSQLSvc/${SQLSERVER_HOST}:${SQLSERVER_PORT})"
-oc exec "${SAMBA_POD}" -n "${NAMESPACE}" -- samba-tool user create mssql-svc "MssqlSvc@Psyncopate2024!" -U "administrator%${ADMIN_PASSWORD}"
-oc exec "${SAMBA_POD}" -n "${NAMESPACE}" -- samba-tool spn add "MSSQLSvc/${SQLSERVER_HOST}:${SQLSERVER_PORT}" mssql-svc -U "administrator%${ADMIN_PASSWORD}"
+docker exec "${CONTAINER}" samba-tool user create mssql-svc "MssqlSvc@Psyncopate2024!" -U "administrator%${ADMIN_PASSWORD}"
+docker exec "${CONTAINER}" samba-tool spn add "MSSQLSvc/${SQLSERVER_HOST}:${SQLSERVER_PORT}" mssql-svc -U "administrator%${ADMIN_PASSWORD}"
 
-echo "==> Listing SPNs to confirm"
-oc exec "${SAMBA_POD}" -n "${NAMESPACE}" -- samba-tool spn list connect-svc -U "administrator%${ADMIN_PASSWORD}"
-oc exec "${SAMBA_POD}" -n "${NAMESPACE}" -- samba-tool spn list mssql-svc -U "administrator%${ADMIN_PASSWORD}"
+echo "==> Confirming"
+docker exec "${CONTAINER}" samba-tool user list -U "administrator%${ADMIN_PASSWORD}" | grep -E "connect-svc|mssql-svc"
+docker exec "${CONTAINER}" samba-tool spn list mssql-svc -U "administrator%${ADMIN_PASSWORD}"
 
-echo "==> Service accounts created. Next: ./scripts/kerberos/03-export-keytabs.sh"
+echo "==> Accounts created. Next: ./scripts/kerberos/03-export-keytabs.sh"

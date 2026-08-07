@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
-# Runs 02-create-principals.sh through 05-deploy-connector.sh in order,
+# Runs 01-setup-docker-ad.sh through 07-setup-connect-tunnel.sh in order,
 # then validate-kerberos.sh. Individual scripts still exist and are still
-# the right tool for a partial re-run (e.g. docs/kerberos-runbook.md's
-# keytab rotation flow only needs 02-04) - this is just the convenience
-# path for a first-time, start-to-finish run. No init step: base/samba-ad/
-# self-provisions its AD domain on first container startup, unlike the
-# old MIT-KDC-on-LDAP setup this replaced, which needed a manual
-# kdb5_ldap_util step before it could start.
+# the right tool for a partial re-run (e.g. after a `docker restart
+# sqltest2`, only 06 needs re-running - see its header comment).
 #
 # Requires SQLSERVER_HOST (and optionally SQLSERVER_PORT, default 1433) -
 # SQL Server runs outside this cluster (see docs/kerberos-architecture.md),
@@ -20,10 +16,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 steps=(
+  "01-setup-docker-ad.sh"
   "02-create-principals.sh"
   "03-export-keytabs.sh"
   "04-seal-keytabs.sh"
   "05-deploy-connector.sh"
+  "06-join-sqlserver-domain.sh"
+  "07-setup-connect-tunnel.sh"
 )
 
 for step in "${steps[@]}"; do
@@ -48,3 +47,4 @@ echo "      git push"
 echo "    Or, to see the real keytab take effect immediately on this cluster without"
 echo "    waiting for Argo CD's next sync, apply it directly:"
 echo "      oc apply -f base/confluent-platform/secrets/connect-keytab-sealed.yaml"
+echo "    Remember: docker restart sqltest2 wipes 06's changes - re-run it after any restart."

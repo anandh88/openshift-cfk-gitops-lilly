@@ -29,17 +29,22 @@ spec:
       - name: connect-jaas-conf
         configMap:
           name: connect-jaas-conf
+      - name: connect-truststore
+        configMap:
+          name: connect-truststore
     volumeMounts:
       - name: connect-krb5-conf
         mountPath: /mnt/krb5
       - name: connect-jaas-conf
         mountPath: /mnt/jaas
+      - name: connect-truststore
+        mountPath: /mnt/truststore
   podTemplate:
     envVars:
       - name: KRB5_CONFIG
         value: /mnt/krb5/krb5.conf
       - name: KAFKA_OPTS
-        value: "-Djava.security.krb5.conf=/mnt/krb5/krb5.conf -Djava.security.auth.login.config=/mnt/jaas/jaas.conf"
+        value: "-Djava.security.krb5.conf=/mnt/krb5/krb5.conf -Djava.security.auth.login.config=/mnt/jaas/jaas.conf -Djavax.net.ssl.trustStore=/mnt/truststore/truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
   build:
     type: onDemand
     onDemand:
@@ -47,4 +52,4 @@ spec:
         confluentHub:
           - owner: confluentinc
             name: kafka-connect-jdbc
-            version: "10.7.4"
+            version: "10.8.4"

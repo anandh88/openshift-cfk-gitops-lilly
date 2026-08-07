@@ -21,6 +21,15 @@
 # port (749) - Samba has no kadmin service, administration goes through
 # LDAP/samba-tool instead - but this client only ever does AS-REQ/TGS-REQ,
 # never a password change, so admin_server is unused in practice either way.
+#
+# udp_preference_limit=1 alone isn't enough to stop Java from attempting
+# UDP first anyway (confirmed live - a real JDK quirk, not a config
+# mistake), and there's nothing listening on UDP 18088 on the node since
+# the tunnel is TCP-only - that gets an instant ICMP "port unreachable",
+# which Java treats as fatal instead of falling back to TCP. Making the
+# node silently DROP that UDP traffic instead (scripts/kerberos/
+# 07-setup-connect-tunnel.sh) turns it into an ordinary timeout, which
+# *does* trigger Java's normal TCP fallback.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -32,7 +41,7 @@ data:
         default_realm = PSYNCOPATE.COM
         dns_lookup_realm = false
         dns_lookup_kdc = false
-        udp_preference_limit = 0
+        udp_preference_limit = 1
         rdns = false
 
     [realms]
