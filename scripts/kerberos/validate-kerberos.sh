@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # End-to-end health check for the Samba AD (Docker Desktop)/Kerberos/
-# Connect/SQL Server stack. Run after 01-07 have all completed.
+# Connect/SQL Server stack. Run after scripts/kerberos/setup-kerberos.sh has completed.
 # Non-destructive - read-only checks throughout.
 set -uo pipefail
 
@@ -18,7 +18,7 @@ if docker exec sambaad test -f /var/lib/samba/private/sam.ldb 2>/dev/null; then
   pass "sam.ldb present (domain provisioned)"
   docker exec sambaad samba-tool user list -U "administrator%${ADMIN_PASSWORD}" 2>/dev/null | grep -E "connect-svc|mssql-svc" | sed 's/^/    /'
 else
-  fail "no sam.ldb - run scripts/kerberos/01-setup-docker-ad.sh"
+  fail "no sam.ldb - run scripts/kerberos/setup-kerberos.sh"
 fi
 
 echo
@@ -26,7 +26,7 @@ echo "=== SQL Server: sssd resolving AD identities? ==="
 if docker exec sqltest2 getent passwd connect-svc@psyncopate.com >/dev/null 2>&1; then
   pass "sssd resolves connect-svc@psyncopate.com - SQL Server trusts the domain"
 else
-  fail "sssd cannot resolve AD identities - run scripts/kerberos/06-join-sqlserver-domain.sh (note: docker restart wipes this, re-run after any restart)"
+  fail "sssd cannot resolve AD identities - run scripts/kerberos/setup-kerberos.sh (note: docker restart sqltest2 wipes this, re-run after any restart)"
 fi
 
 echo
@@ -34,7 +34,7 @@ echo "=== Connect tunnel: node reachable on the Kerberos port? ==="
 if pgrep -f "ssh.*-R 0.0.0.0:18088" >/dev/null 2>&1; then
   pass "reverse tunnel process running"
 else
-  fail "no tunnel process found - run scripts/kerberos/07-setup-connect-tunnel.sh"
+  fail "no tunnel process found - run scripts/kerberos/setup-kerberos.sh"
 fi
 
 echo
@@ -49,7 +49,7 @@ if [[ -n "${CONNECT_POD}" ]]; then
   if [[ -n "${SIZE}" && "${SIZE}" -gt 2 ]]; then
     pass "connect.keytab is ${SIZE} bytes (real keytab, not the 2-byte placeholder)"
   else
-    fail "connect.keytab is still the empty placeholder - run scripts/kerberos/03-04"
+    fail "connect.keytab is still the empty placeholder - run scripts/kerberos/setup-kerberos.sh"
   fi
 else
   fail "no connect pod found"
@@ -62,6 +62,6 @@ STATUS_JSON="$(curl -sk "${CONNECT_URL}/connectors/sqlserver-claims-source/statu
 if echo "${STATUS_JSON}" | grep -q '"state":"RUNNING"'; then
   pass "connector and task RUNNING"
 else
-  fail "connector not RUNNING - run scripts/kerberos/05-deploy-connector.sh"
+  fail "connector not RUNNING - run scripts/kerberos/setup-kerberos.sh"
 fi
 echo "${STATUS_JSON}" | python3 -m json.tool 2>/dev/null || echo "${STATUS_JSON}"

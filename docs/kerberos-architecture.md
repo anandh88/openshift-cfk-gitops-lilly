@@ -75,8 +75,8 @@ the DC's port 88 instead of SQL Server's 1433.
 
 ## Setting up the Samba AD DC (Docker Desktop)
 
-`scripts/kerberos/01-setup-docker-ad.sh` provisions it. Two non-obvious
-requirements found by testing, both baked into that script:
+`scripts/kerberos/setup-kerberos.sh` provisions it (section 1). Two
+non-obvious requirements found by testing, both baked into that section:
 
 - **`--dns-backend=SAMBA_INTERNAL` is required, not optional.**
   `--dns-backend=NONE` (tried first, since nothing in this setup uses
@@ -104,9 +104,26 @@ requirements found by testing, both baked into that script:
   the capability requirement entirely - Samba's own documented
   workaround for exactly this class of restricted environment.
 
+**`samba` runs as the container's PID 1, not backgrounded.** An earlier
+version of this setup started `samba -i` via `docker exec -d ... nohup
+samba &` - confirmed live that this can die (crash, or just get reaped)
+with nothing to restart it, silently breaking Connect with `Cannot get a
+KDC reply` until someone notices and manually restarts it. Making samba
+PID 1 under `docker run --restart=unless-stopped` means Docker's own
+restart policy recovers it automatically. `/var/lib/samba` lives on a
+named volume (`sambaad-data`) so a crash-triggered container restart -
+which re-runs the container's whole `apt-get install && provision-if-
+needed && exec samba` command from scratch - doesn't lose the
+provisioned domain; it just skips provisioning (sees `sam.ldb` already
+there) and restores `/etc/samba/smb.conf` from a copy also kept on that
+volume (`smb.conf` itself lives outside `/var/lib/samba`, so a freshly
+`apt-get`-installed default one would otherwise overwrite it - confirmed
+live this makes `samba` refuse to start at all: "Samba detected
+misconfigured 'server role' and exited").
+
 ## AD accounts are not the same thing as MIT principals
 
-`scripts/kerberos/02-create-principals.sh` creates two AD accounts:
+`scripts/kerberos/setup-kerberos.sh` creates two AD accounts (section 2):
 `connect-svc` (Kafka Connect's own identity) and `mssql-svc` (an SPN
 holder matching SQL Server's own service identity,
 `MSSQLSvc/<host>:<port>`).
@@ -126,8 +143,8 @@ no SPN at all; it doesn't need one. `mssql-svc` gets exactly one, the
 literal string SQL Server's own SPN needs to match.
 
 `base/confluent-platform/connect-jaas-configmap.yaml`'s `principal=` and
-`scripts/kerberos/03-export-keytabs.sh`'s `exportkeytab --principal=`
-both use the account form for this reason.
+`setup-kerberos.sh`'s `exportkeytab --principal=` calls both use the
+account form for this reason.
 
 ## Domain-joining SQL Server without a working `net ads join`
 
@@ -138,19 +155,37 @@ confirmed live, repeatedly, that it fails with
 `NT_STATUS_NO_TRUST_SAM_ACCOUNT` ("failed to verify domain membership
 after joining") even when the trust account it just created is genuinely
 valid (enabled, real password set, confirmable directly via
-`samba-tool computer show`). `scripts/kerberos/06-join-sqlserver-domain.sh`
-sidesteps the unreliable self-check entirely: it creates the computer
-account directly via `samba-tool` (enabling it and setting its password
-explicitly - `samba-tool computer create` alone leaves an account
-disabled with no key material, which fails keytab export with
+`samba-tool computer show`). `scripts/kerberos/setup-kerberos.sh`
+(section 4) sidesteps the unreliable self-check entirely: it creates the
+computer account directly via `samba-tool` (enabling it and setting its
+password explicitly - `samba-tool computer create` alone leaves an
+account disabled with no key material, which fails keytab export with
 `Export one principal...` printing success while writing nothing) and
 exports its keytab directly, since `sssd` only needs the keytab, not a
 successful `net ads join` run.
 
+Two more account-identity gotchas found getting `sssd` itself to
+actually authenticate as this computer account (both confirmed live,
+both fixed in that same section):
+
+- `sssd`'s own LDAP bind kinits as the computer account's `host/<fqdn>`
+  identity, not its `<NAME>$` sAMAccountName - and just like
+  `connect-svc`'s SPN earlier, that `host/...` string isn't a valid
+  client principal unless the account's `userPrincipalName` is
+  explicitly set to match it (`net ads join` does this automatically;
+  creating the account directly via `samba-tool` does not). Set via a
+  direct `ldbmodify` against `/var/lib/samba/private/sam.ldb`.
+- Kerberos principal matching is case-sensitive. `sssd`'s `ad_hostname`
+  config value determines the exact case it kinits with; the SPN/UPN/
+  exported keytab all need to match that case exactly, or the keytab
+  fails with `no suitable keys` despite being otherwise correct.
+  `setup-kerberos.sh` keeps everything lowercase, matching the
+  container's own (lowercase) hostname.
+
 `docker restart`ing the SQL Server container wipes `/etc/resolv.conf`,
 `/etc/hosts`, and kills the backgrounded `sssd` process (standard Docker
 behavior on restart, not something a script controls) - re-run
-`06-join-sqlserver-domain.sh` after every restart.
+`setup-kerberos.sh` after every restart.
 
 ## Reaching Docker Desktop from the cluster
 
@@ -173,7 +208,7 @@ working end-to-end with real protocol traffic (not just a TCP handshake):
      -R 0.0.0.0:14330:localhost:1433 core@127.0.0.1
    ```
 4. The AD DC (Kerberos, 88) - see the note on UDP below.
-   `scripts/kerberos/07-setup-connect-tunnel.sh` sets this one up:
+   `scripts/kerberos/setup-kerberos.sh` (section 5) sets this one up:
    ```bash
    ssh -i ~/.crc/machines/crc/id_ed25519 -p 2222 -N \
      -R 0.0.0.0:18088:localhost:8088 core@127.0.0.1
@@ -186,8 +221,8 @@ Confirmed reachable from a real pod in both cases:
 This is a **local dev/validation harness**, not committed infrastructure
 - specific to this Mac's setup and not portable across environments.
 Whatever addresses the tunnels end up at, pass SQL Server's via
-`SQLSERVER_HOST`/`SQLSERVER_PORT` to `scripts/kerberos/02-03/05`, and the
-AD DC's via `base/confluent-platform/connect-krb5-configmap.yaml`'s
+`SQLSERVER_HOST`/`SQLSERVER_PORT` to `scripts/kerberos/setup-kerberos.sh`,
+and the AD DC's via `base/confluent-platform/connect-krb5-configmap.yaml`'s
 `[realms]` block.
 
 ### The UDP wall (and why the fix is an iptables rule, not a config change)
@@ -208,9 +243,9 @@ unreachable" response - which Java's `KdcComm` treats as fatal
 gets to its own TCP fallback logic. The actual fix is at the network
 layer: make the node **silently drop** that UDP traffic instead of
 rejecting it, so Java's send just times out - which *does* trigger its
-normal TCP fallback correctly. `scripts/kerberos/07-setup-connect-tunnel.sh`
-adds this via `oc debug node/crc` (no Mac-side `sudo` needed, since this
-rule lives on the cluster node, not the Mac):
+normal TCP fallback correctly. `setup-kerberos.sh` adds this via
+`oc debug node/crc` (no Mac-side `sudo` needed, since this rule lives on
+the cluster node, not the Mac):
 ```bash
 oc debug node/crc -- chroot /host bash -c \
   'iptables -I INPUT -p udp --dport 18088 -j DROP'
@@ -243,8 +278,8 @@ succeeded):
   `PKIX path building failed` - Connect's JVM doesn't trust Schema
   Registry's cert by default. Fixed with a JKS truststore built from
   `schemaregistry-tls-secret`'s `ca.crt`
-  (`base/confluent-platform/connect-truststore-configmap.yaml`, built by
-  `scripts/kerberos/08-build-truststore.sh`), mounted and pointed at via
+  (`base/confluent-platform/connect-truststore-configmap.yaml`, rebuilt
+  by `setup-kerberos.sh` every run), mounted and pointed at via
   `-Djavax.net.ssl.trustStore=...` in `connect-kerberos-patch.yaml`'s
   `KAFKA_OPTS`.
 - **Auto topic creation is disabled on this cluster** (standard
