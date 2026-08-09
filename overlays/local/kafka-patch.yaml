@@ -13,4 +13,4 @@ spec:
         memory: 2Gi
       limits:
         cpu: 2
-        memory: 10Gi
+        memory: 3Gi
