@@ -209,6 +209,7 @@ cat > /etc/krb5.conf <<KRB5EOF
     psyncopate.com = ${REALM}
 KRB5EOF
 
+mkdir -p /etc/samba
 cat > /etc/samba/smb.conf <<SMBEOF
 [global]
     workgroup = PSYNCOPATE
@@ -293,7 +294,7 @@ if [[ ! -f "${KEYTAB_DIR}/mssql.keytab" ]]; then
   exit 1
 fi
 docker cp "${KEYTAB_DIR}/mssql.keytab" "${SQLSERVER_CONTAINER}:/var/opt/mssql/secrets/mssql.keytab"
-docker exec -u root "${SQLSERVER_CONTAINER}" chown mssql:mssql /var/opt/mssql/secrets/mssql.keytab
+docker exec -u root "${SQLSERVER_CONTAINER}" chown mssql:root /var/opt/mssql/secrets/mssql.keytab
 docker exec -u root "${SQLSERVER_CONTAINER}" chmod 400 /var/opt/mssql/secrets/mssql.keytab
 docker exec -u root "${SQLSERVER_CONTAINER}" /opt/mssql/bin/mssql-conf set network.kerberoskeytabfile /var/opt/mssql/secrets/mssql.keytab
 
@@ -383,11 +384,11 @@ curl -sk -X PUT "${CONNECT_URL}/connectors/${CONNECTOR_NAME}/config" \
   -H "Content-Type: application/json" \
   -d '{
     "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
-    "connection.url": "jdbc:sqlserver://'"${SQLSERVER_HOST}"':'"${SQLSERVER_PORT}"';databaseName=Dev-Lily;integratedSecurity=true;authenticationScheme=JavaKerberos;encrypt=false;",
-    "table.whitelist": "Claims",
+    "connection.url": "jdbc:sqlserver://'"${SQLSERVER_HOST}"':'"${SQLSERVER_PORT}"';databaseName=claims_db;integratedSecurity=true;authenticationScheme=JavaKerberos;encrypt=false;",
+    "table.whitelist": "claims",
     "mode": "timestamp+incrementing",
-    "incrementing.column.name": "ClaimId",
-    "timestamp.column.name": "UpdatedAt",
+    "incrementing.column.name": "claim_id",
+    "timestamp.column.name": "claim_date",
     "topic.prefix": "sqlserver-",
     "poll.interval.ms": "10000",
     "tasks.max": "1",

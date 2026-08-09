@@ -9,3 +9,4 @@ bootstrap/argocd-repo-creds.yaml
 .DS_Store
 .claude
 .kerberos-keytabs/
+.vscode/

@@ -2,8 +2,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: platform-root
+  name: confluent-operator
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -11,10 +13,10 @@ spec:
   source:
     repoURL: https://github.com/mkurre/openshift-cfk-gitops.git
     targetRevision: lite
-    path: apps/core
+    path: base/confluent-operator
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: confluent-operator
   syncPolicy:
     automated:
       prune: true
@@ -22,3 +24,9 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

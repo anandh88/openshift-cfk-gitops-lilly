@@ -4,5 +4,6 @@ resources:
   - ../../base/confluent-platform
 patches:
   - path: kafka-patch.yaml
+  - path: kraft-patch.yaml
 commonAnnotations:
   deployment-environment: production

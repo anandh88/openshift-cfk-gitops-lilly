@@ -8,7 +8,7 @@ metadata:
   name: sqlserver-claims
   namespace: confluent
 spec:
-  name: sqlserver-Claims
+  name: sqlserver-claims
   replicas: 1
   partitionCount: 1
   kafkaClusterRef:
