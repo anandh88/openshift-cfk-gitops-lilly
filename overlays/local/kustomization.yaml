@@ -7,6 +7,7 @@ patches:
   - path: kafka-patch.yaml
   - path: sr-patch.yaml
   - path: connect-patch.yaml
+  - path: controlcenter-patch.yaml
 images:
   - name: confluentinc/cp-server
     newTag: "8.2.2"
