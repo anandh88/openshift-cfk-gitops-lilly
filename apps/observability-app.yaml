@@ -147,16 +147,26 @@ spec:
               fsGroup: 1000720000
               runAsNonRoot: true
             retention: 8h
-            # Without these four, Prometheus only watches ServiceMonitors/
+            # Without these, Prometheus only watches ServiceMonitors/
             # PodMonitors/PrometheusRules carrying this Helm release's own
-            # label - our hand-written ServiceMonitors/rules in
-            # base/observability don't have it and would otherwise be
-            # silently ignored.
+            # label - our hand-written ones in base/observability don't
+            # have it and would otherwise be silently ignored. Namespace
+            # selectors scoped to "monitoring" only (where our own objects
+            # live) - {} (all namespaces) was tried first and picked up ~49
+            # of OpenShift's own internal PrometheusRule groups from
+            # openshift-* namespaces, confirmed live via /api/v1/rules -
+            # noisy and outside this stack's job. This does NOT limit which
+            # namespace's Services get scraped - that's each ServiceMonitor's
+            # own spec.namespaceSelector (confluent), unaffected by this.
             serviceMonitorSelectorNilUsesHelmValues: false
-            serviceMonitorNamespaceSelector: {}
+            serviceMonitorNamespaceSelector:
+              matchNames: [monitoring]
             podMonitorSelectorNilUsesHelmValues: false
+            podMonitorNamespaceSelector:
+              matchNames: [monitoring]
             ruleSelectorNilUsesHelmValues: false
-            ruleNamespaceSelector: {}
+            ruleNamespaceSelector:
+              matchNames: [monitoring]
             resources:
               requests: {cpu: 200m, memory: 512Mi}
               limits: {cpu: 500m, memory: 1Gi}
