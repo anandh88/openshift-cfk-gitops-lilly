@@ -8,7 +8,50 @@ boundaries, and which network paths/policies have to be open for the
 whole chain to work. It complements `docs/kerberos-architecture.md`
 (the deeper design-decision log) with a single top-to-bottom narrative.
 
-## 1. The moving parts
+## Enterprise-equivalent architecture (abstracted)
+
+The diagram and component names below describe this repo's actual local
+lab setup (Docker Desktop + CRC). The same authentication flow maps
+directly onto a production deployment, just with real infrastructure in
+place of the lab stand-ins:
+
+| Lab component (this repo) | Enterprise-equivalent |
+|---|---|
+| `sambaad` (Samba4 container) | **Enterprise Active Directory** - a real corporate AD forest/domain, typically a redundant pair of domain controllers on dedicated servers, providing LDAP + Kerberos KDC for the whole organization |
+| `sqltest2` (Docker container) | **Production SQL Server database** - a dedicated, domain-joined database server (physical or VM), hosting the actual business database |
+| Docker Desktop bridge network | The enterprise's own internal network / VLAN connecting the AD domain controllers to the database server |
+| CRC node + reverse SSH tunnels | **OpenShift cluster running on real servers** (bare-metal or VMs, on-prem or cloud), with normal routed network connectivity to the AD and database tiers - no tunneling needed, since none of these are ephemeral local Docker containers |
+| `connect-0` pod | Kafka Connect running in the OpenShift cluster, unchanged |
+
+```
+┌─────────────────────────┐        ┌──────────────────────────────┐
+│   Enterprise Network     │        │   OpenShift Cluster            │
+│                          │        │   (production servers)         │
+│  ┌────────────────────┐  │        │  ┌──────────────────────────┐  │
+│  │  Enterprise Active  │  │        │  │   connect-0 (Kafka       │  │
+│  │  Directory (AD/KDC) │◄─┼────────┼──┤   Connect) - JDBC Source │  │
+│  └──────────┬──────────┘  │        │  │   Connector,              │  │
+│             │ trust /      │        │  │   authenticationScheme=  │  │
+│             │ identity     │        │  │   JavaKerberos            │  │
+│             │ resolution   │        │  └──────────┬───────────────┘  │
+│  ┌──────────▼──────────┐  │        │             │                  │
+│  │  Production SQL     │◄─┼────────┼─────────────┘                  │
+│  │  Server Database     │  │  Kerberos AS-REQ/TGS-REQ + SPNEGO/TDS   │
+│  └─────────────────────┘  │  over the normal routed network         │
+└─────────────────────────┘        └──────────────────────────────┘
+```
+
+Everything in §§1-5 below still applies conceptually in this
+enterprise deployment - the AD DC still issues tickets, SQL Server still
+validates them via its own domain trust and enforces a `db_datareader`-
+only login, and the OpenShift NetworkPolicy still needs to allow the
+`connect` pod to reach the AD/KDC and database hosts. The only thing
+that goes away in production is the reverse-SSH-tunnel layer: real
+servers on a routed network talk to each other directly, so
+`GatewayPorts`/tunnel-specific concerns in §4.1 are a lab-only detail,
+not something a production rollout needs to replicate.
+
+## 1. The moving parts (local lab implementation)
 
 ```
 ┌─────────────────────────── Docker Desktop (Mac host) ───────────────────────────┐
