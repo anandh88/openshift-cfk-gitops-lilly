@@ -65,19 +65,19 @@ spec:
         - name: kafka-ca
           configMap:
             name: kafka-ca
-  # 768m, not 1024m or 512m. 512m failed outright - confirmed live,
-  # IllegalConfigurationException: Flink's own JobManager memory model
-  # (Total Flink Memory after JVM Metaspace/Overhead carve-outs) computed
-  # to only 64mb, less than the 128mb off-heap minimum. 768m clears that
-  # floor with room to spare. 1024m was fine functionally but this node hit
-  # 98% memory allocated once Kafka scaled to 3 brokers - cmf-operator's
-  # request was cut instead (see apps/cmf-operator-app.yaml) to make room.
+  # Asymmetric on purpose. JobManager's memory model is simple (Heap +
+  # Off-heap, off-heap floor 128mb) - 640m clears it (640 - 256 jvm-metaspace
+  # - 192 jvm-overhead = 192mb Flink Memory > 128mb floor). TaskManager's
+  # model sums more categories (framework heap/off-heap + managed + network
+  # = 448mb by default) - confirmed live 768m fails here (only 320mb Flink
+  # Memory available, < 448mb needed); 1024m clears it (576mb available).
+  # Both confirmed by IllegalConfigurationException on under-sized attempts.
   jobManager:
     resource:
-      memory: 768m
+      memory: 640m
       cpu: 0.5
   taskManager:
     replicas: 1
     resource:
-      memory: 768m
+      memory: 1024m
       cpu: 1
