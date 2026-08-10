@@ -36,6 +36,18 @@ spec:
         podSecurityContext:
           runAsUser: null
           runAsGroup: null
+        # Chart default is 2 CPU / 3Gi requests+limits - no Flink jobs run on
+        # this CRC cluster, so the operator sits idle at that reservation.
+        # Cut to 1 CPU to leave room for Kafka; bump back up if a real Flink
+        # workload needs it.
+        operatorPod:
+          resources:
+            requests:
+              cpu: "1"
+              memory: "3Gi"
+            limits:
+              cpu: "1"
+              memory: "3Gi"
   destination:
     server: https://kubernetes.default.svc
     namespace: flink-operator
