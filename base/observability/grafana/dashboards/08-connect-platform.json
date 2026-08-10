@@ -93,7 +93,7 @@
             "uid": "prometheus"
           },
           "expr": "count(up{job=\"connect\"} == 1)",
-          "refId": "C",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -152,7 +152,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_count{job=\"connect\"})",
-          "refId": "D",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -211,7 +211,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_running_task_count{job=\"connect\"})",
-          "refId": "E",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -274,7 +274,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_failed_task_count{job=\"connect\"})",
-          "refId": "F",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -337,7 +337,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_paused_task_count{job=\"connect\"})",
-          "refId": "G",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -396,7 +396,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_rebalance_metrics_rebalancing{job=\"connect\"})",
-          "refId": "H",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -458,7 +458,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_running_task_count{job=\"connect\"})",
-          "refId": "H",
+          "refId": "A",
           "legendFormat": "running"
         },
         {
@@ -467,7 +467,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_failed_task_count{job=\"connect\"})",
-          "refId": "H",
+          "refId": "B",
           "legendFormat": "failed"
         },
         {
@@ -476,7 +476,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_paused_task_count{job=\"connect\"})",
-          "refId": "H",
+          "refId": "C",
           "legendFormat": "paused"
         },
         {
@@ -485,7 +485,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_unassigned_task_count{job=\"connect\"})",
-          "refId": "H",
+          "refId": "D",
           "legendFormat": "unassigned"
         },
         {
@@ -494,7 +494,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_destroyed_task_count{job=\"connect\"})",
-          "refId": "H",
+          "refId": "E",
           "legendFormat": "destroyed"
         },
         {
@@ -503,7 +503,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_restarting_task_count{job=\"connect\"})",
-          "refId": "H",
+          "refId": "F",
           "legendFormat": "restarting"
         }
       ],
@@ -580,7 +580,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_running_task_count{job=\"connect\"})",
-          "refId": "I",
+          "refId": "A",
           "legendFormat": "running"
         },
         {
@@ -589,7 +589,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_failed_task_count{job=\"connect\"})",
-          "refId": "I",
+          "refId": "B",
           "legendFormat": "failed"
         },
         {
@@ -598,7 +598,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_paused_task_count{job=\"connect\"})",
-          "refId": "I",
+          "refId": "C",
           "legendFormat": "paused"
         }
       ],
@@ -701,7 +701,7 @@
             "uid": "prometheus"
           },
           "expr": "rate(process_cpu_seconds_total{job=\"connect\"}[5m])",
-          "refId": "K",
+          "refId": "A",
           "legendFormat": "{{pod}}"
         }
       ],
@@ -778,7 +778,7 @@
             "uid": "prometheus"
           },
           "expr": "java_lang_memory_heapmemoryusage_used{job=\"connect\"}",
-          "refId": "L",
+          "refId": "A",
           "legendFormat": "{{pod}} used"
         },
         {
@@ -787,7 +787,7 @@
             "uid": "prometheus"
           },
           "expr": "java_lang_memory_heapmemoryusage_max{job=\"connect\"}",
-          "refId": "L",
+          "refId": "B",
           "legendFormat": "{{pod}} max"
         }
       ],
@@ -864,7 +864,7 @@
             "uid": "prometheus"
           },
           "expr": "rate(jvm_gc_collection_seconds_sum{job=\"connect\"}[5m])",
-          "refId": "M",
+          "refId": "A",
           "legendFormat": "{{pod}}"
         }
       ],
@@ -949,7 +949,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_rebalance_metrics_completed_rebalances_total{job=\"connect\"})",
-          "refId": "P",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -1008,7 +1008,7 @@
             "uid": "prometheus"
           },
           "expr": "max(kafka_connect_connect_worker_rebalance_metrics_epoch{job=\"connect\"})",
-          "refId": "Q",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -1067,7 +1067,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_worker_rebalance_metrics_time_since_last_rebalance_ms{job=\"connect\"}",
-          "refId": "R",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -1126,7 +1126,7 @@
             "uid": "prometheus"
           },
           "expr": "max(kafka_connect_connect_coordinator_metrics_last_heartbeat_seconds_ago{job=\"connect\"})",
-          "refId": "S",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -1203,7 +1203,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_worker_rebalance_metrics_rebalance_avg_time_ms{job=\"connect\"}",
-          "refId": "S",
+          "refId": "A",
           "legendFormat": "{{pod}} avg"
         },
         {
@@ -1212,7 +1212,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_worker_rebalance_metrics_rebalance_max_time_ms{job=\"connect\"}",
-          "refId": "S",
+          "refId": "B",
           "legendFormat": "{{pod}} max"
         }
       ],
@@ -1289,7 +1289,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_coordinator_metrics_join_rate{job=\"connect\"}",
-          "refId": "T",
+          "refId": "A",
           "legendFormat": "{{pod}} join"
         },
         {
@@ -1298,7 +1298,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_coordinator_metrics_sync_rate{job=\"connect\"}",
-          "refId": "T",
+          "refId": "B",
           "legendFormat": "{{pod}} sync"
         },
         {
@@ -1307,7 +1307,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_coordinator_metrics_heartbeat_rate{job=\"connect\"}",
-          "refId": "T",
+          "refId": "C",
           "legendFormat": "{{pod}} heartbeat"
         }
       ],
@@ -1410,7 +1410,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_metrics_network_io_rate{job=\"connect\"}",
-          "refId": "B",
+          "refId": "A",
           "legendFormat": "{{pod}}-{{client_id}}"
         }
       ],
@@ -1487,7 +1487,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_metrics_incoming_byte_rate{job=\"connect\"}",
-          "refId": "C",
+          "refId": "A",
           "legendFormat": "{{pod}}-{{client_id}}"
         }
       ],
@@ -1564,7 +1564,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_metrics_outgoing_byte_rate{job=\"connect\"}",
-          "refId": "D",
+          "refId": "A",
           "legendFormat": "{{pod}}-{{client_id}}"
         }
       ],
@@ -1641,7 +1641,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_metrics_connection_count{job=\"connect\"}",
-          "refId": "E",
+          "refId": "A",
           "legendFormat": "{{pod}}-{{client_id}}"
         }
       ],
@@ -1718,7 +1718,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_metrics_io_ratio{job=\"connect\"}",
-          "refId": "F",
+          "refId": "A",
           "legendFormat": "{{pod}}-{{client_id}}"
         }
       ],
@@ -1795,7 +1795,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_metrics_request_rate{job=\"connect\"}",
-          "refId": "G",
+          "refId": "A",
           "legendFormat": "{{pod}} req"
         },
         {
@@ -1804,7 +1804,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_metrics_response_rate{job=\"connect\"}",
-          "refId": "G",
+          "refId": "B",
           "legendFormat": "{{pod}} resp"
         }
       ],
@@ -1907,7 +1907,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_node_metrics_request_latency_avg{job=\"connect\"}",
-          "refId": "I",
+          "refId": "A",
           "legendFormat": "{{node_id}} avg"
         },
         {
@@ -1916,7 +1916,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_node_metrics_request_latency_max{job=\"connect\"}",
-          "refId": "I",
+          "refId": "B",
           "legendFormat": "{{node_id}} max"
         }
       ],
@@ -1993,7 +1993,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_node_metrics_incoming_byte_rate{job=\"connect\"}",
-          "refId": "J",
+          "refId": "A",
           "legendFormat": "{{node_id}} in"
         },
         {
@@ -2002,7 +2002,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connect_node_metrics_outgoing_byte_rate{job=\"connect\"}",
-          "refId": "J",
+          "refId": "B",
           "legendFormat": "{{node_id}} out"
         }
       ],
@@ -2105,7 +2105,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connector_task_metrics_batch_size_avg{job=\"connect\"}",
-          "refId": "L",
+          "refId": "A",
           "legendFormat": "{{connector}}-{{task}} avg"
         },
         {
@@ -2114,7 +2114,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connector_task_metrics_batch_size_max{job=\"connect\"}",
-          "refId": "L",
+          "refId": "B",
           "legendFormat": "{{connector}}-{{task}} max"
         }
       ],
@@ -2191,7 +2191,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connector_task_metrics_task_cpu_load_avg{job=\"connect\"}",
-          "refId": "M",
+          "refId": "A",
           "legendFormat": "{{connector}}-{{task}} avg"
         },
         {
@@ -2200,7 +2200,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connector_task_metrics_task_cpu_load_max{job=\"connect\"}",
-          "refId": "M",
+          "refId": "B",
           "legendFormat": "{{connector}}-{{task}} max"
         }
       ],
@@ -2277,7 +2277,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connector_task_metrics_offset_commit_success_percentage{job=\"connect\"}",
-          "refId": "N",
+          "refId": "A",
           "legendFormat": "{{connector}}-{{task}} success %"
         },
         {
@@ -2286,7 +2286,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connector_task_metrics_offset_commit_avg_time_ms{job=\"connect\"}",
-          "refId": "N",
+          "refId": "B",
           "legendFormat": "{{connector}}-{{task}} avg time (ms)"
         }
       ],
@@ -2363,7 +2363,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connector_task_metrics_task_mem_usages_avg{job=\"connect\"}",
-          "refId": "O",
+          "refId": "A",
           "legendFormat": "{{connector}}-{{task}} avg"
         },
         {
@@ -2372,7 +2372,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connector_task_metrics_task_mem_usages_max{job=\"connect\"}",
-          "refId": "O",
+          "refId": "B",
           "legendFormat": "{{connector}}-{{task}} max"
         }
       ],
@@ -2449,7 +2449,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connector_task_metrics_running_ratio{job=\"connect\"}",
-          "refId": "P",
+          "refId": "A",
           "legendFormat": "{{connector}}-{{task}} running"
         },
         {
@@ -2458,7 +2458,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_connector_task_metrics_pause_ratio{job=\"connect\"}",
-          "refId": "P",
+          "refId": "B",
           "legendFormat": "{{connector}}-{{task}} paused"
         }
       ],
@@ -2546,7 +2546,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_startup_success_total{job=\"connect\"})",
-          "refId": "R",
+          "refId": "A",
           "legendFormat": "success"
         },
         {
@@ -2555,7 +2555,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_startup_failure_total{job=\"connect\"})",
-          "refId": "R",
+          "refId": "B",
           "legendFormat": "failure"
         }
       ],
@@ -2617,7 +2617,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_task_startup_success_total{job=\"connect\"})",
-          "refId": "S",
+          "refId": "A",
           "legendFormat": "success"
         },
         {
@@ -2626,7 +2626,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_task_startup_failure_total{job=\"connect\"})",
-          "refId": "S",
+          "refId": "B",
           "legendFormat": "failure"
         }
       ],
@@ -2744,7 +2744,7 @@
             "uid": "prometheus"
           },
           "expr": "min(kafka_connect_connect_worker_metrics_task_startup_success_percentage{job=\"connect\"})",
-          "refId": "B",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -2847,7 +2847,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_task_error_metrics_total_record_failures{job=\"connect\"}",
-          "refId": "C",
+          "refId": "A",
           "legendFormat": "{{connector}}-{{task}} failures"
         },
         {
@@ -2856,7 +2856,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_task_error_metrics_total_record_errors{job=\"connect\"}",
-          "refId": "C",
+          "refId": "B",
           "legendFormat": "{{connector}}-{{task}} errors"
         },
         {
@@ -2942,7 +2942,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_task_error_metrics_total_errors_logged{job=\"connect\"}",
-          "refId": "D",
+          "refId": "A",
           "legendFormat": "{{connector}}-{{task}} logged"
         },
         {
@@ -2951,7 +2951,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_task_error_metrics_total_retries{job=\"connect\"}",
-          "refId": "D",
+          "refId": "B",
           "legendFormat": "{{connector}}-{{task}} retries"
         }
       ],
@@ -3028,7 +3028,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_task_error_metrics_deadletterqueue_produce_requests{job=\"connect\"}",
-          "refId": "E",
+          "refId": "A",
           "legendFormat": "{{connector}}-{{task}} requests"
         },
         {
@@ -3037,7 +3037,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_task_error_metrics_deadletterqueue_produce_failures{job=\"connect\"}",
-          "refId": "E",
+          "refId": "B",
           "legendFormat": "{{connector}}-{{task}} failures"
         }
       ],
@@ -3140,7 +3140,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_source_task_metrics_source_record_write_rate{job=\"connect\", task!=\"\"}",
-          "refId": "G",
+          "refId": "A",
           "legendFormat": "{{connector}}-{{task}} write"
         },
         {
@@ -3149,7 +3149,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_source_task_metrics_source_record_poll_rate{job=\"connect\", task!=\"\"}",
-          "refId": "G",
+          "refId": "B",
           "legendFormat": "{{connector}}-{{task}} poll"
         }
       ],
@@ -3226,7 +3226,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_source_task_metrics_poll_batch_avg_time_ms{job=\"connect\", task!=\"\"}",
-          "refId": "H",
+          "refId": "A",
           "legendFormat": "{{connector}}-{{task}} avg"
         },
         {
@@ -3235,7 +3235,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_source_task_metrics_poll_batch_max_time_ms{job=\"connect\", task!=\"\"}",
-          "refId": "H",
+          "refId": "B",
           "legendFormat": "{{connector}}-{{task}} max"
         }
       ],
@@ -3312,7 +3312,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_source_task_metrics_source_record_active_count_avg{job=\"connect\", task!=\"\"}",
-          "refId": "I",
+          "refId": "A",
           "legendFormat": "{{connector}}-{{task}} avg"
         },
         {
@@ -3321,7 +3321,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_connect_source_task_metrics_source_record_active_count_max{job=\"connect\", task!=\"\"}",
-          "refId": "I",
+          "refId": "B",
           "legendFormat": "{{connector}}-{{task}} max"
         }
       ],

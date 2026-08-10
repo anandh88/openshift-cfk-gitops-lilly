@@ -93,7 +93,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"ActiveBrokerCount\"})",
-          "refId": "C",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -152,7 +152,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"ActiveControllerCount\"})",
-          "refId": "D",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -211,7 +211,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"GlobalTopicCount\"})",
-          "refId": "E",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -270,7 +270,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"GlobalPartitionCount\"})",
-          "refId": "F",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -333,7 +333,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_server_replicamanager_value{job=\"kafka\", name=\"UnderReplicatedPartitions\"})",
-          "refId": "G",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -396,7 +396,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"OfflinePartitionsCount\"})",
-          "refId": "H",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -455,7 +455,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_server_replicamanager_value{job=\"kafka\", name=\"StrayPartitionsCount\"})",
-          "refId": "I",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -518,7 +518,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"MetadataErrorCount\"})",
-          "refId": "J",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -580,7 +580,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_replicamanager_value{job=\"kafka\", name=\"LeaderCount\"}",
-          "refId": "J",
+          "refId": "A",
           "legendFormat": "{{pod}}"
         }
       ],
@@ -646,7 +646,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_socketserver_value{job=\"kafka\", name=\"NetworkProcessorAvgIdlePercent\"}",
-          "refId": "L",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -712,7 +712,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_kafkarequesthandlerpool_oneminuterate{job=\"kafka\", name=\"RequestHandlerAvgIdlePercent\"}",
-          "refId": "M",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -789,7 +789,7 @@
             "uid": "prometheus"
           },
           "expr": "sum by (pod) (kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"BytesInPerSec\"})",
-          "refId": "M",
+          "refId": "A",
           "legendFormat": "{{pod}} in"
         },
         {
@@ -798,7 +798,7 @@
             "uid": "prometheus"
           },
           "expr": "sum by (pod) (kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"BytesOutPerSec\"})",
-          "refId": "M",
+          "refId": "B",
           "legendFormat": "{{pod}} out"
         }
       ],
@@ -886,7 +886,7 @@
             "uid": "prometheus"
           },
           "expr": "sum by (topic) (kafka_log_log_value{job=\"kafka\", name=\"Size\"})",
-          "refId": "O",
+          "refId": "A",
           "legendFormat": "{{topic}}"
         }
       ],
@@ -948,7 +948,7 @@
             "uid": "prometheus"
           },
           "expr": "count by (topic) (kafka_log_log_value{job=\"kafka\", name=\"Size\"})",
-          "refId": "P",
+          "refId": "A",
           "legendFormat": "{{topic}}"
         }
       ],
@@ -998,7 +998,7 @@
             "uid": "prometheus"
           },
           "expr": "sum by (topic) (kafka_log_log_value{job=\"kafka\", name=\"Size\"})",
-          "refId": "Q",
+          "refId": "A",
           "legendFormat": "size"
         }
       ],
@@ -1075,7 +1075,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"BytesInPerSec\", topic!=\"\"}",
-          "refId": "R",
+          "refId": "A",
           "legendFormat": "{{topic}}"
         }
       ],
@@ -1152,7 +1152,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"BytesOutPerSec\", topic!=\"\"}",
-          "refId": "S",
+          "refId": "A",
           "legendFormat": "{{topic}}"
         }
       ],
@@ -1237,7 +1237,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_raft_metrics_current_leader{job=\"kraftcontroller\"}",
-          "refId": "B",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -1296,7 +1296,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_raft_metrics_current_epoch{job=\"kraftcontroller\"}",
-          "refId": "C",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -1355,7 +1355,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_raft_metrics_high_watermark{job=\"kraftcontroller\"}",
-          "refId": "D",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -1418,7 +1418,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"FencedBrokerCount\"})",
-          "refId": "E",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -1477,7 +1477,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"LastAppliedRecordLagMs\"}",
-          "refId": "F",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -1536,7 +1536,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_controller_controllerstats_oneminuterate{job=\"kraftcontroller\", name=\"UncleanLeaderElectionsPerSec\"})",
-          "refId": "G",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -1613,7 +1613,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_raft_metrics_append_records_rate{job=\"kraftcontroller\"}",
-          "refId": "G",
+          "refId": "A",
           "legendFormat": "{{pod}} append"
         },
         {
@@ -1622,7 +1622,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_raft_metrics_fetch_records_rate{job=\"kraftcontroller\"}",
-          "refId": "G",
+          "refId": "B",
           "legendFormat": "{{pod}} fetch"
         }
       ],
@@ -1699,7 +1699,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_controller_controllereventmanager_mean{job=\"kraftcontroller\", name=\"EventQueueTimeMs\"}",
-          "refId": "H",
+          "refId": "A",
           "legendFormat": "{{pod}} queue"
         },
         {
@@ -1708,7 +1708,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_controller_controllereventmanager_mean{job=\"kraftcontroller\", name=\"EventQueueProcessingTimeMs\"}",
-          "refId": "H",
+          "refId": "B",
           "legendFormat": "{{pod}} processing"
         }
       ],
@@ -1785,7 +1785,7 @@
             "uid": "prometheus"
           },
           "expr": "rate(process_cpu_seconds_total{job=\"kraftcontroller\"}[5m])",
-          "refId": "I",
+          "refId": "A",
           "legendFormat": "{{pod}} cpu"
         }
       ],
@@ -1862,7 +1862,7 @@
             "uid": "prometheus"
           },
           "expr": "java_lang_memory_heapmemoryusage_used{job=\"kraftcontroller\"}",
-          "refId": "J",
+          "refId": "A",
           "legendFormat": "{{pod}} used"
         },
         {
@@ -1871,7 +1871,7 @@
             "uid": "prometheus"
           },
           "expr": "jvm_memory_bytes_max{job=\"kraftcontroller\", area=\"heap\"}",
-          "refId": "J",
+          "refId": "B",
           "legendFormat": "{{pod}} max"
         }
       ],
@@ -1956,7 +1956,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\"})",
-          "refId": "M",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -2015,7 +2015,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"Produce\"})",
-          "refId": "N",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -2074,7 +2074,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"FetchConsumer\"})",
-          "refId": "O",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -2133,7 +2133,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"FetchFollower\"})",
-          "refId": "P",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -2192,7 +2192,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"OffsetCommit\"})",
-          "refId": "Q",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -2251,7 +2251,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"Metadata\"})",
-          "refId": "R",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -2313,7 +2313,7 @@
             "uid": "prometheus"
           },
           "expr": "topk(8, sum by (request) (kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\"}))",
-          "refId": "R",
+          "refId": "A",
           "legendFormat": "{{request}}"
         }
       ],
@@ -2390,7 +2390,7 @@
             "uid": "prometheus"
           },
           "expr": "sum by (request) (kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"ErrorsPerSec\"})",
-          "refId": "S",
+          "refId": "A",
           "legendFormat": "{{request}}"
         }
       ],
@@ -2570,7 +2570,7 @@
             "uid": "prometheus"
           },
           "expr": "rate(process_cpu_seconds_total{job=\"kafka\"}[5m])",
-          "refId": "B",
+          "refId": "A",
           "legendFormat": "{{pod}}"
         }
       ],
@@ -2647,7 +2647,7 @@
             "uid": "prometheus"
           },
           "expr": "java_lang_memory_heapmemoryusage_used{job=\"kafka\"}",
-          "refId": "C",
+          "refId": "A",
           "legendFormat": "{{pod}} used"
         },
         {
@@ -2656,7 +2656,7 @@
             "uid": "prometheus"
           },
           "expr": "java_lang_memory_heapmemoryusage_max{job=\"kafka\"}",
-          "refId": "C",
+          "refId": "B",
           "legendFormat": "{{pod}} max"
         }
       ],
@@ -2733,7 +2733,7 @@
             "uid": "prometheus"
           },
           "expr": "rate(jvm_gc_collection_seconds_sum{job=\"kafka\"}[5m])",
-          "refId": "D",
+          "refId": "A",
           "legendFormat": "{{pod}}"
         }
       ],
@@ -2810,7 +2810,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestchannel_value{job=\"kafka\", name=\"RequestQueueSize\"}",
-          "refId": "E",
+          "refId": "A",
           "legendFormat": "{{pod}}"
         }
       ],
@@ -2887,7 +2887,7 @@
             "uid": "prometheus"
           },
           "expr": "sum by (pod) (kafka_log_log_value{job=\"kafka\", name=\"Size\"})",
-          "refId": "F",
+          "refId": "A",
           "legendFormat": "{{pod}}"
         }
       ],
@@ -2964,7 +2964,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_replicamanager_oneminuterate{job=\"kafka\", name=\"IsrShrinksPerSec\"}",
-          "refId": "G",
+          "refId": "A",
           "legendFormat": "{{pod}} shrinks"
         },
         {
@@ -2973,7 +2973,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_replicamanager_oneminuterate{job=\"kafka\", name=\"IsrExpandsPerSec\"}",
-          "refId": "G",
+          "refId": "B",
           "legendFormat": "{{pod}} expands"
         }
       ],
@@ -3050,7 +3050,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_replicafetchermanager_value{job=\"kafka\", name=\"MinFetchRate\"}",
-          "refId": "H",
+          "refId": "A",
           "legendFormat": "{{pod}} min fetch rate"
         },
         {
@@ -3059,7 +3059,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_replicafetchermanager_value{job=\"kafka\", name=\"MaxLag\"}",
-          "refId": "H",
+          "refId": "B",
           "legendFormat": "{{pod}} max lag"
         }
       ],
@@ -3147,7 +3147,7 @@
             "uid": "prometheus"
           },
           "expr": "sum by (listener) (kafka_server_socket_server_metrics_connection_count{job=\"kafka\"})",
-          "refId": "J",
+          "refId": "A",
           "legendFormat": "{{listener}}"
         }
       ],
@@ -3224,7 +3224,7 @@
             "uid": "prometheus"
           },
           "expr": "sum by (listener) (kafka_server_socket_server_metrics_connection_creation_rate{job=\"kafka\"})",
-          "refId": "K",
+          "refId": "A",
           "legendFormat": "{{listener}} created"
         },
         {
@@ -3233,7 +3233,7 @@
             "uid": "prometheus"
           },
           "expr": "sum by (listener) (kafka_server_socket_server_metrics_connection_close_rate{job=\"kafka\"})",
-          "refId": "K",
+          "refId": "B",
           "legendFormat": "{{listener}} closed"
         }
       ],
@@ -3310,7 +3310,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_fetchsessioncache_value{job=\"kafka\", name=\"NumIncrementalFetchSessions\"}",
-          "refId": "L",
+          "refId": "A",
           "legendFormat": "{{pod}} sessions cached"
         },
         {
@@ -3319,7 +3319,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_fetchsessioncache_oneminuterate{job=\"kafka\", name=\"IncrementalFetchSessionEvictionsPerSec\"}",
-          "refId": "L",
+          "refId": "B",
           "legendFormat": "{{pod}} evictions/sec"
         }
       ],
@@ -3396,7 +3396,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"ProduceMessageConversionsPerSec\"}",
-          "refId": "M",
+          "refId": "A",
           "legendFormat": "{{pod}} produce"
         },
         {
@@ -3405,7 +3405,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"FetchMessageConversionsPerSec\"}",
-          "refId": "M",
+          "refId": "B",
           "legendFormat": "{{pod}} fetch"
         }
       ],
@@ -3508,7 +3508,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RequestQueueTimeMs\", request=\"Produce\"}",
-          "refId": "O",
+          "refId": "A",
           "legendFormat": "queue"
         },
         {
@@ -3517,7 +3517,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"LocalTimeMs\", request=\"Produce\"}",
-          "refId": "O",
+          "refId": "B",
           "legendFormat": "local"
         },
         {
@@ -3526,7 +3526,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RemoteTimeMs\", request=\"Produce\"}",
-          "refId": "O",
+          "refId": "C",
           "legendFormat": "remote"
         },
         {
@@ -3535,7 +3535,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseQueueTimeMs\", request=\"Produce\"}",
-          "refId": "O",
+          "refId": "D",
           "legendFormat": "resp queue"
         },
         {
@@ -3544,7 +3544,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseSendTimeMs\", request=\"Produce\"}",
-          "refId": "O",
+          "refId": "E",
           "legendFormat": "resp send"
         }
       ],
@@ -3621,7 +3621,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RequestQueueTimeMs\", request=\"FetchConsumer\"}",
-          "refId": "P",
+          "refId": "A",
           "legendFormat": "queue"
         },
         {
@@ -3630,7 +3630,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"LocalTimeMs\", request=\"FetchConsumer\"}",
-          "refId": "P",
+          "refId": "B",
           "legendFormat": "local"
         },
         {
@@ -3639,7 +3639,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RemoteTimeMs\", request=\"FetchConsumer\"}",
-          "refId": "P",
+          "refId": "C",
           "legendFormat": "remote"
         },
         {
@@ -3648,7 +3648,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseQueueTimeMs\", request=\"FetchConsumer\"}",
-          "refId": "P",
+          "refId": "D",
           "legendFormat": "resp queue"
         },
         {
@@ -3657,7 +3657,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseSendTimeMs\", request=\"FetchConsumer\"}",
-          "refId": "P",
+          "refId": "E",
           "legendFormat": "resp send"
         }
       ],
@@ -3734,7 +3734,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RequestQueueTimeMs\", request=\"FetchFollower\"}",
-          "refId": "Q",
+          "refId": "A",
           "legendFormat": "queue"
         },
         {
@@ -3743,7 +3743,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"LocalTimeMs\", request=\"FetchFollower\"}",
-          "refId": "Q",
+          "refId": "B",
           "legendFormat": "local"
         },
         {
@@ -3752,7 +3752,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RemoteTimeMs\", request=\"FetchFollower\"}",
-          "refId": "Q",
+          "refId": "C",
           "legendFormat": "remote"
         },
         {
@@ -3761,7 +3761,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseQueueTimeMs\", request=\"FetchFollower\"}",
-          "refId": "Q",
+          "refId": "D",
           "legendFormat": "resp queue"
         },
         {
@@ -3770,7 +3770,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseSendTimeMs\", request=\"FetchFollower\"}",
-          "refId": "Q",
+          "refId": "E",
           "legendFormat": "resp send"
         }
       ],
@@ -3847,7 +3847,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RequestQueueTimeMs\", request=\"Metadata\"}",
-          "refId": "R",
+          "refId": "A",
           "legendFormat": "queue"
         },
         {
@@ -3856,7 +3856,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"LocalTimeMs\", request=\"Metadata\"}",
-          "refId": "R",
+          "refId": "B",
           "legendFormat": "local"
         },
         {
@@ -3865,7 +3865,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RemoteTimeMs\", request=\"Metadata\"}",
-          "refId": "R",
+          "refId": "C",
           "legendFormat": "remote"
         },
         {
@@ -3874,7 +3874,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseQueueTimeMs\", request=\"Metadata\"}",
-          "refId": "R",
+          "refId": "D",
           "legendFormat": "resp queue"
         },
         {
@@ -3883,7 +3883,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseSendTimeMs\", request=\"Metadata\"}",
-          "refId": "R",
+          "refId": "E",
           "legendFormat": "resp send"
         }
       ],
@@ -3986,7 +3986,7 @@
             "uid": "prometheus"
           },
           "expr": "kafka_coordinator_group_groupmetadatamanager_value{job=\"kafka\", name=\"NumGroups\"}",
-          "refId": "T",
+          "refId": "A",
           "legendFormat": "{{pod}}"
         }
       ],
@@ -4057,7 +4057,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_coordinator_group_groupmetadatamanager_value{job=\"kafka\", name=\"NumGroupsEmpty\"})",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "empty"
         },
         {
@@ -4066,7 +4066,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_coordinator_group_groupmetadatamanager_value{job=\"kafka\", name=\"NumGroupsDead\"})",
-          "refId": "A",
+          "refId": "C",
           "legendFormat": "dead"
         },
         {
@@ -4075,7 +4075,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_coordinator_group_groupmetadatamanager_value{job=\"kafka\", name=\"NumGroupsPreparingRebalance\"})",
-          "refId": "A",
+          "refId": "D",
           "legendFormat": "preparing rebalance"
         },
         {
@@ -4084,7 +4084,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_coordinator_group_groupmetadatamanager_value{job=\"kafka\", name=\"NumGroupsCompletingRebalance\"})",
-          "refId": "A",
+          "refId": "E",
           "legendFormat": "completing rebalance"
         }
       ],
@@ -4169,7 +4169,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_server_transaction_coordinator_metrics_transactional_id_count{job=\"kafka\"})",
-          "refId": "D",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -4232,7 +4232,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_server_transaction_coordinator_metrics_transaction_timeout_rate{job=\"kafka\"})",
-          "refId": "E",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -4295,7 +4295,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_server_transaction_coordinator_metrics_transaction_state_error_rate{job=\"kafka\"})",
-          "refId": "F",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
@@ -4354,7 +4354,7 @@
             "uid": "prometheus"
           },
           "expr": "min(kafka_server_produce_broker_quota{job=\"kafka\"})",
-          "refId": "G",
+          "refId": "A",
           "legendFormat": ""
         }
       ],
