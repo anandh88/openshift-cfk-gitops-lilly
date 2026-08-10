@@ -58,3 +58,10 @@ spec:
     execution.checkpointing.mode: EXACTLY_ONCE
     taskmanager.numberOfTaskSlots: "1"
     rest.port: "8081"
+    # Prerequisite for base/observability/grafana/dashboards/24-flink-mvp.json -
+    # without this the job would run with zero Prometheus metrics exposed, same
+    # as the jobmanager/CMF operator pods today. Port range (not a single port)
+    # because every taskmanager replica needs its own listener.
+    metrics.reporters: prom
+    metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+    metrics.reporter.prom.port: "9249-9250"

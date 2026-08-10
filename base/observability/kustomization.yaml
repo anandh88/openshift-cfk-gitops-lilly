@@ -17,4 +17,5 @@ resources:
   - grafana/dashboard-configmaps/08-connect-platform-configmap.yaml
   - grafana/dashboard-configmaps/10-schema-registry-configmap.yaml
   - grafana/dashboard-configmaps/22-k8s-resources-configmap.yaml
+  - grafana/dashboard-configmaps/24-flink-mvp-configmap.yaml
   - grafana/dashboard-configmaps/23-jvm-deep-dive-configmap.yaml
