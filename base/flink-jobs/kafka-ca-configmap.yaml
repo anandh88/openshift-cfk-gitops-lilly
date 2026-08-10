@@ -1,0 +1,46 @@
+# Public CA cert only (no private key) - copied from confluent/kafka-tls-secret's
+# ca.crt so the Flink job's plain Kafka client (not a CFK-managed component,
+# so it doesn't get truststore wiring automatically like Connect/SchemaRegistry/
+# RestProxy do) can trust the broker's TLS cert on the internal SASL_SSL
+# listener (kafka.confluent.svc.cluster.local:9071). PEM format, mounted
+# directly as ssl.truststore.location with ssl.truststore.type=PEM (KIP-651) -
+# no keytool/JKS conversion needed, unlike connect-truststore-configmap.yaml's
+# older JKS approach. Re-copy this if kafka-tls-secret's CA ever rotates
+# (valid until 2036-08-02 as of writing).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-ca
+  namespace: flink-jobs
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIFNjCCAx6gAwIBAgIQL0Pd0aVI/6FQcQYqjMrFrjANBgkqhkiG9w0BAQsFADA1
+    MRgwFgYDVQQKEw9zdGF0ZWZhcm0tbG9jYWwxGTAXBgNVBAMTEHBsYXRmb3JtLXJv
+    b3QtY2EwHhcNMjYwODA1MjAyMTA5WhcNMzYwODAyMjAyMTA5WjA1MRgwFgYDVQQK
+    Ew9zdGF0ZWZhcm0tbG9jYWwxGTAXBgNVBAMTEHBsYXRmb3JtLXJvb3QtY2EwggIi
+    MA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQDkcs+4K2v4qFQst1JV3LGxzznR
+    i65cP+opgkf0JNYaPy/82S0Bd83WKTPybW6zmOA1j4mYUe+MeACxM9f5P/zZm358
+    3b3WxvBf5ZuWcmkpcx1n0C7HlFT9w0uMGjxR6WmsbQR/Q3xlGSXZrS8bNNu5Z+bU
+    w2VOE5SZsLDTpEqk3ZXFJE4r5cHUTmSMIlIjIFaaGEIZlEDUmmbItUxuJvJPiKdJ
+    PIaku0HMd4iXDs6ohIjZcz0GMYn6s10XybIxtBRn+mwm15OFAmm3Nqt836OkfF54
+    2MdAOW5EI+jiMwFaqI2WTCfu19d3/VSCMq/x2mNUVmOwxxidWie2KtPmlZze1v6E
+    /CiX61A6Ece+Ph/xn28M905w7A2gEbi2JgFjFnyeJIrGZNBtFSysaaWASGuuGinp
+    MSi2P7d9emAdsYtoe20aDGEjlavV3j2TuYpkEvZG83KwgKrl82Q0Qup3P4awZl2g
+    YtnSbJ3JvW3QJo7mCldjKYMgO04KaV+2TAcvWgSoLw7L22t5JRzl3wk+uA9BgC7L
+    cZ8S9WilnusphVAMKTb1lSEYejq0Nt50JpBTu06V7ewfpetRhPt7pqfrd7KUb7aB
+    MXKatIJu5bRAjMihWMmt7b5QGlvC80Y82yUOudHaFO0gcSzZq4XaS6qIjKJeOLJh
+    RGT6w1UeldAKeHiohQIDAQABo0IwQDAOBgNVHQ8BAf8EBAMCAqQwDwYDVR0TAQH/
+    BAUwAwEB/zAdBgNVHQ4EFgQUThQgAd0nQOMAjXR9GVazHnlUv98wDQYJKoZIhvcN
+    AQELBQADggIBAHnm9CyBt53QnWuxcvgnhMD/T0eqTBludHXwS+TPp45ZA51rS4pc
+    LnSs59WjAm7owR7qcWsN60pwEhR9aafwq5Ole7+BcX180aVhnlQypL4rTu7ZgIE1
+    13d+asm73pFDTXrUhcXS0zn62H0dpkbcuy61W9q57DKmnOtQ0xGlLV5RJ6LTqgYi
+    4eeTiZ0dXO9zFK3gdmsgputUMYOirE18RYlOBula4kWAT7BKcvvxtYFcOM5+leBy
+    hzOQxRbysNWV0pqIBqoeCydWnXHL/cEw4Uxagc5cZXsMJDQ1EkLuExK770QLwJTL
+    ImkOSFfRRsounS53yyN8eg5gzfTPM3pvqmxldd8paDCmhUAKkiV8YIQFj6bHfoIc
+    oc3N34tv96dNbv2EOczce87dscumB0ij/LdMELNqRRrmHmiJqPxS0g1UH5FUHtPm
+    uMPSP/bNqtnxhuc8KKK1xTxKMv0XAqQtQmnqj5SH9yOHLFTQcdjjIvK7mXqyC5ih
+    lJ7zytkT4HaZsyrbQxuhlvd+a+L8YZZdWYq3frxVC6LYpz14dyQpcyTbqPWFh9ao
+    8DeTcxyH8e+WR+pw5Z3XC4q3gPeCCtGdI+noHF2G9oKB3bbOTt8ROavY/aiIN6d+
+    DB2Xel0SwaBHEJ8KV76TDa5r86tMkx7QUqLqGATEbEKXeT6kjLHSJEg6
+    -----END CERTIFICATE-----

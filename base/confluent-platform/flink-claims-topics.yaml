@@ -1,0 +1,27 @@
+# Topics for flink-jobs/statefarm-claims-processor. Auto topic creation is
+# disabled on this cluster (base/confluent-platform/kafka.yaml's
+# configOverrides), so the job's consumer/producer get UNKNOWN_TOPIC_OR_PARTITION
+# until these exist - same reasoning as sqlserver-claims-topic.yaml.
+apiVersion: platform.confluent.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: raw-claims
+  namespace: confluent
+spec:
+  name: raw-claims
+  replicas: 1
+  partitionCount: 1
+  kafkaClusterRef:
+    name: kafka
+---
+apiVersion: platform.confluent.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: processed-claims
+  namespace: confluent
+spec:
+  name: processed-claims
+  replicas: 1
+  partitionCount: 1
+  kafkaClusterRef:
+    name: kafka

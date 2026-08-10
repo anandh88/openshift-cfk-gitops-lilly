@@ -9,3 +9,5 @@ bootstrap/argocd-repo-creds.yaml
 .DS_Store
 .claude
 .kerberos-keytabs/
+target/
+dependency-reduced-pom.xml

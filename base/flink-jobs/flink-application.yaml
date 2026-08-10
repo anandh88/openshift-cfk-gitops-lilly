@@ -1,5 +1,15 @@
-# TODO: replace with your GitHub username in the ghcr.io image path
-# once claims-processor images are being published from ci-flink-build.yaml.
+# Image is built from flink-jobs/claims-processor/ (Dockerfile + pom.xml) and
+# pushed to this CRC instance's own internal registry - not ghcr.io/
+# ci-flink-build.yaml's path, since that CI pipeline has never actually run
+# (no GitHub Actions execution in this environment) and the ghcr.io image was
+# never published. Rebuild with:
+#   cd flink-jobs/claims-processor && mvn -q package -DskipTests
+#   docker build --platform linux/amd64 -t claims-processor:local .
+#   oc registry login  # or: docker login default-route-openshift-image-registry.apps-crc.testing
+#   docker tag claims-processor:local default-route-openshift-image-registry.apps-crc.testing/flink-jobs/claims-processor:latest
+#   docker push default-route-openshift-image-registry.apps-crc.testing/flink-jobs/claims-processor:latest
+# ci-flink-build.yaml remains as the intended path once this repo is pushed
+# somewhere with real GitHub Actions runs and a ghcr.io username to publish to.
 #
 # Rewritten against the actual CFK 3.3 FlinkApplication CRD schema, which
 # differs substantially from the CMF-as-a-separate-product model originally
@@ -21,7 +31,7 @@ spec:
   flinkEnvironment: statefarm-flink-env
   flinkVersion: "v1_19"
   mode: native
-  image: ghcr.io/mkurre/flink-jobs/claims-processor:latest
+  image: image-registry.openshift-image-registry.svc:5000/flink-jobs/claims-processor:latest
   serviceAccount: flink-service-account
   job:
     jarURI: local:///opt/flink/usrlib/claims-processor.jar
@@ -48,10 +58,16 @@ spec:
               - name: flink-kafka-sasl
                 mountPath: /mnt/secrets/flink-kafka-sasl
                 readOnly: true
+              - name: kafka-ca
+                mountPath: /mnt/kafka-ca
+                readOnly: true
         volumes:
           - name: flink-kafka-sasl
             secret:
               secretName: flink-kafka-sasl
+          - name: kafka-ca
+            configMap:
+              name: kafka-ca
   flinkConfiguration:
     state.backend: hashmap
     execution.checkpointing.interval: "60000"

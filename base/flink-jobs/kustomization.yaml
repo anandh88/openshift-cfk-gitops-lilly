@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - flink-rbac.yaml
   - flink-kafka-sasl-sealed.yaml
+  - kafka-ca-configmap.yaml
   - cmf-restclass.yaml
   - flink-environment.yaml
   - flink-application.yaml
