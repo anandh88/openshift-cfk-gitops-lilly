@@ -36,18 +36,24 @@ spec:
         podSecurityContext:
           runAsUser: null
           runAsGroup: null
-        # Chart default is 2 CPU / 3Gi requests+limits - no Flink jobs run on
-        # this CRC cluster, so the operator sits idle at that reservation.
-        # Cut to 1 CPU to leave room for Kafka; bump back up if a real Flink
-        # workload needs it.
+        # Chart default is 2 CPU / 3Gi requests+limits. Confirmed live
+        # (docs/troubleshooting.md) that this operator never actually does
+        # anything in this environment - the CFK operator's controller for
+        # FlinkApplication/FlinkEnvironment never reconciles, so FKO never
+        # gets invoked to manage a real FlinkDeployment. Cut hard, to a
+        # JVM-safe idle floor, to free real memory headroom for a 3-broker
+        # Kafka test (base/confluent-platform/kafka.yaml declares replicas: 3,
+        # but CFK's own cluster-shrink safety default was holding it at 1
+        # because this node had no spare memory). Bump back up if/when the
+        # CFK<->FKO reconciliation gap gets fixed and a real job needs to run.
         operatorPod:
           resources:
             requests:
-              cpu: "1"
-              memory: "3Gi"
+              cpu: "300m"
+              memory: "768Mi"
             limits:
-              cpu: "1"
-              memory: "3Gi"
+              cpu: "300m"
+              memory: "768Mi"
   destination:
     server: https://kubernetes.default.svc
     namespace: flink-operator
