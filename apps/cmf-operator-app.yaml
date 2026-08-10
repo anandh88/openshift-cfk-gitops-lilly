@@ -21,13 +21,22 @@ spec:
     targetRevision: 2.4.1
     helm:
       values: |
+        # Cut from 1Gi/2Gi - confirmed live that CMF isn't on the critical
+        # path for actually running a Flink job in this environment (see
+        # base/flink-jobs/flink-deployment.yaml's header comment: real jobs
+        # go through the native flink-kubernetes-operator FlinkDeployment
+        # CRD, not through CFK's FlinkApplication -> CMF path, which never
+        # reconciles here). Freed to make room for the Flink job itself on
+        # a memory-constrained node. Bump back up if CMF's REST API
+        # (environment/catalog/database registration for Flink SQL) becomes
+        # load-bearing.
         resources:
           requests:
             cpu: 500m
-            memory: 1Gi
+            memory: 640Mi
           limits:
             cpu: 1
-            memory: 2Gi
+            memory: 1Gi
         # Suppress the chart's hardcoded podSecurityContext (fsGroup: 1001,
         # runAsUser: 1001). On OpenShift, the restricted-v2 SCC assigns UIDs
         # from the namespace's allowed range at admission - fixed UIDs trip
