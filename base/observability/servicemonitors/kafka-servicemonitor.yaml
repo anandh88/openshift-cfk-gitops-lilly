@@ -20,7 +20,7 @@ spec:
       - confluent
   selector:
     matchLabels:
-      app: kafka
+      type: kafka
   endpoints:
     - port: prometheus
       path: /metrics

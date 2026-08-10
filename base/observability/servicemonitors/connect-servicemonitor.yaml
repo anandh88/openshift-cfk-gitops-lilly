@@ -15,7 +15,7 @@ spec:
       - confluent
   selector:
     matchLabels:
-      app: connect
+      type: connect
   endpoints:
     - port: prometheus
       path: /metrics

@@ -13,7 +13,7 @@ spec:
       - confluent
   selector:
     matchLabels:
-      app: kafkarestproxy
+      type: kafkarestproxy
   endpoints:
     - port: prometheus
       path: /metrics

@@ -13,7 +13,7 @@ spec:
       - confluent
   selector:
     matchLabels:
-      app: schemaregistry
+      type: schemaregistry
   endpoints:
     - port: prometheus
       path: /metrics

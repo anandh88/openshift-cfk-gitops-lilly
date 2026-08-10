@@ -19,7 +19,7 @@ spec:
       - confluent
   selector:
     matchLabels:
-      app: controlcenter
+      type: controlcenter
   endpoints:
     - port: prometheus
       path: /metrics

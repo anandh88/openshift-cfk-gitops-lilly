@@ -13,7 +13,7 @@ spec:
       - confluent
   selector:
     matchLabels:
-      app: kraftcontroller
+      type: kraftcontroller
   endpoints:
     - port: prometheus
       path: /metrics
