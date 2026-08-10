@@ -64,10 +64,21 @@ spec:
           # allocated range at admission - the chart's hardcoded UID 472
           # trips SCC validation, same reasoning as
           # apps/flink-kubernetes-operator-app.yaml's podSecurityContext
-          # override. Confirmed via `helm template` that null (not {}, which
-          # deep-merges as a no-op and leaves the default intact) actually
-          # clears it.
-          securityContext: null
+          # override. `securityContext: null` verified clean under a local
+          # `helm template` but Argo CD's own Helm value-merge does NOT
+          # treat null as "delete this map" the same way - confirmed live
+          # it left the chart's default UID 472 fully intact, unlike the
+          # scalar `kube-state-metrics.securityContext.enabled: false`
+          # override below, which did apply. So: explicit UID within the
+          # monitoring namespace's actual allocated range
+          # (`oc get namespace monitoring -o jsonpath='{.metadata.annotations}'`
+          # -> openshift.io/sa.scc.uid-range: 1000720000/10000) instead of
+          # trying to remove the block.
+          securityContext:
+            runAsUser: 1000720000
+            runAsGroup: 1000720000
+            fsGroup: 1000720000
+            runAsNonRoot: true
           admin:
             existingSecret: grafana-admin
             userKey: admin-user
@@ -110,7 +121,18 @@ spec:
         prometheusOperator:
           admissionWebhooks:
             enabled: false
-          securityContext: null
+          # Separate from admissionWebhooks above - this is the operator's
+          # OWN web server TLS (--web.enable-tls), which otherwise mounts a
+          # secret ("<release>-admission") that only the (disabled)
+          # admission-webhook cert job would ever create, leaving the pod
+          # stuck on FailedMount forever. Confirmed live.
+          tls:
+            enabled: false
+          securityContext:
+            runAsUser: 1000720000
+            runAsGroup: 1000720000
+            fsGroup: 1000720000
+            runAsNonRoot: true
           resources:
             requests: {cpu: 100m, memory: 128Mi}
             limits: {cpu: 200m, memory: 256Mi}
@@ -119,7 +141,11 @@ spec:
           serviceAccount:
             create: true
           prometheusSpec:
-            securityContext: null
+            securityContext:
+              runAsUser: 1000720000
+              runAsGroup: 1000720000
+              fsGroup: 1000720000
+              runAsNonRoot: true
             retention: 8h
             # Without these four, Prometheus only watches ServiceMonitors/
             # PodMonitors/PrometheusRules carrying this Helm release's own
