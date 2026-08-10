@@ -158,15 +158,30 @@ spec:
             # noisy and outside this stack's job. This does NOT limit which
             # namespace's Services get scraped - that's each ServiceMonitor's
             # own spec.namespaceSelector (confluent), unaffected by this.
+            #
+            # NOTE: these three fields are plain metav1.LabelSelector
+            # (matchLabels/matchExpressions only) on this cluster's
+            # installed Prometheus CRD (operator.prometheus.io/version
+            # 0.87.0) - NOT the separate NamespaceSelector type
+            # (any/matchNames) that ServiceMonitor.spec.namespaceSelector
+            # uses. Using matchNames here was rejected by Argo CD's
+            # server-side apply ("field not declared in schema") and left
+            # the Application silently OutOfSync/unapplied - confirmed via
+            # `oc get application observability -o
+            # jsonpath='{.status.conditions}'`. matchLabels against the
+            # namespace's own auto-populated name label is the correct form.
             serviceMonitorSelectorNilUsesHelmValues: false
             serviceMonitorNamespaceSelector:
-              matchNames: [monitoring]
+              matchLabels:
+                kubernetes.io/metadata.name: monitoring
             podMonitorSelectorNilUsesHelmValues: false
             podMonitorNamespaceSelector:
-              matchNames: [monitoring]
+              matchLabels:
+                kubernetes.io/metadata.name: monitoring
             ruleSelectorNilUsesHelmValues: false
             ruleNamespaceSelector:
-              matchNames: [monitoring]
+              matchLabels:
+                kubernetes.io/metadata.name: monitoring
             resources:
               requests: {cpu: 200m, memory: 512Mi}
               limits: {cpu: 500m, memory: 1Gi}
