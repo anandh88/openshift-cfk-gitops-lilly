@@ -1,0 +1,292 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: observability-dashboard-03-kafka-broker-deep-dive
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  03-kafka-broker-deep-dive.json: |
+    {
+      "uid": "kafka-broker-deep-dive",
+      "title": "03 - Kafka Broker Deep Dive",
+      "description": "Per-broker request handling, latency, and resource usage. $broker variable filters all panels.",
+      "tags": [
+        "kafka",
+        "broker"
+      ],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Leader Count per broker",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_server_replicamanager_value{name=\"LeaderCount\"}",
+              "refId": "A",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "description": ""
+        },
+        {
+          "id": 2,
+          "title": "Partition Count per broker",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 12,
+            "y": 0,
+            "w": 12,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_server_replicamanager_value{name=\"PartitionCount\"}",
+              "refId": "A",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "description": ""
+        },
+        {
+          "id": 3,
+          "title": "Request Handler Idle %",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 0,
+            "y": 8,
+            "w": 12,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_server_kafkarequesthandlerpool_oneminuterate{name=\"RequestHandlerAvgIdlePercent\"}",
+              "refId": "A",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "description": ""
+        },
+        {
+          "id": 4,
+          "title": "Produce p99 Latency (ms)",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 12,
+            "y": 8,
+            "w": 12,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_99thpercentile{name=\"TotalTimeMs\", request=\"Produce\"}",
+              "refId": "A",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "description": ""
+        },
+        {
+          "id": 5,
+          "title": "Fetch Consumer p99 Latency (ms)",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 0,
+            "y": 16,
+            "w": 12,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_99thpercentile{name=\"TotalTimeMs\", request=\"FetchConsumer\"}",
+              "refId": "A",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "description": ""
+        },
+        {
+          "id": 6,
+          "title": "Broker CPU (cores)",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 12,
+            "y": 16,
+            "w": 12,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"confluent\",pod=~\"kafka-.*\",container=\"kafka\"}[5m]))",
+              "refId": "A",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "description": ""
+        },
+        {
+          "id": 7,
+          "title": "Broker Memory (working set)",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 0,
+            "y": 24,
+            "w": 12,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"confluent\",pod=~\"kafka-.*\",container=\"kafka\"})",
+              "refId": "A",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "description": ""
+        },
+        {
+          "id": 8,
+          "title": "Broker Disk Usage",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 12,
+            "y": 24,
+            "w": 12,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kubelet_volume_stats_used_bytes{namespace=\"confluent\",persistentvolumeclaim=~\"data0-kafka.*\"}",
+              "refId": "A",
+              "legendFormat": "{{persistentvolumeclaim}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "description": ""
+        }
+      ]
+    }
