@@ -1,0 +1,68 @@
+# Kubernetes/OpenShift infra alerting rules - standard kube-state-metrics /
+# kubelet cAdvisor metric names (kube_pod_container_status_*, container_*),
+# confirmed live (kube-state-metrics and kubelet ServiceMonitors are both
+# `up` in Prometheus's own targets page - part of the kube-prometheus-stack
+# chart's default scrape config, not something this repo added by hand).
+# Scoped to the confluent/monitoring/flink-* namespaces this platform
+# actually owns - not cluster-wide (this is a shared CRC cluster also
+# running OpenShift's own control plane, which isn't this platform's to
+# alert on).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: observability-infra-rules
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  groups:
+    - name: infra.alerts
+      rules:
+        - alert: PodCrashLooping
+          expr: increase(kube_pod_container_status_restarts_total{namespace=~"confluent|monitoring|flink-.*|cmf-operator"}[15m]) > 3
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} container {{ $labels.container }} restarted {{ $value }} times in 15m"
+
+        - alert: ContainerOOMKilled
+          expr: kube_pod_container_status_last_terminated_reason{namespace=~"confluent|monitoring|flink-.*|cmf-operator", reason="OOMKilled"} == 1
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} container {{ $labels.container }} was OOMKilled"
+
+        - alert: HighCPU
+          expr: sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{namespace=~"confluent|monitoring|flink-.*|cmf-operator", container!=""}[5m])) > 1.5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} using {{ $value }} CPU cores sustained for 10m"
+
+        - alert: HighMemory
+          expr: sum by (namespace, pod) (container_memory_working_set_bytes{namespace=~"confluent|monitoring|flink-.*|cmf-operator", container!=""}) / 1024/1024/1024 > 8
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} using {{ $value }}Gi memory sustained for 10m"
+
+        - alert: PodPending
+          expr: kube_pod_status_phase{namespace=~"confluent|monitoring|flink-.*|cmf-operator", phase="Pending"} == 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} has been Pending for 10m+"
+            description: "Usually a resource-headroom or SCC/scheduling problem - check `oc describe pod`."
+
+        - alert: PVCAlmostFull
+          expr: (kubelet_volume_stats_used_bytes{namespace=~"confluent|monitoring"} / kubelet_volume_stats_capacity_bytes{namespace=~"confluent|monitoring"}) > 0.80
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "PVC {{ $labels.persistentvolumeclaim }} in {{ $labels.namespace }} is {{ $value | humanizePercentage }} full"

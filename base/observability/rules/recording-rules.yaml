@@ -1,0 +1,55 @@
+# Recording rules for expensive/high-value queries, built ONLY from metric
+# names+labels confirmed live via Prometheus's own query API before writing
+# this file (see docs/prometheus-metrics-guide.md for the discovery
+# commands). The JMX-Prometheus-exporter here uses generic MBean-to-metric
+# conversion - the real metric identity lives in a `name` label
+# (e.g. kafka_server_replicamanager_value{name="UnderReplicatedPartitions"}),
+# not baked into the metric name itself. Recording rules below normalize
+# that into clean, memorable names.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: observability-recording-rules
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  groups:
+    - name: kafka.recording
+      interval: 30s
+      rules:
+        - record: kafka:cluster:messages_in_rate
+          expr: sum(kafka_server_brokertopicmetrics_count{name="MessagesInPerSec"})
+        - record: kafka:cluster:bytes_in_rate
+          expr: sum(rate(kafka_server_brokertopicmetrics_count{name="BytesInPerSec"}[5m]))
+        - record: kafka:cluster:bytes_out_rate
+          expr: sum(rate(kafka_server_brokertopicmetrics_count{name="BytesOutPerSec"}[5m]))
+        - record: kafka:broker:under_replicated_partitions
+          expr: kafka_server_replicamanager_value{name="UnderReplicatedPartitions"}
+        - record: kafka:broker:leader_count
+          expr: kafka_server_replicamanager_value{name="LeaderCount"}
+        - record: kafka:broker:partition_count
+          expr: kafka_server_replicamanager_value{name="PartitionCount"}
+        - record: kafka:cluster:offline_partitions_count
+          expr: kafka_controller_kafkacontroller_value{name="OfflinePartitionsCount"}
+        - record: kafka:cluster:active_controller_count
+          expr: sum(kafka_controller_kafkacontroller_value{name="ActiveControllerCount"})
+        - record: kafka:topic:bytes_in_rate
+          expr: sum by (topic) (rate(kafka_server_brokertopicmetrics_count{name="BytesInPerSec", topic!=""}[5m]))
+        - record: kafka:topic:bytes_out_rate
+          expr: sum by (topic) (rate(kafka_server_brokertopicmetrics_count{name="BytesOutPerSec", topic!=""}[5m]))
+        - record: kafka:request:p99_latency_ms
+          expr: kafka_network_requestmetrics_99thpercentile{name="TotalTimeMs"}
+    - name: connect.recording
+      interval: 30s
+      rules:
+        - record: connect:worker:connector_count
+          expr: kafka_connect_connect_worker_metrics_connector_count
+        - record: connect:worker:running_task_count
+          expr: sum(kafka_connect_connect_worker_metrics_connector_running_task_count)
+        - record: connect:worker:failed_task_count
+          expr: sum(kafka_connect_connect_worker_metrics_connector_failed_task_count)
+        - record: connect:source_task:poll_rate
+          expr: sum by (pod) (kafka_connect_source_task_metrics_source_record_poll_rate)
+        - record: connect:source_task:write_rate
+          expr: sum by (pod) (kafka_connect_source_task_metrics_source_record_write_rate)

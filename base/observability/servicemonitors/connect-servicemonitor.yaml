@@ -21,3 +21,11 @@ spec:
       path: /metrics
       interval: 30s
       scrapeTimeout: 15s
+      relabelings:
+        # CFK creates a per-pod "<name>-0-internal" Service with identical
+        # labels alongside the headless "<name>" one this ServiceMonitor is
+        # meant to select - both would otherwise get scraped, doubling every
+        # series. Drop the per-pod one, keep the headless one.
+        - sourceLabels: [__meta_kubernetes_service_name]
+          regex: '.*-[0-9]+-internal'
+          action: drop
