@@ -1,0 +1,70 @@
+# Native Apache Flink Kubernetes Operator CRD - NOT CFK's platform.confluent.io/
+# v1beta1 FlinkApplication (see flink-application.yaml, kept for reference/
+# comparison but no longer relied on). Switched after finding a reference
+# implementation (a real production GitOps repo, shared for lead-hunting on
+# the CFK-never-reconciles-FlinkApplication gap) that deploys real Flink jobs
+# exactly this way - CMF is used there only for SQL environment/catalog/
+# database REST registration, never for running the job itself. That
+# reference repo's own flink-job/README.md states outright: "Flink
+# application mode... only accepts local:// JAR URIs" and uses this exact
+# CRD (flink.apache.org/v1beta1 FlinkDeployment) reconciled directly by
+# flink-kubernetes-operator - which is already running healthy in this
+# cluster and was never the broken link; only CFK's own controller for its
+# own FlinkApplication CRD was.
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: statefarm-claims-processor
+  namespace: flink-jobs
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  image: image-registry.openshift-image-registry.svc:5000/flink-jobs/claims-processor:latest
+  imagePullPolicy: Always
+  flinkVersion: v1_19
+  mode: native
+  serviceAccount: flink-service-account
+  flinkConfiguration:
+    state.backend: hashmap
+    execution.checkpointing.interval: "60000"
+    execution.checkpointing.mode: EXACTLY_ONCE
+    taskmanager.numberOfTaskSlots: "1"
+    rest.port: "8081"
+    metrics.reporters: prom
+    metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+    metrics.reporter.prom.port: "9249-9250"
+  job:
+    jarURI: local:///opt/flink/usrlib/claims-processor.jar
+    entryClass: com.statefarm.flink.ClaimsProcessorJob
+    args:
+      - --input-topic=raw-claims
+      - --output-topic=processed-claims
+    parallelism: 1
+    upgradeMode: stateless
+  jobManager:
+    resource:
+      memory: 1024m
+      cpu: 0.5
+  taskManager:
+    replicas: 1
+    resource:
+      memory: 1024m
+      cpu: 1
+    podTemplate:
+      spec:
+        containers:
+          - name: flink-main-container
+            volumeMounts:
+              - name: flink-kafka-sasl
+                mountPath: /mnt/secrets/flink-kafka-sasl
+                readOnly: true
+              - name: kafka-ca
+                mountPath: /mnt/kafka-ca
+                readOnly: true
+        volumes:
+          - name: flink-kafka-sasl
+            secret:
+              secretName: flink-kafka-sasl
+          - name: kafka-ca
+            configMap:
+              name: kafka-ca

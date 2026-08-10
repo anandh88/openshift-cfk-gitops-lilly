@@ -4,6 +4,14 @@ resources:
   - flink-rbac.yaml
   - flink-kafka-sasl-sealed.yaml
   - kafka-ca-configmap.yaml
-  - cmf-restclass.yaml
-  - flink-environment.yaml
-  - flink-application.yaml
+  - flink-deployment.yaml
+# cmf-restclass.yaml, flink-environment.yaml, and flink-application.yaml are
+# NOT deployed here anymore - confirmed live (docs/troubleshooting.md) that
+# the CFK operator never reconciles those CRDs in this environment (zero log
+# lines ever, across 4+ days and 3 generation bumps, despite every checkable
+# precondition - RBAC, image digest, env vars, CMF reachability - being fine).
+# Kept on disk for reference/comparison, not applied, to avoid live clutter
+# from dead objects. flink-deployment.yaml (flink.apache.org/v1beta1
+# FlinkDeployment, reconciled directly by flink-kubernetes-operator instead
+# of going through CFK/CMF) is the real, working path - see its own header
+# comment for how this was found.
