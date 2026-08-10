@@ -1,0 +1,207 @@
+# TODO: replace with your GitHub username in repoURL below (n/a here - this
+# Application sources a vendor Helm chart directly, same pattern as
+# apps/cmf-operator-app.yaml and apps/flink-kubernetes-operator-app.yaml).
+#
+# Deploys a dedicated, CRC-sized Prometheus Operator + Prometheus + Grafana
+# (kube-state-metrics + kubelet/cAdvisor scraping, no node-exporter/
+# Alertmanager/default-rules-bundle - see docs/observability-architecture.md
+# for the full reasoning). Chosen over enabling OpenShift's User Workload
+# Monitoring because: (a) this repo already uses the Helm-from-vendor-repo
+# pattern twice and this keeps the same GitOps shape, (b) it avoids
+# depending on OpenShift's own Thanos-querier auth wiring to get an external
+# Grafana reading UWM's Prometheus, (c) full control over resource sizing -
+# the CRC node was already at 68% CPU / 82% memory before this stack, so
+# every component here is deliberately trimmed (8h Prometheus retention,
+# no HA, no long-term storage).
+#
+# Sync-wave "3": after confluent-platform ("1") and flink-jobs ("2") so the
+# ServiceMonitors below have real Services to select from the moment they
+# apply. ServiceMonitors/PrometheusRules/dashboard ConfigMaps live in
+# base/observability, applied by this same Application (git-kustomize
+# source layered via a second Application - see below).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 88.2.0
+    helm:
+      values: |
+        fullnameOverride: "observability"
+
+        # These CRDs (Prometheus/Alertmanager/ServiceMonitor/PodMonitor/
+        # PrometheusRule) already exist cluster-wide, installed by
+        # OpenShift's own cluster-monitoring-operator - confirmed live via
+        # `oc get crd`. Never let this chart install/take ownership of them.
+        crds:
+          enabled: false
+
+        # Only our own curated rules load (see base/observability/rules/) -
+        # the chart's bundled etcd/apiserver/kube-scheduler alert bundle is
+        # out of scope for this Kafka-focused deployment.
+        defaultRules:
+          create: false
+
+        # Deferred in Phase 1: PrometheusRule alerts still load and are
+        # visible in Prometheus/Grafana without Alertmanager running - a
+        # real notification receiver is a follow-up requiring credentials
+        # this repo doesn't have yet. Saves a pod's worth of resources now.
+        alertmanager:
+          enabled: false
+
+        grafana:
+          enabled: true
+          # OpenShift's restricted-v2 SCC assigns UIDs from the namespace's
+          # allocated range at admission - the chart's hardcoded UID 472
+          # trips SCC validation, same reasoning as
+          # apps/flink-kubernetes-operator-app.yaml's podSecurityContext
+          # override. Confirmed via `helm template` that null (not {}, which
+          # deep-merges as a no-op and leaves the default intact) actually
+          # clears it.
+          securityContext: null
+          admin:
+            existingSecret: grafana-admin
+            userKey: admin-user
+            passwordKey: admin-password
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: 200m, memory: 512Mi}
+          sidecar:
+            dashboards:
+              enabled: true
+              label: grafana_dashboard
+              labelValue: "1"
+              searchNamespace: ALL
+          serviceMonitor:
+            enabled: true
+
+        # Core k8s control-plane component scraping is out of scope here
+        # (this is CRC, a single all-in-one node, not a multi-node prod
+        # cluster where etcd/apiserver dashboards would matter) - only
+        # kubelet (cAdvisor container metrics) stays on.
+        kubeApiServer: {enabled: false}
+        kubeControllerManager: {enabled: false}
+        coreDns: {enabled: false}
+        kubeDns: {enabled: false}
+        kubeEtcd: {enabled: false}
+        kubeScheduler: {enabled: false}
+        kubeProxy: {enabled: false}
+        kubelet: {enabled: true}
+
+        kubeStateMetrics:
+          enabled: true
+
+        # A DaemonSet giving OS-level node metrics we don't need for this
+        # scope (pod/container metrics already come from kubelet/cAdvisor
+        # above) - skipped to save resources on an already resource-tight
+        # single node.
+        nodeExporter:
+          enabled: false
+
+        prometheusOperator:
+          admissionWebhooks:
+            enabled: false
+          securityContext: null
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 200m, memory: 256Mi}
+
+        prometheus:
+          serviceAccount:
+            create: true
+          prometheusSpec:
+            securityContext: null
+            retention: 8h
+            # Without these four, Prometheus only watches ServiceMonitors/
+            # PodMonitors/PrometheusRules carrying this Helm release's own
+            # label - our hand-written ServiceMonitors/rules in
+            # base/observability don't have it and would otherwise be
+            # silently ignored.
+            serviceMonitorSelectorNilUsesHelmValues: false
+            serviceMonitorNamespaceSelector: {}
+            podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+            ruleNamespaceSelector: {}
+            resources:
+              requests: {cpu: 200m, memory: 512Mi}
+              limits: {cpu: 500m, memory: 1Gi}
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: crc-csi-hostpath-provisioner
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 5Gi
+
+        kube-state-metrics:
+          # This subchart's securityContext schema is {enabled: bool, ...},
+          # not a plain PodSecurityContext map like the others above - null
+          # here would error (chart template dereferences .enabled
+          # unconditionally). enabled: false is the correct way to disable
+          # its fixed UID 65534 for the same SCC reason as grafana/prometheus.
+          securityContext:
+            enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+---
+# Second Application, same wave, for the hand-written ServiceMonitors/
+# PrometheusRules/Grafana provisioning that only make sense once the chart
+# above exists (they reference its generated Service names/labels).
+# Two Applications instead of one because this repo's git-kustomize and
+# Helm-from-vendor-repo sourcing styles can't be mixed within a single
+# Application's spec.source.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mkurre/openshift-cfk-gitops.git
+    targetRevision: main
+    path: base/observability
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

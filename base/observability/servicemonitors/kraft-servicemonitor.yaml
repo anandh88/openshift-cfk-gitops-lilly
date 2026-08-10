@@ -1,0 +1,21 @@
+# See kafka-servicemonitor.yaml for the full rationale - same port 7778
+# JMX-Prometheus-exporter endpoint, confirmed live on kraftcontroller-0.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kraftcontroller
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - confluent
+  selector:
+    matchLabels:
+      app: kraftcontroller
+  endpoints:
+    - port: prometheus
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 15s

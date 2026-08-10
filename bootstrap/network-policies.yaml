@@ -56,6 +56,31 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: monitoring-scrape-confluent
+  namespace: confluent
+spec:
+  # Prometheus (namespace monitoring) scrapes every JVM-based component's
+  # JMX-Prometheus-exporter endpoint - confirmed live on all six workloads
+  # (kafka, kraftcontroller, connect, schemaregistry, controlcenter,
+  # kafkarestproxy) that port 7778 already serves real Prometheus-exposition
+  # text with zero CR changes. Without this rule the scrape times out the
+  # same way the CFK operator's own polling did before
+  # confluent-operator-management existed (see that policy's comment).
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 7778
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: kafka-internal-replication
   namespace: confluent
 spec:

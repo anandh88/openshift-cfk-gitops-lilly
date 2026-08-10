@@ -1,0 +1,21 @@
+# See kafka-servicemonitor.yaml for the full rationale - same port 7778
+# JMX-Prometheus-exporter endpoint, confirmed live on schemaregistry-0.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: schemaregistry
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - confluent
+  selector:
+    matchLabels:
+      app: schemaregistry
+  endpoints:
+    - port: prometheus
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 15s

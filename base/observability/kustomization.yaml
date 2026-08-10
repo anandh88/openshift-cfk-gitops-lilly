@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - secrets/grafana-admin-sealed.yaml
+  - servicemonitors/kafka-servicemonitor.yaml
+  - servicemonitors/kraft-servicemonitor.yaml
+  - servicemonitors/connect-servicemonitor.yaml
+  - servicemonitors/schemaregistry-servicemonitor.yaml
+  - servicemonitors/restproxy-servicemonitor.yaml
+  - servicemonitors/controlcenter-servicemonitor.yaml

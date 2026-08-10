@@ -101,6 +101,22 @@ stringData:
 EOF
 echo "    -> base/flink-jobs/flink-kafka-sasl-sealed.yaml created"
 
+# --- grafana-admin (monitoring) -----------------------------------------
+echo "==> Sealing grafana-admin"
+kubeseal --cert "${CERT_PATH}" --format yaml \
+  <<EOF > base/observability/secrets/grafana-admin-sealed.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-admin
+  namespace: monitoring
+type: Opaque
+stringData:
+  admin-user: admin
+  admin-password: GrafanaAdmin@Local2024!
+EOF
+echo "    -> base/observability/secrets/grafana-admin-sealed.yaml created"
+
 # --- connect-keytab (confluent) ------------------------------------------
 # NOT regenerated here - it holds a binary Kerberos keytab, not a password,
 # and this script only ever seals plaintext stringData. Its real value
