@@ -31,7 +31,7 @@ spec:
   flinkEnvironment: statefarm-flink-env
   flinkVersion: "v1_19"
   mode: native
-  image: image-registry.openshift-image-registry.svc:5000/flink-jobs/claims-processor:latest
+  image: ghcr.io/mkurre/flink-jobs/claims-processor:sha-699eba3
   serviceAccount: flink-service-account
   job:
     jarURI: local:///opt/flink/usrlib/claims-processor.jar
