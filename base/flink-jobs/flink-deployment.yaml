@@ -83,6 +83,13 @@ spec:
     spec:
       containers:
         - name: flink-main-container
+          # PodMonitor requires the port to be declared here - Prometheus
+          # drops any target whose port isn't in the Pod spec, even if
+          # something really is listening on it.
+          ports:
+            - name: metrics
+              containerPort: 9249
+              protocol: TCP
           volumeMounts:
             - name: flink-kafka-sasl
               mountPath: /mnt/secrets/flink-kafka-sasl

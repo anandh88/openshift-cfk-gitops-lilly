@@ -1,0 +1,28 @@
+# PodMonitor, not ServiceMonitor - flink-kubernetes-operator doesn't create a
+# Service for the metrics.reporter.prom port (9249-9250), only a "-rest"
+# Service for the 8081 REST API. PodMonitor scrapes pods directly by label,
+# no Service object needed. Confirmed live: metrics.reporter.prom is real and
+# working (curled http://<taskmanager-pod-ip>:9249/metrics directly, got real
+# flink_taskmanager_* series) - this just wires up the missing scrape config.
+# No NetworkPolicy exists in flink-jobs (default allow-all ingress), so no
+# additional policy is needed for Prometheus to reach it, unlike confluent's
+# monitoring-scrape-confluent rule.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: flink-jobs
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - flink-jobs
+  selector:
+    matchLabels:
+      type: flink-native-kubernetes
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 15s
