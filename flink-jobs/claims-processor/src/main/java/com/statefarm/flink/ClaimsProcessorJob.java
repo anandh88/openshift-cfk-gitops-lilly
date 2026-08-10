@@ -2,15 +2,20 @@ package com.statefarm.flink;
 
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
+import org.apache.flink.util.Collector;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,10 +25,14 @@ import java.util.List;
 import java.util.Properties;
 
 /**
- * Minimal passthrough job: raw-claims -> stamp a processed-at timestamp ->
- * processed-claims. Deliberately does no real claims business logic - its
- * job is to exist and emit real Flink metrics (checkpoints, throughput,
- * backpressure, watermarks) into base/observability/grafana/dashboards/
+ * Minimal passthrough job: raw-claims -> key by a bucket derived from the
+ * record -> keep a per-bucket running count (real keyed ValueState, so
+ * RocksDB actually has a column family to report data-size/error/write-
+ * stall metrics on - a purely stateless map() gives RocksDB nothing to
+ * track) -> stamp a processed-at timestamp -> processed-claims. Deliberately
+ * does no real claims business logic - its job is to exist and emit real
+ * Flink metrics (checkpoints, throughput, backpressure, watermarks,
+ * RocksDB state) into base/observability/grafana/dashboards/
  * 24-flink-mvp.json, which until now had never seen a running job.
  */
 public class ClaimsProcessorJob {
@@ -70,8 +79,10 @@ public class ClaimsProcessorJob {
                 .build();
 
         DataStreamSource<String> claims = env.fromSource(source, WatermarkStrategy.noWatermarks(), "raw-claims-source");
-        DataStream<String> processed = claims.map(record ->
-                "{\"processedAt\":\"" + Instant.now() + "\",\"claim\":" + record + "}");
+        DataStream<String> processed = claims
+                .keyBy(record -> Math.floorMod(record.hashCode(), 8))
+                .process(new RunningCountPerBucket())
+                .name("running-count-per-bucket");
         processed.sinkTo(sink);
 
         env.execute("claims-processor");
@@ -106,5 +117,29 @@ public class ClaimsProcessorJob {
         }
         return "org.apache.kafka.common.security.plain.PlainLoginModule required username=\""
                 + username + "\" password=\"" + password + "\";";
+    }
+
+    /**
+     * Real keyed state (one Long counter per bucket key) - deliberately
+     * simple, just enough that RocksDB registers a column family and has
+     * real, if tiny, data to report on.
+     */
+    private static class RunningCountPerBucket extends KeyedProcessFunction<Integer, String, String> {
+        private transient ValueState<Long> countState;
+
+        @Override
+        public void open(Configuration parameters) {
+            countState = getRuntimeContext().getState(
+                    new ValueStateDescriptor<>("claims-seen-per-bucket", Long.class));
+        }
+
+        @Override
+        public void processElement(String record, Context ctx, Collector<String> out) throws Exception {
+            long count = countState.value() == null ? 0L : countState.value();
+            count++;
+            countState.update(count);
+            out.collect("{\"processedAt\":\"" + Instant.now() + "\",\"bucket\":" + ctx.getCurrentKey()
+                    + ",\"seqForBucket\":" + count + ",\"claim\":" + record + "}");
+        }
     }
 }

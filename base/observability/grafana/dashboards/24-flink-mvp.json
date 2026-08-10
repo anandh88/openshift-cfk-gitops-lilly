@@ -1,7 +1,7 @@
 {
   "uid": "flink-mvp",
   "title": "24 - Flink",
-  "description": "Real Flink job metrics (flink-jobs/statefarm-claims-processor). Audited against the live metric catalog from both pods directly (curl :9249/metrics) - 359 real series exist. Fixed two silently-wrong metric names in place (commitsSucceeded/commitsFailed were missing a KafkaSourceReader_ prefix) and appended job-lifecycle timing, derived real parallelism, full checkpoint/network/buffer detail, hard-vs-soft backpressure, per-topic-partition offset tracking on raw-claims, the full Kafka producer client (sink side), Sink API v2 commit-protocol detail, and JVM completeness for both JobManager and TaskManager - every existing panel from the prior version is kept unchanged. Runs via the native flink.apache.org/v1beta1 FlinkDeployment CRD (flink-kubernetes-operator), not CFK's FlinkApplication.",
+  "description": "Real Flink job metrics (flink-jobs/statefarm-claims-processor). Audited against the live metric catalog from both pods directly (curl :9249/metrics) - 359 real series exist. Fixed two silently-wrong metric names in place (commitsSucceeded/commitsFailed were missing a KafkaSourceReader_ prefix) and appended job-lifecycle timing, derived real parallelism, full checkpoint/network/buffer detail, hard-vs-soft backpressure, per-topic-partition offset tracking on raw-claims, the full Kafka producer client (sink side), Sink API v2 commit-protocol detail, and JVM completeness for both JobManager and TaskManager - every existing panel from the prior version is kept unchanged. Runs via the native flink.apache.org/v1beta1 FlinkDeployment CRD (flink-kubernetes-operator), not CFK's FlinkApplication. RocksDB row added after switching state.backend from hashmap to rocksdb and adding real keyed state (a per-bucket running counter) - a stateless map() gives RocksDB nothing to report on, confirmed live (zero rocksdb_* metrics existed even after the backend switch alone, until real keyed state existed).",
   "tags": [
     "flink"
   ],
@@ -5223,7 +5223,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "cAdvisor container filesystem usage - the pod's writable layer (logs, /tmp), not durable state. RocksDB/durable checkpoint storage metrics do NOT apply to this job: state.backend is 'hashmap' (pure in-memory) and no state.checkpoints.dir is configured, so checkpoints are held in JobManager heap, not written to a PVC or object store - confirmed live, zero rocksdb_* metrics exist in either pod's /metrics output. If this job is ever switched to RocksDB + durable checkpoint storage, that switch would need its own dashboard row (rocksdb-block-cache, num-running-compactions, live-sst-files-size, and the checkpoint storage's own PVC/bucket usage), not something to fake here.",
+      "description": "cAdvisor container filesystem usage - the pod's writable layer (logs, /tmp), not durable state. RocksDB state IS now in use (switched from hashmap so this job's keyed state has something real for RocksDB to report on) - see the RocksDB row below for its actual data-size/error/write-stall metrics, which live inside the container's memory + this same writable layer, not a separate PVC or object store (no state.checkpoints.dir is configured for durable external checkpoint storage).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -5293,6 +5293,638 @@
         }
       ],
       "title": "Container Disk (ephemeral-storage) Used, JM + TM",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 184
+      },
+      "id": 83,
+      "panels": [],
+      "title": "RocksDB (state: claims_seen_per_bucket)",
+      "type": "row",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "RocksDB-internal errors (corruption, IO failures during compaction/flush). Real metric, currently 0.",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 185
+      },
+      "id": 84,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_background_errors",
+          "refId": "A",
+          "legendFormat": ""
+        }
+      ],
+      "title": "Background Errors",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "1 means RocksDB has currently stopped accepting writes (memtables full, compaction can't keep up). The clearest possible write-stall signal.",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 185
+      },
+      "id": 85,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_is_write_stopped",
+          "refId": "A",
+          "legendFormat": ""
+        }
+      ],
+      "title": "Write Stopped",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Non-zero means writes are being throttled (soft stall) even if not fully stopped.",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 185
+      },
+      "id": 86,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_actual_delayed_write_rate",
+          "refId": "A",
+          "legendFormat": ""
+        }
+      ],
+      "title": "Delayed Write Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 185
+      },
+      "id": 87,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_num_running_compactions",
+          "refId": "A",
+          "legendFormat": ""
+        }
+      ],
+      "title": "Running Compactions",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Real RocksDB data size for this job's own keyed state (a per-bucket running counter, deliberately tiny). Grows as more distinct keys/updates accumulate.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 189
+      },
+      "id": 88,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_estimate_live_data_size",
+          "refId": "A",
+          "legendFormat": "estimated live data"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_live_sst_files_size",
+          "refId": "B",
+          "legendFormat": "live SST files"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_total_sst_files_size",
+          "refId": "C",
+          "legendFormat": "total SST files"
+        }
+      ],
+      "title": "Data Size (live / total SST files)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "In-memory write buffer before flush to an SST file on disk.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 189
+      },
+      "id": 89,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_cur_size_active_mem_table",
+          "refId": "A",
+          "legendFormat": "active memtable"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_cur_size_all_mem_tables",
+          "refId": "B",
+          "legendFormat": "all memtables"
+        }
+      ],
+      "title": "MemTable Size (active / all)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Sustained non-zero pending values (not just running) mean RocksDB's background threads can't keep up with the write rate - the real root cause behind write stalls.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 196
+      },
+      "id": 90,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_compaction_pending",
+          "refId": "A",
+          "legendFormat": "compaction pending"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_mem_table_flush_pending",
+          "refId": "B",
+          "legendFormat": "flush pending"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_num_running_flushes",
+          "refId": "C",
+          "legendFormat": "running flushes"
+        }
+      ],
+      "title": "Compaction / Flush Pending",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Block cache holds hot, uncompressed data blocks for reads. Confirmed real non-zero baseline usage even with near-empty state - RocksDB's own bookkeeping overhead.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 196
+      },
+      "id": 91,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_block_cache_usage",
+          "refId": "A",
+          "legendFormat": "used"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_block_cache_capacity",
+          "refId": "B",
+          "legendFormat": "capacity"
+        }
+      ],
+      "title": "Block Cache Usage / Capacity",
       "type": "timeseries"
     }
   ],
