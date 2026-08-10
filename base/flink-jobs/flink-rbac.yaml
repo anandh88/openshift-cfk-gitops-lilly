@@ -23,6 +23,16 @@ rules:
   - apiGroups: ["apps"]
     resources: ["deployments", "replicasets"]
     verbs: ["*"]
+  - apiGroups: ["apps"]
+    # Separate K8s RBAC subresource, NOT covered by the "deployments" rule
+    # above even with verbs: ["*"] on the resource. Confirmed live: the
+    # JobManager (using this ServiceAccount's in-cluster client) failed to
+    # create the TaskManager pod with "cannot set blockOwnerDeletion if an
+    # ownerReference refers to a resource you can't set finalizers on" -
+    # setting blockOwnerDeletion: true on a child's ownerReference requires
+    # update on the parent kind's /finalizers subresource specifically.
+    resources: ["deployments/finalizers"]
+    verbs: ["update"]
   - apiGroups: ["platform.confluent.io"]
     resources: ["flinkapplications", "flinkenvironments"]
     verbs: ["get", "list", "watch", "update", "patch"]
