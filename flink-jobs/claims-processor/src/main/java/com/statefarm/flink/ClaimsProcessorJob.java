@@ -2,6 +2,9 @@ package com.statefarm.flink;
 
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.api.common.state.MapState;
+import org.apache.flink.api.common.state.MapStateDescriptor;
+import org.apache.flink.api.common.state.StateTtlConfig;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -20,20 +23,23 @@ import org.apache.flink.util.Collector;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Properties;
 
 /**
- * Minimal passthrough job: raw-claims -> key by a bucket derived from the
- * record -> keep a per-bucket running count (real keyed ValueState, so
- * RocksDB actually has a column family to report data-size/error/write-
- * stall metrics on - a purely stateless map() gives RocksDB nothing to
- * track) -> stamp a processed-at timestamp -> processed-claims. Deliberately
- * does no real claims business logic - its job is to exist and emit real
- * Flink metrics (checkpoints, throughput, backpressure, watermarks,
- * RocksDB state) into base/observability/grafana/dashboards/
- * 24-flink-mvp.json, which until now had never seen a running job.
+ * Minimal passthrough job: raw-claims -> dedupe by exact content (MapState
+ * with TTL, RocksDB-compaction-filter cleanup) -> key by a bucket derived
+ * from the record -> keep a per-bucket running count (ValueState) -> stamp
+ * a processed-at timestamp -> processed-claims. Two different operators,
+ * two different RocksDB column families ("seen-claim-ids",
+ * "claims-seen-per-bucket") - a purely stateless map() gives RocksDB
+ * nothing to track at all, confirmed live. Deliberately does no real
+ * claims business logic - its job is to exist and emit real Flink metrics
+ * (checkpoints, throughput, backpressure, watermarks, RocksDB state) into
+ * base/observability/grafana/dashboards/24-flink-mvp.json, which until now
+ * had never seen a running job.
  */
 public class ClaimsProcessorJob {
 
@@ -79,7 +85,11 @@ public class ClaimsProcessorJob {
                 .build();
 
         DataStreamSource<String> claims = env.fromSource(source, WatermarkStrategy.noWatermarks(), "raw-claims-source");
-        DataStream<String> processed = claims
+        DataStream<String> deduped = claims
+                .keyBy(record -> record)
+                .process(new DedupeByContent())
+                .name("dedupe-by-content");
+        DataStream<String> processed = deduped
                 .keyBy(record -> Math.floorMod(record.hashCode(), 8))
                 .process(new RunningCountPerBucket())
                 .name("running-count-per-bucket");
@@ -117,6 +127,42 @@ public class ClaimsProcessorJob {
         }
         return "org.apache.kafka.common.security.plain.PlainLoginModule required username=\""
                 + username + "\" password=\"" + password + "\";";
+    }
+
+    /**
+     * Drops exact-duplicate records (keyed by their own content) already
+     * seen within the last 5 minutes. MapState<String, Long> - key doubles
+     * as the value's own dedupe entry, value is the timestamp last seen
+     * (unused beyond existence-check, but real - lets a future version
+     * report "how stale" a dedupe hit was). TTL cleanup runs via RocksDB's
+     * own compaction filter (cleanupInRocksdbCompactFilter), not a separate
+     * Flink-side timer - the RocksDB-specific way to do this, exercising a
+     * different code path than the plain ValueState in RunningCountPerBucket.
+     */
+    private static class DedupeByContent extends KeyedProcessFunction<String, String, String> {
+        private transient MapState<String, Long> seenState;
+
+        @Override
+        public void open(Configuration parameters) {
+            StateTtlConfig ttlConfig = StateTtlConfig.newBuilder(Duration.ofMinutes(5))
+                    .setUpdateType(StateTtlConfig.UpdateType.OnCreateAndWrite)
+                    .setStateVisibility(StateTtlConfig.StateVisibility.NeverReturnExpired)
+                    .cleanupInRocksdbCompactFilter(1000)
+                    .build();
+            MapStateDescriptor<String, Long> descriptor =
+                    new MapStateDescriptor<>("seen-claim-ids", String.class, Long.class);
+            descriptor.enableTimeToLive(ttlConfig);
+            seenState = getRuntimeContext().getMapState(descriptor);
+        }
+
+        @Override
+        public void processElement(String record, Context ctx, Collector<String> out) throws Exception {
+            if (seenState.contains(record)) {
+                return;
+            }
+            seenState.put(record, ctx.timestamp() == null ? System.currentTimeMillis() : ctx.timestamp());
+            out.collect(record);
+        }
     }
 
     /**
