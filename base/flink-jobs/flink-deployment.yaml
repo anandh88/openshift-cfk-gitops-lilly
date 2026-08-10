@@ -25,7 +25,28 @@ spec:
   mode: native
   serviceAccount: flink-service-account
   flinkConfiguration:
-    state.backend: hashmap
+    # Switched from hashmap so RocksDB metrics (data size, background
+    # errors, write stalls) actually exist to dashboard - confirmed live
+    # that zero rocksdb_* metrics are emitted under the hashmap backend.
+    # RocksDB's own metrics are opt-in (disabled by default, each one adds
+    # per-column-family scrape overhead) - explicitly enabling exactly the
+    # ones asked for plus the memtable/compaction context needed to
+    # interpret them.
+    state.backend: rocksdb
+    state.backend.rocksdb.metrics.estimate-live-data-size: "true"
+    state.backend.rocksdb.metrics.live-sst-files-size: "true"
+    state.backend.rocksdb.metrics.total-sst-files-size: "true"
+    state.backend.rocksdb.metrics.background-errors: "true"
+    state.backend.rocksdb.metrics.is-write-stopped: "true"
+    state.backend.rocksdb.metrics.actual-delayed-write-rate: "true"
+    state.backend.rocksdb.metrics.mem-table-flush-pending: "true"
+    state.backend.rocksdb.metrics.compaction-pending: "true"
+    state.backend.rocksdb.metrics.num-running-compactions: "true"
+    state.backend.rocksdb.metrics.num-running-flushes: "true"
+    state.backend.rocksdb.metrics.cur-size-active-mem-table: "true"
+    state.backend.rocksdb.metrics.cur-size-all-mem-tables: "true"
+    state.backend.rocksdb.metrics.block-cache-usage: "true"
+    state.backend.rocksdb.metrics.block-cache-capacity: "true"
     execution.checkpointing.interval: "60000"
     execution.checkpointing.mode: EXACTLY_ONCE
     taskmanager.numberOfTaskSlots: "1"
