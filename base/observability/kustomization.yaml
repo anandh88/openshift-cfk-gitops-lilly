@@ -13,12 +13,7 @@ resources:
   - rules/connect-rules.yaml
   - rules/infra-rules.yaml
   - grafana/dashboard-configmaps/01-platform-overview-configmap.yaml
-  - grafana/dashboard-configmaps/02-kafka-cluster-overview-configmap.yaml
-  - grafana/dashboard-configmaps/03-kafka-broker-deep-dive-configmap.yaml
-  - grafana/dashboard-configmaps/04-kafka-topics-configmap.yaml
-  - grafana/dashboard-configmaps/07-kraft-controller-configmap.yaml
-  - grafana/dashboard-configmaps/08-connect-overview-configmap.yaml
-  - grafana/dashboard-configmaps/09-connect-cluster-detailed-configmap.yaml
-  - grafana/dashboard-configmaps/10-kafka-cluster-fullyloaded-configmap.yaml
+  - grafana/dashboard-configmaps/02-kafka-platform-configmap.yaml
+  - grafana/dashboard-configmaps/08-connect-platform-configmap.yaml
   - grafana/dashboard-configmaps/22-k8s-resources-configmap.yaml
   - grafana/dashboard-configmaps/23-jvm-deep-dive-configmap.yaml

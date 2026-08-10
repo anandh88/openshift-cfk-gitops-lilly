@@ -5,11 +5,21 @@ then `http://localhost:3000`. Credentials: `admin` / whatever's in the
 `grafana-admin` secret (`oc get secret grafana-admin -n monitoring -o
 jsonpath='{.data.admin-password}' | base64 -d`).
 
-All 7 dashboards below are auto-provisioned via ConfigMaps labeled
+All dashboards below are auto-provisioned via ConfigMaps labeled
 `grafana_dashboard: "1"` (the chart's sidecar picks them up automatically
 - no manual JSON import, ever, per this repo's GitOps convention). Source
 files: `base/observability/grafana/dashboards/*.json`, wrapped as
 ConfigMaps in `base/observability/grafana/dashboard-configmaps/`.
+
+As of this pass, the Kafka-side and Connect-side dashboards were each
+consolidated from several fragmented dashboards into one "platform"
+dashboard apiece (per explicit request), adapted from Confluent's own
+`confluentinc/jmx-monitoring-stacks` reference dashboards rather than a
+generic community one, with pie charts/gauges added and several
+previously-unused-but-real metric families folded in. See each dashboard's
+own `description` field for the full list of what was ported, fixed, or
+dropped (and why) - that's kept in the dashboard JSON itself so it can't
+drift out of sync with this doc.
 
 ## 01 - Streaming Platform Overview
 
@@ -19,32 +29,29 @@ partitions, Connect worker/task health, cluster throughput, and CPU/memory
 for Kafka and Connect. No Flink or SQL Server panels - see
 `docs/observability-architecture.md` for why.
 
-## 02 - Kafka Cluster Overview
+## 02 - Kafka Platform (KRaft + Brokers + Topics)
 
-Cluster-wide throughput, replication health, and produce/fetch request
-rates per broker.
+One consolidated dashboard (formerly split across 02/03/04/07/10) covering
+the whole Kafka side: platform health stats + partition-leadership and
+listener-connection pie charts, per-topic log-size/partition-count pie
+charts and per-topic throughput, the KRaft controller's quorum/raft/event-
+queue internals, broker request rate and per-request-type latency
+breakdown, throughput/system/JVM, thread utilization, ISR/replica lag,
+connections, group coordinator, and transaction-coordinator/quota metrics
+(real, currently idle/unlimited since EOS and client quotas aren't in use
+here). Adapted from Confluent's own `kafka-cluster-kraft.json`/`kraft.json`/
+`kafka-topics-kraft.json` reference dashboards (`confluentinc/jmx-monitoring-
+stacks`) - the KRaft variants, since this cluster has no ZooKeeper.
 
-## 03 - Kafka Broker Deep Dive
+## 08 - Connect Platform
 
-Per-broker leader/partition counts, request-handler idle %, produce/fetch
-p99 latency, CPU/memory, and disk usage (`data0-kafka-*` PVCs).
-
-## 04 - Kafka Topics
-
-Per-topic throughput - top 10 by bytes in/out and messages in. Cardinality
-note: one series per (topic × broker) - see
-`docs/observability-cardinality.md`. Run
-`scripts/generate-observability-load.sh start` to see this dashboard react
-to real traffic on a dedicated `observability-load-test` topic (doesn't
-touch `sqlserver-Claims` or the JDBC connector).
-
-## 08-09 - Kafka Connect Overview & Connector Deep Dive
-
-Worker health (connectors configured, tasks running/failed/paused,
-rebalancing state) plus the **Kerberos JDBC Source Connector's own** poll
-rate, write rate, and active-record count - the direct answer to "how many
-records is my JDBC Source reading?" Also task error rate and worker JVM
-heap.
+One consolidated dashboard (formerly split across 08/09) covering Connect
+worker health (connectors/tasks running/failed/paused, rebalancing,
+coordinator join/sync/heartbeat health, per-broker-node client latency),
+per-task CPU/memory load and startup success/failure rates, task error
+metrics, and the **Kerberos JDBC Source Connector's own** poll rate, write
+rate, active-record count, and batch timing - the direct answer to "how
+many records is my JDBC Source reading?"
 
 ## 22 - Kubernetes/OpenShift Resources
 
@@ -65,7 +72,7 @@ Control Center all show up as separate series, filterable by pod.
 `kube-prometheus-stack` ships its own set of generic Kubernetes dashboards
 (Compute Resources by Cluster/Namespace/Pod/Workload, Networking,
 Persistent Volumes, Kubelet, Prometheus Overview) - these came free with
-the Helm chart and are visible in Grafana alongside the 7 above. Useful
+the Helm chart and are visible in Grafana alongside the 4 above. Useful
 for cross-checking the custom "22 - Kubernetes/OpenShift Resources"
 dashboard against a different view of the same underlying metrics.
 

@@ -22,7 +22,7 @@ partition are down simultaneously).
 **KafkaUnderReplicatedPartitions** (warning, 5m) - replicas falling
 behind their leader. On a healthy multi-broker cluster this means a
 broker is struggling (disk I/O, network, GC pause) - check that broker's
-CPU/memory panel in "03 - Kafka Broker Deep Dive" first.
+CPU/memory panel in "02 - Kafka Platform" first.
 
 **KafkaUnderMinISR** (critical, 5m) - producers using `acks=all` will
 start failing outright for these partitions. More urgent than plain URP.
@@ -33,7 +33,7 @@ stalled (0 controllers) or there's a split-brain (2+) - both need
 immediate attention.
 
 **KafkaHighRequestLatency** (warning, 5m) - Produce or FetchConsumer p99
-above 1s. Cross-check "03 - Kafka Broker Deep Dive"'s CPU/request-handler-
+above 1s. Cross-check "02 - Kafka Platform"'s CPU/request-handler-
 idle panels - this is almost always a saturation symptom, not a network
 issue.
 

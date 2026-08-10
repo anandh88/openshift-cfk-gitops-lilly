@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: observability-dashboard-10-kafka-cluster-fullyloaded
+  name: observability-dashboard-02-kafka-platform
   namespace: monitoring
   labels:
     grafana_dashboard: "1"
 data:
-  10-kafka-cluster-fullyloaded.json: |
+  02-kafka-platform.json: |
     {
-      "uid": "kafka-cluster-fullyloaded",
-      "title": "10 - Kafka Cluster (fully loaded)",
-      "description": "Adapted from Confluent's own official reference dashboard (confluentinc/jmx-monitoring-stacks, jmxexporter-prometheus-grafana/assets/grafana/provisioning/dashboards/kafka-cluster-kraft.json - the KRaft variant, matching this cluster which has no ZooKeeper). Every panel was individually verified against this cluster's live Prometheus output before inclusion. Dropped entirely (confirmed not present, not faked): the whole Tiered Storage row (kafka_tier_tasks_* has zero registrations - tiered storage isn't enabled here), Linux disk read/write bytes (MBean not registered on this JVM/exporter combo - broker disk usage is covered via kubelet PVC stats in dashboards 03 and 22 instead), client-version tracking (no such metric here), and Acceptor Blocked Percentage (attribute not present). See this dashboard's own panel descriptions for the exact metric-name translations applied (this exporter uses generic name={...} labeled metrics, not the reference's specific-named ones).",
+      "uid": "kafka-platform",
+      "title": "02 - Kafka Platform (KRaft + Brokers + Topics)",
+      "description": "Consolidates the former 02/03/04/07/10 dashboards into one, per request - KRaft controller, broker cluster, and topics in a single view, with pie charts and gauges for at-a-glance health. Adapted from Confluent's own confluentinc/jmx-monitoring-stacks reference (kafka-cluster-kraft.json, kraft.json, kafka-topics-kraft.json). Every panel verified live against this cluster's Prometheus. Gaps filled on this pass: per-topic log-size/partition-count pies, Transaction Coordinator metrics (real, currently idle - no EOS producer in use), broker quota ceilings (real, currently unlimited). Still dropped (confirmed not present, not faked): tiered storage, Linux disk read/write bytes MBean, client-version tracking, acceptor blocked percent.",
       "tags": [
         "kafka",
         "kraft"
@@ -38,7 +38,7 @@ data:
           },
           "id": 1,
           "panels": [],
-          "title": "Healthcheck",
+          "title": "Platform Health",
           "type": "row",
           "targets": [
             {
@@ -76,7 +76,7 @@ data:
           },
           "gridPos": {
             "h": 3,
-            "w": 4,
+            "w": 3,
             "x": 0,
             "y": 1
           },
@@ -101,67 +101,8 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"ActiveControllerCount\"})",
-              "refId": "A",
-              "legendFormat": ""
-            }
-          ],
-          "title": "Active Controllers",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "decimals": 0,
-              "mappings": [],
-              "noValue": "0",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 4,
-            "x": 4,
-            "y": 1
-          },
-          "id": 3,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
               "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"ActiveBrokerCount\"})",
-              "refId": "A",
+              "refId": "C",
               "legendFormat": ""
             }
           ],
@@ -194,8 +135,67 @@ data:
           },
           "gridPos": {
             "h": 3,
-            "w": 4,
-            "x": 8,
+            "w": 3,
+            "x": 3,
+            "y": 1
+          },
+          "id": 3,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"ActiveControllerCount\"})",
+              "refId": "D",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Active Controllers",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 3,
+            "x": 6,
             "y": 1
           },
           "id": 4,
@@ -219,12 +219,12 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"GlobalPartitionCount\"})",
-              "refId": "A",
+              "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"GlobalTopicCount\"})",
+              "refId": "E",
               "legendFormat": ""
             }
           ],
-          "title": "Global Partition Count",
+          "title": "Topics",
           "type": "stat"
         },
         {
@@ -244,10 +244,6 @@ data:
                   {
                     "color": "green",
                     "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 1
                   }
                 ]
               },
@@ -257,8 +253,8 @@ data:
           },
           "gridPos": {
             "h": 3,
-            "w": 4,
-            "x": 12,
+            "w": 3,
+            "x": 9,
             "y": 1
           },
           "id": 5,
@@ -282,130 +278,12 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"OfflinePartitionsCount\"})",
-              "refId": "A",
+              "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"GlobalPartitionCount\"})",
+              "refId": "F",
               "legendFormat": ""
             }
           ],
-          "title": "Offline Partitions Count",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "decimals": 0,
-              "mappings": [],
-              "noValue": "0",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 4,
-            "x": 16,
-            "y": 1
-          },
-          "id": 6,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"PreferredReplicaImbalanceCount\"})",
-              "refId": "A",
-              "legendFormat": ""
-            }
-          ],
-          "title": "Preferred Replica Imbalance",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "decimals": 0,
-              "mappings": [],
-              "noValue": "0",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "ops"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 4,
-            "x": 20,
-            "y": 1
-          },
-          "id": 7,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum(kafka_controller_controllerstats_oneminuterate{job=\"kraftcontroller\", name=\"UncleanLeaderElectionsPerSec\"})",
-              "refId": "A",
-              "legendFormat": ""
-            }
-          ],
-          "title": "Unclean Leader Election Rate",
+          "title": "Partitions",
           "type": "stat"
         },
         {
@@ -438,11 +316,11 @@ data:
           },
           "gridPos": {
             "h": 3,
-            "w": 4,
-            "x": 0,
-            "y": 4
+            "w": 3,
+            "x": 12,
+            "y": 1
           },
-          "id": 8,
+          "id": 6,
           "options": {
             "colorMode": "value",
             "graphMode": "none",
@@ -464,7 +342,7 @@ data:
                 "uid": "prometheus"
               },
               "expr": "sum(kafka_server_replicamanager_value{job=\"kafka\", name=\"UnderReplicatedPartitions\"})",
-              "refId": "A",
+              "refId": "G",
               "legendFormat": ""
             }
           ],
@@ -501,11 +379,11 @@ data:
           },
           "gridPos": {
             "h": 3,
-            "w": 4,
-            "x": 4,
-            "y": 4
+            "w": 3,
+            "x": 15,
+            "y": 1
           },
-          "id": 9,
+          "id": 7,
           "options": {
             "colorMode": "value",
             "graphMode": "none",
@@ -526,12 +404,12 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(kafka_server_replicamanager_value{job=\"kafka\", name=\"UnderMinIsrPartitionCount\"})",
-              "refId": "A",
+              "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"OfflinePartitionsCount\"})",
+              "refId": "H",
               "legendFormat": ""
             }
           ],
-          "title": "Under Min ISR Partitions",
+          "title": "Offline Partitions",
           "type": "stat"
         },
         {
@@ -560,70 +438,11 @@ data:
           },
           "gridPos": {
             "h": 3,
-            "w": 4,
-            "x": 8,
-            "y": 4
+            "w": 3,
+            "x": 18,
+            "y": 1
           },
-          "id": 10,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum(kafka_server_replicamanager_value{job=\"kafka\", name=\"AtMinIsrPartitionCount\"})",
-              "refId": "A",
-              "legendFormat": ""
-            }
-          ],
-          "title": "At Min ISR Partitions",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "decimals": 0,
-              "mappings": [],
-              "noValue": "0",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 4,
-            "x": 12,
-            "y": 4
-          },
-          "id": 11,
+          "id": 8,
           "options": {
             "colorMode": "value",
             "graphMode": "none",
@@ -645,70 +464,11 @@ data:
                 "uid": "prometheus"
               },
               "expr": "sum(kafka_server_replicamanager_value{job=\"kafka\", name=\"StrayPartitionsCount\"})",
-              "refId": "A",
+              "refId": "I",
               "legendFormat": ""
             }
           ],
-          "title": "Stray Partitions Count",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "decimals": 0,
-              "mappings": [],
-              "noValue": "0",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 4,
-            "x": 16,
-            "y": 4
-          },
-          "id": 12,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum(kafka_server_replicamanager_value{job=\"kafka\", name=\"StrayPartitionsMisclassifiedCount\"})",
-              "refId": "A",
-              "legendFormat": ""
-            }
-          ],
-          "title": "Stray Partitions Misclassified",
+          "title": "Stray Partitions",
           "type": "stat"
         },
         {
@@ -741,11 +501,11 @@ data:
           },
           "gridPos": {
             "h": 3,
-            "w": 4,
-            "x": 20,
-            "y": 4
+            "w": 3,
+            "x": 21,
+            "y": 1
           },
-          "id": 13,
+          "id": 9,
           "options": {
             "colorMode": "value",
             "graphMode": "none",
@@ -767,12 +527,492 @@ data:
                 "uid": "prometheus"
               },
               "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"MetadataErrorCount\"})",
-              "refId": "A",
+              "refId": "J",
               "legendFormat": ""
             }
           ],
-          "title": "Metadata Error Count",
+          "title": "Metadata Errors",
           "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "decimals": 0,
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 4
+          },
+          "id": 10,
+          "maxDataPoints": 1,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "values": [
+                "value",
+                "percent"
+              ]
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_server_replicamanager_value{job=\"kafka\", name=\"LeaderCount\"}",
+              "refId": "J",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "title": "Partition Leadership by Broker",
+          "type": "piechart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 1,
+              "mappings": [],
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.3
+                  },
+                  {
+                    "color": "green",
+                    "value": 0.6
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 4,
+            "x": 8,
+            "y": 4
+          },
+          "id": 11,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_socketserver_value{job=\"kafka\", name=\"NetworkProcessorAvgIdlePercent\"}",
+              "refId": "L",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Network Processor Idle %",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 1,
+              "mappings": [],
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.3
+                  },
+                  {
+                    "color": "green",
+                    "value": 0.6
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 4,
+            "x": 12,
+            "y": 4
+          },
+          "id": 12,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_server_kafkarequesthandlerpool_oneminuterate{job=\"kafka\", name=\"RequestHandlerAvgIdlePercent\"}",
+              "refId": "M",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Request Handler Idle %",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "pointSize": 5,
+                "showPoints": "never",
+                "spanNulls": true,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "Bps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 4
+          },
+          "id": 13,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (pod) (kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"BytesInPerSec\"})",
+              "refId": "M",
+              "legendFormat": "{{pod}} in"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (pod) (kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"BytesOutPerSec\"})",
+              "refId": "M",
+              "legendFormat": "{{pod}} out"
+            }
+          ],
+          "title": "Broker network throughput",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 12
+          },
+          "id": 14,
+          "panels": [],
+          "title": "Topics",
+          "type": "row",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "Real per-topic log size incl. sqlserver-Claims (JDBC Source Connector's output topic) and internal Confluent topics.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "decimals": 0,
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 13
+          },
+          "id": 15,
+          "maxDataPoints": 1,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "values": [
+                "value",
+                "percent"
+              ]
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (topic) (kafka_log_log_value{job=\"kafka\", name=\"Size\"})",
+              "refId": "O",
+              "legendFormat": "{{topic}}"
+            }
+          ],
+          "title": "Log Size by Topic",
+          "type": "piechart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "decimals": 0,
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 13
+          },
+          "id": 16,
+          "maxDataPoints": 1,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "values": [
+                "value",
+                "percent"
+              ]
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "count by (topic) (kafka_log_log_value{job=\"kafka\", name=\"Size\"})",
+              "refId": "P",
+              "legendFormat": "{{topic}}"
+            }
+          ],
+          "title": "Partition Count by Topic",
+          "type": "piechart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "Per-topic log size table",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 13
+          },
+          "id": 17,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (topic) (kafka_log_log_value{job=\"kafka\", name=\"Size\"})",
+              "refId": "Q",
+              "legendFormat": "size"
+            }
+          ],
+          "title": "Topics detail",
+          "type": "table"
         },
         {
           "datasource": {
@@ -818,9 +1058,9 @@ data:
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 7
+            "y": 21
           },
-          "id": 14,
+          "id": 18,
           "options": {
             "legend": {
               "calcs": [
@@ -843,21 +1083,12 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum by (pod) (kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"BytesInPerSec\"})",
-              "refId": "A",
-              "legendFormat": "{{pod}} in"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum by (pod) (kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"BytesOutPerSec\"})",
-              "refId": "A",
-              "legendFormat": "{{pod}} out"
+              "expr": "kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"BytesInPerSec\", topic!=\"\"}",
+              "refId": "R",
+              "legendFormat": "{{topic}}"
             }
           ],
-          "title": "Broker network throughput (bytes in/out)",
+          "title": "Bytes In by Topic",
           "type": "timeseries"
         },
         {
@@ -896,7 +1127,7 @@ data:
                   }
                 ]
               },
-              "unit": "short"
+              "unit": "Bps"
             },
             "overrides": []
           },
@@ -904,9 +1135,9 @@ data:
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 7
+            "y": 21
           },
-          "id": 15,
+          "id": 19,
           "options": {
             "legend": {
               "calcs": [
@@ -929,12 +1160,12 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_server_replicamanager_value{job=\"kafka\", name=\"LeaderCount\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"BytesOutPerSec\", topic!=\"\"}",
+              "refId": "S",
+              "legendFormat": "{{topic}}"
             }
           ],
-          "title": "Leader Count per broker",
+          "title": "Bytes Out by Topic",
           "type": "timeseries"
         },
         {
@@ -947,11 +1178,11 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 14
+            "y": 28
           },
-          "id": 16,
+          "id": 20,
           "panels": [],
-          "title": "Request rate",
+          "title": "KRaft Controller",
           "type": "row",
           "targets": [
             {
@@ -983,7 +1214,7 @@ data:
                   }
                 ]
               },
-              "unit": "reqps"
+              "unit": "short"
             },
             "overrides": []
           },
@@ -991,243 +1222,7 @@ data:
             "h": 3,
             "w": 4,
             "x": 0,
-            "y": 15
-          },
-          "id": 17,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\"})",
-              "refId": "A",
-              "legendFormat": ""
-            }
-          ],
-          "title": "All Requests/sec (all brokers)",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "decimals": 0,
-              "mappings": [],
-              "noValue": "0",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "reqps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 4,
-            "x": 4,
-            "y": 15
-          },
-          "id": 18,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"Produce\"})",
-              "refId": "A",
-              "legendFormat": ""
-            }
-          ],
-          "title": "Produce Requests/sec",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "decimals": 0,
-              "mappings": [],
-              "noValue": "0",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "reqps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 4,
-            "x": 8,
-            "y": 15
-          },
-          "id": 19,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"FetchConsumer\"})",
-              "refId": "A",
-              "legendFormat": ""
-            }
-          ],
-          "title": "Consumer Fetch Requests/sec",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "decimals": 0,
-              "mappings": [],
-              "noValue": "0",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "reqps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 4,
-            "x": 12,
-            "y": 15
-          },
-          "id": 20,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"FetchFollower\"})",
-              "refId": "A",
-              "legendFormat": ""
-            }
-          ],
-          "title": "Follower Fetch Requests/sec",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "decimals": 0,
-              "mappings": [],
-              "noValue": "0",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "reqps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 4,
-            "x": 16,
-            "y": 15
+            "y": 29
           },
           "id": 21,
           "options": {
@@ -1250,12 +1245,12 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"OffsetCommit\"})",
-              "refId": "A",
+              "expr": "kafka_server_raft_metrics_current_leader{job=\"kraftcontroller\"}",
+              "refId": "B",
               "legendFormat": ""
             }
           ],
-          "title": "Offset Commit Requests/sec",
+          "title": "Current Leader (node id)",
           "type": "stat"
         },
         {
@@ -1278,15 +1273,15 @@ data:
                   }
                 ]
               },
-              "unit": "reqps"
+              "unit": "short"
             },
             "overrides": []
           },
           "gridPos": {
             "h": 3,
             "w": 4,
-            "x": 20,
-            "y": 15
+            "x": 4,
+            "y": 29
           },
           "id": 22,
           "options": {
@@ -1309,12 +1304,252 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"Metadata\"})",
-              "refId": "A",
+              "expr": "kafka_server_raft_metrics_current_epoch{job=\"kraftcontroller\"}",
+              "refId": "C",
               "legendFormat": ""
             }
           ],
-          "title": "Metadata Requests/sec",
+          "title": "Current Epoch",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 8,
+            "y": 29
+          },
+          "id": 23,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_server_raft_metrics_high_watermark{job=\"kraftcontroller\"}",
+              "refId": "D",
+              "legendFormat": ""
+            }
+          ],
+          "title": "High Watermark",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 12,
+            "y": 29
+          },
+          "id": 24,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"FencedBrokerCount\"})",
+              "refId": "E",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Fenced Brokers",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 16,
+            "y": 29
+          },
+          "id": 25,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"LastAppliedRecordLagMs\"}",
+              "refId": "F",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Last Applied Record Lag (ms)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 20,
+            "y": 29
+          },
+          "id": 26,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafka_controller_controllerstats_oneminuterate{job=\"kraftcontroller\", name=\"UncleanLeaderElectionsPerSec\"})",
+              "refId": "G",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Unclean Leader Election Rate",
           "type": "stat"
         },
         {
@@ -1359,11 +1594,11 @@ data:
           },
           "gridPos": {
             "h": 7,
-            "w": 24,
+            "w": 12,
             "x": 0,
-            "y": 18
+            "y": 32
           },
-          "id": 23,
+          "id": 27,
           "options": {
             "legend": {
               "calcs": [
@@ -1386,39 +1621,108 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum by (request) (kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"ErrorsPerSec\"})",
-              "refId": "A",
-              "legendFormat": "{{request}}"
+              "expr": "kafka_server_raft_metrics_append_records_rate{job=\"kraftcontroller\"}",
+              "refId": "G",
+              "legendFormat": "{{pod}} append"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_server_raft_metrics_fetch_records_rate{job=\"kraftcontroller\"}",
+              "refId": "G",
+              "legendFormat": "{{pod}} fetch"
             }
           ],
-          "title": "Errors per sec, by request type",
+          "title": "Raft Append/Fetch Records Rate",
           "type": "timeseries"
         },
         {
-          "collapsed": false,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 25
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "pointSize": 5,
+                "showPoints": "never",
+                "spanNulls": true,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
           },
-          "id": 24,
-          "panels": [],
-          "title": "System",
-          "type": "row",
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 32
+          },
+          "id": 28,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
           "targets": [
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "refId": "A"
+              "expr": "kafka_controller_controllereventmanager_mean{job=\"kraftcontroller\", name=\"EventQueueTimeMs\"}",
+              "refId": "H",
+              "legendFormat": "{{pod}} queue"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_controller_controllereventmanager_mean{job=\"kraftcontroller\", name=\"EventQueueProcessingTimeMs\"}",
+              "refId": "H",
+              "legendFormat": "{{pod}} processing"
             }
-          ]
+          ],
+          "title": "Controller Event Queue Time (ms, mean)",
+          "type": "timeseries"
         },
         {
           "datasource": {
@@ -1462,11 +1766,11 @@ data:
           },
           "gridPos": {
             "h": 7,
-            "w": 8,
+            "w": 12,
             "x": 0,
-            "y": 26
+            "y": 39
           },
-          "id": 25,
+          "id": 29,
           "options": {
             "legend": {
               "calcs": [
@@ -1489,12 +1793,12 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "rate(process_cpu_seconds_total{job=\"kafka\"}[5m])",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "rate(process_cpu_seconds_total{job=\"kraftcontroller\"}[5m])",
+              "refId": "I",
+              "legendFormat": "{{pod}} cpu"
             }
           ],
-          "title": "CPU Usage",
+          "title": "Controller CPU / JVM Heap",
           "type": "timeseries"
         },
         {
@@ -1502,7 +1806,7 @@ data:
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "description": "Reference used jvm_memory_used_bytes/jvm_memory_bytes_max - not present on the kafka broker container; this exporter's generic MBean conversion names it java_lang_memory_heapmemoryusage_*.",
+          "description": "",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1539,11 +1843,11 @@ data:
           },
           "gridPos": {
             "h": 7,
-            "w": 8,
-            "x": 8,
-            "y": 26
+            "w": 12,
+            "x": 12,
+            "y": 39
           },
-          "id": 26,
+          "id": 30,
           "options": {
             "legend": {
               "calcs": [
@@ -1566,8 +1870,8 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "java_lang_memory_heapmemoryusage_used{job=\"kafka\"}",
-              "refId": "A",
+              "expr": "java_lang_memory_heapmemoryusage_used{job=\"kraftcontroller\"}",
+              "refId": "J",
               "legendFormat": "{{pod}} used"
             },
             {
@@ -1575,13 +1879,455 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "java_lang_memory_heapmemoryusage_max{job=\"kafka\"}",
-              "refId": "A",
+              "expr": "jvm_memory_bytes_max{job=\"kraftcontroller\", area=\"heap\"}",
+              "refId": "J",
               "legendFormat": "{{pod}} max"
             }
           ],
-          "title": "JVM Heap Memory Used",
+          "title": "Controller JVM Heap Used",
           "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 46
+          },
+          "id": 31,
+          "panels": [],
+          "title": "Broker Request Rate",
+          "type": "row",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 0,
+            "y": 47
+          },
+          "id": 32,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\"})",
+              "refId": "M",
+              "legendFormat": ""
+            }
+          ],
+          "title": "All Requests/sec",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 4,
+            "y": 47
+          },
+          "id": 33,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"Produce\"})",
+              "refId": "N",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Produce/sec",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 8,
+            "y": 47
+          },
+          "id": 34,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"FetchConsumer\"})",
+              "refId": "O",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Consumer Fetch/sec",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 12,
+            "y": 47
+          },
+          "id": 35,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"FetchFollower\"})",
+              "refId": "P",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Follower Fetch/sec",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 16,
+            "y": 47
+          },
+          "id": 36,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"OffsetCommit\"})",
+              "refId": "Q",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Offset Commit/sec",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 20,
+            "y": 47
+          },
+          "id": 37,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\", request=\"Metadata\"})",
+              "refId": "R",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Metadata/sec",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "decimals": 0,
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 50
+          },
+          "id": 38,
+          "maxDataPoints": 1,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "values": [
+                "value",
+                "percent"
+              ]
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "topk(8, sum by (request) (kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"RequestsPerSec\"}))",
+              "refId": "R",
+              "legendFormat": "{{request}}"
+            }
+          ],
+          "title": "Request Mix by Type",
+          "type": "piechart"
         },
         {
           "datasource": {
@@ -1619,17 +2365,17 @@ data:
                   }
                 ]
               },
-              "unit": "percentunit"
+              "unit": "ops"
             },
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
-            "w": 8,
-            "x": 16,
-            "y": 26
+            "h": 8,
+            "w": 16,
+            "x": 8,
+            "y": 50
           },
-          "id": 27,
+          "id": 39,
           "options": {
             "legend": {
               "calcs": [
@@ -1652,12 +2398,12 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "rate(jvm_gc_collection_seconds_sum{job=\"kafka\"}[5m])",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "sum by (request) (kafka_network_requestmetrics_oneminuterate{job=\"kafka\", name=\"ErrorsPerSec\"})",
+              "refId": "S",
+              "legendFormat": "{{request}}"
             }
           ],
-          "title": "Time spent in GC",
+          "title": "Errors per sec, by request type",
           "type": "timeseries"
         },
         {
@@ -1670,11 +2416,11 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 33
+            "y": 58
           },
-          "id": 28,
+          "id": 40,
           "panels": [],
-          "title": "Throughput In/Out",
+          "title": "Broker Throughput & System",
           "type": "row",
           "targets": [
             {
@@ -1730,9 +2476,9 @@ data:
             "h": 7,
             "w": 8,
             "x": 0,
-            "y": 34
+            "y": 59
           },
-          "id": 29,
+          "id": 41,
           "options": {
             "legend": {
               "calcs": [
@@ -1799,7 +2545,7 @@ data:
                   }
                 ]
               },
-              "unit": "Bps"
+              "unit": "percentunit"
             },
             "overrides": []
           },
@@ -1807,9 +2553,9 @@ data:
             "h": 7,
             "w": 8,
             "x": 8,
-            "y": 34
+            "y": 59
           },
-          "id": 30,
+          "id": 42,
           "options": {
             "legend": {
               "calcs": [
@@ -1832,21 +2578,12 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"BytesInPerSec\"})",
-              "refId": "A",
-              "legendFormat": "in"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum(kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"BytesOutPerSec\"})",
-              "refId": "A",
-              "legendFormat": "out"
+              "expr": "rate(process_cpu_seconds_total{job=\"kafka\"}[5m])",
+              "refId": "B",
+              "legendFormat": "{{pod}}"
             }
           ],
-          "title": "Bytes In/Out (total)",
+          "title": "CPU Usage",
           "type": "timeseries"
         },
         {
@@ -1885,7 +2622,7 @@ data:
                   }
                 ]
               },
-              "unit": "ops"
+              "unit": "bytes"
             },
             "overrides": []
           },
@@ -1893,9 +2630,9 @@ data:
             "h": 7,
             "w": 8,
             "x": 16,
-            "y": 34
+            "y": 59
           },
-          "id": 31,
+          "id": 43,
           "options": {
             "legend": {
               "calcs": [
@@ -1918,12 +2655,98 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"MessagesInPerSec\"}",
-              "refId": "A",
+              "expr": "java_lang_memory_heapmemoryusage_used{job=\"kafka\"}",
+              "refId": "C",
+              "legendFormat": "{{pod}} used"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "java_lang_memory_heapmemoryusage_max{job=\"kafka\"}",
+              "refId": "C",
+              "legendFormat": "{{pod}} max"
+            }
+          ],
+          "title": "JVM Heap Memory Used",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "pointSize": 5,
+                "showPoints": "never",
+                "spanNulls": true,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 66
+          },
+          "id": 44,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "rate(jvm_gc_collection_seconds_sum{job=\"kafka\"}[5m])",
+              "refId": "D",
               "legendFormat": "{{pod}}"
             }
           ],
-          "title": "Messages In per broker",
+          "title": "Time spent in GC",
           "type": "timeseries"
         },
         {
@@ -1968,11 +2791,11 @@ data:
           },
           "gridPos": {
             "h": 7,
-            "w": 12,
-            "x": 0,
-            "y": 41
+            "w": 8,
+            "x": 8,
+            "y": 66
           },
-          "id": 32,
+          "id": 45,
           "options": {
             "legend": {
               "calcs": [
@@ -1996,7 +2819,7 @@ data:
                 "uid": "prometheus"
               },
               "expr": "kafka_network_requestchannel_value{job=\"kafka\", name=\"RequestQueueSize\"}",
-              "refId": "A",
+              "refId": "E",
               "legendFormat": "{{pod}}"
             }
           ],
@@ -2039,804 +2862,7 @@ data:
                   }
                 ]
               },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 41
-          },
-          "id": 33,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_network_requestchannel_value{job=\"kafka\", name=\"ResponseQueueSize\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}-{{processor}}"
-            }
-          ],
-          "title": "Response Queue Size (per processor)",
-          "type": "timeseries"
-        },
-        {
-          "collapsed": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 48
-          },
-          "id": 34,
-          "panels": [],
-          "title": "Thread utilization",
-          "type": "row",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "refId": "A"
-            }
-          ]
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 0,
-            "y": 49
-          },
-          "id": 35,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_network_socketserver_value{job=\"kafka\", name=\"NetworkProcessorAvgIdlePercent\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "Network Processor Avg Idle %",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 49
-          },
-          "id": 36,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_server_kafkarequesthandlerpool_oneminuterate{job=\"kafka\", name=\"RequestHandlerAvgIdlePercent\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "Request Handler Avg Idle %",
-          "type": "timeseries"
-        },
-        {
-          "collapsed": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 56
-          },
-          "id": 37,
-          "panels": [],
-          "title": "ISR Shrinks / Expands",
-          "type": "row",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "refId": "A"
-            }
-          ]
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ops"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 0,
-            "y": 57
-          },
-          "id": 38,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_server_replicamanager_oneminuterate{job=\"kafka\", name=\"IsrShrinksPerSec\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "IsrShrinks per sec",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ops"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 57
-          },
-          "id": 39,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_server_replicamanager_oneminuterate{job=\"kafka\", name=\"IsrExpandsPerSec\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "IsrExpands per sec",
-          "type": "timeseries"
-        },
-        {
-          "collapsed": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 64
-          },
-          "id": 40,
-          "panels": [],
-          "title": "Log size",
-          "type": "row",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "refId": "A"
-            }
-          ]
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "kafka_log_log_value{name=\"TierSize\"} also exists but sums to exactly 0 cluster-wide - tiered storage is not enabled on this cluster, so it's omitted rather than shown as a permanently-flat line.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
               "unit": "bytes"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 0,
-            "y": 65
-          },
-          "id": 41,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum by (topic) (kafka_log_log_value{job=\"kafka\", name=\"Size\"})",
-              "refId": "A",
-              "legendFormat": "{{topic}}"
-            }
-          ],
-          "title": "Log size per Topic",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "bytes"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 65
-          },
-          "id": 42,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum by (pod) (kafka_log_log_value{job=\"kafka\", name=\"Size\"})",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "Log size per Broker",
-          "type": "timeseries"
-        },
-        {
-          "collapsed": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 72
-          },
-          "id": 43,
-          "panels": [],
-          "title": "Producer Performance",
-          "type": "row",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "refId": "A"
-            }
-          ]
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ms"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 8,
-            "x": 0,
-            "y": 73
-          },
-          "id": 44,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RequestQueueTimeMs\", request=\"Produce\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "RequestQueueTimeMs (mean)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ms"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 8,
-            "x": 8,
-            "y": 73
-          },
-          "id": 45,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"LocalTimeMs\", request=\"Produce\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "LocalTimeMs (mean)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ms"
             },
             "overrides": []
           },
@@ -2844,7 +2870,7 @@ data:
             "h": 7,
             "w": 8,
             "x": 16,
-            "y": 73
+            "y": 66
           },
           "id": 46,
           "options": {
@@ -2869,12 +2895,12 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RemoteTimeMs\", request=\"Produce\"}",
-              "refId": "A",
+              "expr": "sum by (pod) (kafka_log_log_value{job=\"kafka\", name=\"Size\"})",
+              "refId": "F",
               "legendFormat": "{{pod}}"
             }
           ],
-          "title": "RemoteTimeMs (mean)",
+          "title": "Log size per Broker",
           "type": "timeseries"
         },
         {
@@ -2913,15 +2939,15 @@ data:
                   }
                 ]
               },
-              "unit": "ms"
+              "unit": "ops"
             },
             "overrides": []
           },
           "gridPos": {
             "h": 7,
-            "w": 8,
+            "w": 12,
             "x": 0,
-            "y": 80
+            "y": 73
           },
           "id": 47,
           "options": {
@@ -2946,12 +2972,21 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseQueueTimeMs\", request=\"Produce\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "kafka_server_replicamanager_oneminuterate{job=\"kafka\", name=\"IsrShrinksPerSec\"}",
+              "refId": "G",
+              "legendFormat": "{{pod}} shrinks"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_server_replicamanager_oneminuterate{job=\"kafka\", name=\"IsrExpandsPerSec\"}",
+              "refId": "G",
+              "legendFormat": "{{pod}} expands"
             }
           ],
-          "title": "ResponseQueueTimeMs (mean)",
+          "title": "IsrShrinks / IsrExpands per sec",
           "type": "timeseries"
         },
         {
@@ -2990,15 +3025,15 @@ data:
                   }
                 ]
               },
-              "unit": "ms"
+              "unit": "short"
             },
             "overrides": []
           },
           "gridPos": {
             "h": 7,
-            "w": 8,
-            "x": 8,
-            "y": 80
+            "w": 12,
+            "x": 12,
+            "y": 73
           },
           "id": 48,
           "options": {
@@ -3023,12 +3058,21 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseSendTimeMs\", request=\"Produce\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "kafka_server_replicafetchermanager_value{job=\"kafka\", name=\"MinFetchRate\"}",
+              "refId": "H",
+              "legendFormat": "{{pod}} min fetch rate"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_server_replicafetchermanager_value{job=\"kafka\", name=\"MaxLag\"}",
+              "refId": "H",
+              "legendFormat": "{{pod}} max lag"
             }
           ],
-          "title": "ResponseSendTimeMs (mean)",
+          "title": "Replica Fetcher Min Rate / Max Lag",
           "type": "timeseries"
         },
         {
@@ -3041,11 +3085,11 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 87
+            "y": 80
           },
           "id": 49,
           "panels": [],
-          "title": "Consumer Fetch Performance",
+          "title": "Broker Connections",
           "type": "row",
           "targets": [
             {
@@ -3068,52 +3112,37 @@ data:
               "color": {
                 "mode": "palette-classic"
               },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ms"
+              "decimals": 0,
+              "mappings": [],
+              "unit": "short"
             },
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
+            "h": 8,
             "w": 8,
             "x": 0,
-            "y": 88
+            "y": 81
           },
           "id": 50,
+          "maxDataPoints": 1,
           "options": {
             "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "values": [
+                "value",
+                "percent"
+              ]
+            },
+            "pieType": "pie",
+            "reduceOptions": {
               "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
+                "lastNotNull"
               ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
+              "fields": "",
+              "values": false
             },
             "tooltip": {
               "mode": "single",
@@ -3126,13 +3155,13 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RequestQueueTimeMs\", request=\"FetchConsumer\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "sum by (listener) (kafka_server_socket_server_metrics_connection_count{job=\"kafka\"})",
+              "refId": "J",
+              "legendFormat": "{{listener}}"
             }
           ],
-          "title": "RequestQueueTimeMs (mean)",
-          "type": "timeseries"
+          "title": "Connections by Listener",
+          "type": "piechart"
         },
         {
           "datasource": {
@@ -3170,15 +3199,15 @@ data:
                   }
                 ]
               },
-              "unit": "ms"
+              "unit": "ops"
             },
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
-            "w": 8,
+            "h": 8,
+            "w": 16,
             "x": 8,
-            "y": 88
+            "y": 81
           },
           "id": 51,
           "options": {
@@ -3203,12 +3232,21 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"LocalTimeMs\", request=\"FetchConsumer\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "sum by (listener) (kafka_server_socket_server_metrics_connection_creation_rate{job=\"kafka\"})",
+              "refId": "K",
+              "legendFormat": "{{listener}} created"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (listener) (kafka_server_socket_server_metrics_connection_close_rate{job=\"kafka\"})",
+              "refId": "K",
+              "legendFormat": "{{listener}} closed"
             }
           ],
-          "title": "LocalTimeMs (mean)",
+          "title": "Connection Creation/Close Rate per Listener",
           "type": "timeseries"
         },
         {
@@ -3247,15 +3285,15 @@ data:
                   }
                 ]
               },
-              "unit": "ms"
+              "unit": "short"
             },
             "overrides": []
           },
           "gridPos": {
             "h": 7,
-            "w": 8,
-            "x": 16,
-            "y": 88
+            "w": 12,
+            "x": 0,
+            "y": 89
           },
           "id": 52,
           "options": {
@@ -3280,12 +3318,21 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RemoteTimeMs\", request=\"FetchConsumer\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "kafka_server_fetchsessioncache_value{job=\"kafka\", name=\"NumIncrementalFetchSessions\"}",
+              "refId": "L",
+              "legendFormat": "{{pod}} sessions cached"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_server_fetchsessioncache_oneminuterate{job=\"kafka\", name=\"IncrementalFetchSessionEvictionsPerSec\"}",
+              "refId": "L",
+              "legendFormat": "{{pod}} evictions/sec"
             }
           ],
-          "title": "RemoteTimeMs (mean)",
+          "title": "Fetch Session Cache",
           "type": "timeseries"
         },
         {
@@ -3293,7 +3340,7 @@ data:
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "description": "",
+          "description": "Non-zero means producers/consumers use an older message format than the broker's log, forcing an expensive down-conversion.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3324,15 +3371,15 @@ data:
                   }
                 ]
               },
-              "unit": "ms"
+              "unit": "ops"
             },
             "overrides": []
           },
           "gridPos": {
             "h": 7,
-            "w": 8,
-            "x": 0,
-            "y": 95
+            "w": 12,
+            "x": 12,
+            "y": 89
           },
           "id": 53,
           "options": {
@@ -3357,89 +3404,21 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseQueueTimeMs\", request=\"FetchConsumer\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "ResponseQueueTimeMs (mean)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ms"
+              "expr": "kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"ProduceMessageConversionsPerSec\"}",
+              "refId": "M",
+              "legendFormat": "{{pod}} produce"
             },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 8,
-            "x": 8,
-            "y": 95
-          },
-          "id": 54,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseSendTimeMs\", request=\"FetchConsumer\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"FetchMessageConversionsPerSec\"}",
+              "refId": "M",
+              "legendFormat": "{{pod}} fetch"
             }
           ],
-          "title": "ResponseSendTimeMs (mean)",
+          "title": "Message Conversions per sec (produce/fetch)",
           "type": "timeseries"
         },
         {
@@ -3452,11 +3431,11 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 102
+            "y": 96
           },
-          "id": 55,
+          "id": 54,
           "panels": [],
-          "title": "Fetch Follower Performance",
+          "title": "Broker Request Latency Breakdown",
           "type": "row",
           "targets": [
             {
@@ -3510,9 +3489,122 @@ data:
           },
           "gridPos": {
             "h": 7,
-            "w": 8,
+            "w": 12,
             "x": 0,
-            "y": 103
+            "y": 97
+          },
+          "id": 55,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RequestQueueTimeMs\", request=\"Produce\"}",
+              "refId": "O",
+              "legendFormat": "queue"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"LocalTimeMs\", request=\"Produce\"}",
+              "refId": "O",
+              "legendFormat": "local"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RemoteTimeMs\", request=\"Produce\"}",
+              "refId": "O",
+              "legendFormat": "remote"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseQueueTimeMs\", request=\"Produce\"}",
+              "refId": "O",
+              "legendFormat": "resp queue"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseSendTimeMs\", request=\"Produce\"}",
+              "refId": "O",
+              "legendFormat": "resp send"
+            }
+          ],
+          "title": "Produce: RequestQueue / Local / Remote / ResponseQueue / ResponseSend (ms, mean)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "pointSize": 5,
+                "showPoints": "never",
+                "spanNulls": true,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 97
           },
           "id": 56,
           "options": {
@@ -3537,12 +3629,48 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RequestQueueTimeMs\", request=\"FetchFollower\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RequestQueueTimeMs\", request=\"FetchConsumer\"}",
+              "refId": "P",
+              "legendFormat": "queue"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"LocalTimeMs\", request=\"FetchConsumer\"}",
+              "refId": "P",
+              "legendFormat": "local"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RemoteTimeMs\", request=\"FetchConsumer\"}",
+              "refId": "P",
+              "legendFormat": "remote"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseQueueTimeMs\", request=\"FetchConsumer\"}",
+              "refId": "P",
+              "legendFormat": "resp queue"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseSendTimeMs\", request=\"FetchConsumer\"}",
+              "refId": "P",
+              "legendFormat": "resp send"
             }
           ],
-          "title": "RequestQueueTimeMs (mean)",
+          "title": "FetchConsumer: RequestQueue / Local / Remote / ResponseQueue / ResponseSend (ms, mean)",
           "type": "timeseries"
         },
         {
@@ -3587,9 +3715,9 @@ data:
           },
           "gridPos": {
             "h": 7,
-            "w": 8,
-            "x": 8,
-            "y": 103
+            "w": 12,
+            "x": 0,
+            "y": 104
           },
           "id": 57,
           "options": {
@@ -3614,12 +3742,48 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RequestQueueTimeMs\", request=\"FetchFollower\"}",
+              "refId": "Q",
+              "legendFormat": "queue"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
               "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"LocalTimeMs\", request=\"FetchFollower\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "refId": "Q",
+              "legendFormat": "local"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RemoteTimeMs\", request=\"FetchFollower\"}",
+              "refId": "Q",
+              "legendFormat": "remote"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseQueueTimeMs\", request=\"FetchFollower\"}",
+              "refId": "Q",
+              "legendFormat": "resp queue"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseSendTimeMs\", request=\"FetchFollower\"}",
+              "refId": "Q",
+              "legendFormat": "resp send"
             }
           ],
-          "title": "LocalTimeMs (mean)",
+          "title": "FetchFollower: RequestQueue / Local / Remote / ResponseQueue / ResponseSend (ms, mean)",
           "type": "timeseries"
         },
         {
@@ -3664,9 +3828,9 @@ data:
           },
           "gridPos": {
             "h": 7,
-            "w": 8,
-            "x": 16,
-            "y": 103
+            "w": 12,
+            "x": 12,
+            "y": 104
           },
           "id": 58,
           "options": {
@@ -3691,1055 +3855,63 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RemoteTimeMs\", request=\"FetchFollower\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RequestQueueTimeMs\", request=\"Metadata\"}",
+              "refId": "R",
+              "legendFormat": "queue"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"LocalTimeMs\", request=\"Metadata\"}",
+              "refId": "R",
+              "legendFormat": "local"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RemoteTimeMs\", request=\"Metadata\"}",
+              "refId": "R",
+              "legendFormat": "remote"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseQueueTimeMs\", request=\"Metadata\"}",
+              "refId": "R",
+              "legendFormat": "resp queue"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseSendTimeMs\", request=\"Metadata\"}",
+              "refId": "R",
+              "legendFormat": "resp send"
             }
           ],
-          "title": "RemoteTimeMs (mean)",
+          "title": "Metadata: RequestQueue / Local / Remote / ResponseQueue / ResponseSend (ms, mean)",
           "type": "timeseries"
         },
         {
+          "collapsed": false,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ms"
-            },
-            "overrides": []
-          },
           "gridPos": {
-            "h": 7,
-            "w": 8,
+            "h": 1,
+            "w": 24,
             "x": 0,
-            "y": 110
+            "y": 111
           },
           "id": 59,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseQueueTimeMs\", request=\"FetchFollower\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "ResponseQueueTimeMs (mean)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ms"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 8,
-            "x": 8,
-            "y": 110
-          },
-          "id": 60,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"ResponseSendTimeMs\", request=\"FetchFollower\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "ResponseSendTimeMs (mean)",
-          "type": "timeseries"
-        },
-        {
-          "collapsed": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 117
-          },
-          "id": 61,
-          "panels": [],
-          "title": "Fetch Session",
-          "type": "row",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "refId": "A"
-            }
-          ]
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 0,
-            "y": 118
-          },
-          "id": 62,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_server_fetchsessioncache_value{job=\"kafka\", name=\"NumIncrementalFetchSessions\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "Incremental Fetch Sessions in cache",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ops"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 118
-          },
-          "id": 63,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_server_fetchsessioncache_oneminuterate{job=\"kafka\", name=\"IncrementalFetchSessionEvictionsPerSec\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "Fetch Session Eviction rate",
-          "type": "timeseries"
-        },
-        {
-          "collapsed": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 125
-          },
-          "id": 64,
-          "panels": [],
-          "title": "Metadata Request Performance",
-          "type": "row",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "refId": "A"
-            }
-          ]
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ms"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 0,
-            "y": 126
-          },
-          "id": 65,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"RequestQueueTimeMs\", request=\"Metadata\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "Metadata Request Queue Time (ms)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ms"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 126
-          },
-          "id": 66,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_network_requestmetrics_mean{job=\"kafka\", name=\"TotalTimeMs\", request=\"Metadata\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "Metadata Total Time (ms)",
-          "type": "timeseries"
-        },
-        {
-          "collapsed": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 133
-          },
-          "id": 67,
-          "panels": [],
-          "title": "Replicas / ISR",
-          "type": "row",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "refId": "A"
-            }
-          ]
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 0,
-            "y": 134
-          },
-          "id": 68,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_server_replicafetchermanager_value{job=\"kafka\", name=\"MinFetchRate\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "Replica Min Fetch Rate",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 134
-          },
-          "id": 69,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kafka_server_replicafetchermanager_value{job=\"kafka\", name=\"MaxLag\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "Replica Max Lag",
-          "type": "timeseries"
-        },
-        {
-          "collapsed": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 141
-          },
-          "id": 70,
-          "panels": [],
-          "title": "Connections",
-          "type": "row",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "refId": "A"
-            }
-          ]
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "kafka_server_socket_server_metrics_* is a different (newer, richer) metric family than kafka_network_socketserver_value - this one carries per-listener/per-networkProcessor labels, which is what the reference dashboard's per-listener panels need.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 0,
-            "y": 142
-          },
-          "id": 71,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum by (listener) (kafka_server_socket_server_metrics_connection_count{job=\"kafka\"})",
-              "refId": "A",
-              "legendFormat": "{{listener}}"
-            }
-          ],
-          "title": "Connections count per listener",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 142
-          },
-          "id": 72,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum by (pod) (kafka_server_socket_server_metrics_connection_count{job=\"kafka\"})",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "title": "Connections count per broker",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ops"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 0,
-            "y": 149
-          },
-          "id": 73,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum by (listener) (kafka_server_socket_server_metrics_connection_creation_rate{job=\"kafka\"})",
-              "refId": "A",
-              "legendFormat": "{{listener}}"
-            }
-          ],
-          "title": "Connection creation rate per listener",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ops"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 149
-          },
-          "id": 74,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum by (listener) (kafka_server_socket_server_metrics_connection_close_rate{job=\"kafka\"})",
-              "refId": "A",
-              "legendFormat": "{{listener}}"
-            }
-          ],
-          "title": "Connection close rate per listener",
-          "type": "timeseries"
-        },
-        {
-          "collapsed": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 156
-          },
-          "id": 75,
           "panels": [],
           "title": "Group Coordinator",
           "type": "row",
@@ -4797,9 +3969,9 @@ data:
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 157
+            "y": 112
           },
-          "id": 76,
+          "id": 60,
           "options": {
             "legend": {
               "calcs": [
@@ -4823,7 +3995,7 @@ data:
                 "uid": "prometheus"
               },
               "expr": "kafka_coordinator_group_groupmetadatamanager_value{job=\"kafka\", name=\"NumGroups\"}",
-              "refId": "A",
+              "refId": "T",
               "legendFormat": "{{pod}}"
             }
           ],
@@ -4841,52 +4013,37 @@ data:
               "color": {
                 "mode": "palette-classic"
               },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
+              "decimals": 0,
+              "mappings": [],
               "unit": "short"
             },
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
+            "h": 8,
             "w": 12,
             "x": 12,
-            "y": 157
+            "y": 112
           },
-          "id": 77,
+          "id": 61,
+          "maxDataPoints": 1,
           "options": {
             "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "values": [
+                "value",
+                "percent"
+              ]
+            },
+            "pieType": "pie",
+            "reduceOptions": {
               "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
+                "lastNotNull"
               ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
+              "fields": "",
+              "values": false
             },
             "tooltip": {
               "mode": "single",
@@ -4941,7 +4098,7 @@ data:
             }
           ],
           "title": "Consumer groups by state",
-          "type": "timeseries"
+          "type": "piechart"
         },
         {
           "collapsed": false,
@@ -4953,11 +4110,11 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 164
+            "y": 120
           },
-          "id": 78,
+          "id": 62,
           "panels": [],
-          "title": "Message Conversion",
+          "title": "Transaction Coordinator & Quotas",
           "type": "row",
           "targets": [
             {
@@ -4974,63 +4131,45 @@ data:
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "description": "Non-zero here means producers are sending an older message format than the broker's log format and the broker is doing an expensive down-conversion - worth alerting on in a real deployment.",
+          "description": "Currently 0 - no transactional (EOS) producer is in use in this environment. Real metric, honestly idle, not hidden.",
           "fieldConfig": {
             "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   {
                     "color": "green",
                     "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
                   }
                 ]
               },
-              "unit": "ops"
+              "unit": "short"
             },
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
-            "w": 12,
+            "h": 3,
+            "w": 6,
             "x": 0,
-            "y": 165
+            "y": 121
           },
-          "id": 79,
+          "id": 63,
           "options": {
-            "legend": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
               "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
+                "lastNotNull"
               ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
+              "fields": "",
+              "values": false
             },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
+            "textMode": "auto"
           },
           "targets": [
             {
@@ -5038,13 +4177,13 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"ProduceMessageConversionsPerSec\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "sum(kafka_server_transaction_coordinator_metrics_transactional_id_count{job=\"kafka\"})",
+              "refId": "D",
+              "legendFormat": ""
             }
           ],
-          "title": "Produce message conversions per sec",
-          "type": "timeseries"
+          "title": "Active Transactional IDs",
+          "type": "stat"
         },
         {
           "datasource": {
@@ -5054,21 +4193,9 @@ data:
           "description": "",
           "fieldConfig": {
             "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "lineWidth": 1,
-                "pointSize": 5,
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                }
-              },
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -5078,36 +4205,34 @@ data:
                   },
                   {
                     "color": "red",
-                    "value": 80
+                    "value": 0.01
                   }
                 ]
               },
-              "unit": "ops"
+              "unit": "short"
             },
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 165
+            "h": 3,
+            "w": 6,
+            "x": 6,
+            "y": 121
           },
-          "id": 80,
+          "id": 64,
           "options": {
-            "legend": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
               "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
+                "lastNotNull"
               ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
+              "fields": "",
+              "values": false
             },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
+            "textMode": "auto"
           },
           "targets": [
             {
@@ -5115,13 +4240,135 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"FetchMessageConversionsPerSec\"}",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
+              "expr": "sum(kafka_server_transaction_coordinator_metrics_transaction_timeout_rate{job=\"kafka\"})",
+              "refId": "E",
+              "legendFormat": ""
             }
           ],
-          "title": "Fetch message conversions per sec",
-          "type": "timeseries"
+          "title": "Transaction Timeout Rate",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.01
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 12,
+            "y": 121
+          },
+          "id": 65,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafka_server_transaction_coordinator_metrics_transaction_state_error_rate{job=\"kafka\"})",
+              "refId": "F",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Transaction State Error Rate",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "Long.MAX_VALUE (shown as the raw byte/sec ceiling) means no client-quota throttling is configured on this cluster - real value, not a graph-worthy series.",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 18,
+            "y": 121
+          },
+          "id": 66,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "min(kafka_server_produce_broker_quota{job=\"kafka\"})",
+              "refId": "G",
+              "legendFormat": ""
+            }
+          ],
+          "title": "Produce/Fetch Broker Quota",
+          "type": "stat"
         }
       ]
     }
