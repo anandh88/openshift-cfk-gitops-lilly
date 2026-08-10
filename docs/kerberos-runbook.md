@@ -30,16 +30,13 @@ Idempotent throughout - safe to re-run in full any time, including after
 a Mac reboot or `crc stop`/`crc start` (neither of which any of this
 survives - see below). It prints numbered section headers as it goes;
 each section's own checks (`OK`/`FAIL`) tell you exactly what state
-things were in before it acted.
-
-One manual, one-time step it doesn't do for you: creating SQL Server's
-own login, after the first successful run:
-```sql
-CREATE LOGIN [PSYNCOPATE\connect-svc] FROM WINDOWS;
--- in the target database:
-CREATE USER [PSYNCOPATE\connect-svc] FOR LOGIN [PSYNCOPATE\connect-svc];
-ALTER ROLE db_datareader ADD MEMBER [PSYNCOPATE\connect-svc];
-```
+things were in before it acted. This includes creating SQL Server's own
+login/user/role for the connector's AD account (`PSYNCOPATE\connect-svc`,
+`db_datareader` on the `CLAIMS_DB` database, default `claims_db`) and
+enabling sshd's `GatewayPorts` on the CRC node - without the latter, the
+reverse tunnels bind to loopback only and look healthy locally while
+being unreachable from pods, which then fail with a JDBC
+"Connection refused" against `SQLSERVER_HOST:SQLSERVER_PORT`.
 
 Validate the whole chain any time with:
 ```bash

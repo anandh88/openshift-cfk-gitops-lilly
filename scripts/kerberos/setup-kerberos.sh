@@ -26,6 +26,15 @@ ADMIN_PASSWORD="${SAMBA_ADMIN_PASSWORD:-SambaAdmin@Psyncopate2024!}"
 REALM="PSYNCOPATE.COM"
 NODE_TUNNEL_PORT="${NODE_TUNNEL_PORT:-18088}"
 SAMBA_HOST_PORT="${SAMBA_HOST_PORT:-8088}"
+# SQL Server's sa password and the database/AD-account the JDBC connector logs
+# in as - see base/confluent-platform/sqlserver-claims-topic.yaml and
+# scripts/kerberos/setup-kerberos.sh's own connector registration below.
+SA_PASSWORD="${SA_PASSWORD:-YourPassword123!}"
+CLAIMS_DB="${CLAIMS_DB:-claims_db}"
+AD_LOGIN='PSYNCOPATE\connect-svc'
+# Reused everywhere this script needs to run something on the CRC VM itself
+# (not through `oc`/a pod) - e.g. sshd_config edits, reverse tunnels.
+CRC_SSH=(ssh -i "$HOME/.crc/machines/crc/id_ed25519" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 core@127.0.0.1)
 
 pass() { echo "  OK: $1"; }
 fail() { echo "  FAIL: $1"; }
@@ -306,14 +315,63 @@ fi
 
 echo "  NOTE: restart SQL Server to load the new keytab if this is a fresh join:"
 echo "    docker restart ${SQLSERVER_CONTAINER}"
-echo "  Then (once) create its SQL login - see docs/kerberos-runbook.md."
 echo "  Re-run this whole script after every docker restart ${SQLSERVER_CONTAINER} -"
 echo "  Docker wipes /etc/resolv.conf, /etc/hosts, and kills sssd on restart."
 
+echo "==> Ensuring SQL Server has a login/user for ${AD_LOGIN} (Kerberos-authenticated AD account the connector logs in as)"
+# Confirmed live: Kerberos auth alone gets the connector past the KDC/SQL
+# Server handshake, but SQL Server still rejects the connection with
+# "Login failed for user 'PSYNCOPATE\connect-svc'" until this Windows login
+# and a matching database user/role exist - that step is SQL-side
+# authorization, separate from (and not implied by) the domain trust set up
+# above. Not gated behind the fresh-join branch above since a restarted
+# container keeps its logins/users (only sssd/DNS/hosts get wiped).
+SQLCMD_BIN="$(docker exec "${SQLSERVER_CONTAINER}" bash -c 'command -v sqlcmd || ls /opt/mssql-tools*/bin/sqlcmd 2>/dev/null | head -1')"
+if [[ -z "${SQLCMD_BIN}" ]]; then
+  fail "sqlcmd not found in ${SQLSERVER_CONTAINER} - can't create SQL login for ${AD_LOGIN}"
+else
+  docker exec "${SQLSERVER_CONTAINER}" "${SQLCMD_BIN}" -S localhost -U sa -P "${SA_PASSWORD}" -C -Q "
+    IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = '${AD_LOGIN}')
+      CREATE LOGIN [${AD_LOGIN}] FROM WINDOWS;
+  " >/dev/null 2>&1 || true
+  docker exec "${SQLSERVER_CONTAINER}" "${SQLCMD_BIN}" -S localhost -U sa -P "${SA_PASSWORD}" -C -d "${CLAIMS_DB}" -Q "
+    IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '${AD_LOGIN}')
+      CREATE USER [${AD_LOGIN}] FOR LOGIN [${AD_LOGIN}];
+    IF NOT EXISTS (SELECT 1 FROM sys.database_role_members rm JOIN sys.database_principals r ON rm.role_principal_id = r.principal_id JOIN sys.database_principals m ON rm.member_principal_id = m.principal_id WHERE r.name = 'db_datareader' AND m.name = '${AD_LOGIN}')
+      ALTER ROLE db_datareader ADD MEMBER [${AD_LOGIN}];
+  " >/dev/null 2>&1 \
+    && pass "${AD_LOGIN} has a SQL login + db_datareader on ${CLAIMS_DB}" \
+    || fail "could not create SQL login/user for ${AD_LOGIN} - does database '${CLAIMS_DB}' exist yet? Check SA_PASSWORD too."
+fi
+
 echo
 echo "############################################################"
-echo "# 5. Connect-side reverse tunnel (cluster -> Docker Desktop)"
+echo "# 5. Connect-side reverse tunnels (cluster -> Docker Desktop)"
 echo "############################################################"
+
+echo "==> Ensuring sshd's GatewayPorts is enabled on the CRC node"
+# Confirmed live: without this, sshd silently binds every `-R 0.0.0.0:PORT:...`
+# reverse forward to loopback only (127.0.0.1/::1) regardless of what the
+# client asked for, so this tunnel (and the separately-managed SQL Server
+# one on SQLSERVER_PORT) are reachable from the Mac/CRC-node-itself but not
+# from pods, which connect via the node's real IP - JDBC then fails with
+# "Connection refused" even though the tunnel process looks healthy.
+GATEWAY_PORTS_CHANGED=false
+if "${CRC_SSH[@]}" "sudo grep -qx 'GatewayPorts yes' /etc/ssh/sshd_config" 2>/dev/null; then
+  pass "GatewayPorts already enabled"
+else
+  "${CRC_SSH[@]}" "sudo sed -i 's/^#\?GatewayPorts.*/GatewayPorts yes/' /etc/ssh/sshd_config; grep -qx 'GatewayPorts yes' /etc/ssh/sshd_config || echo 'GatewayPorts yes' | sudo tee -a /etc/ssh/sshd_config >/dev/null; sudo systemctl restart sshd"
+  GATEWAY_PORTS_CHANGED=true
+  pass "GatewayPorts enabled and sshd restarted"
+fi
+if [[ "${GATEWAY_PORTS_CHANGED}" == true ]]; then
+  # sshd restarting doesn't kill already-established forwarded-port sessions,
+  # so those need to be force-restarted to actually pick up the new setting.
+  echo "  Restarting this script's own KDC tunnel (any other manually-run"
+  echo "  tunnels, e.g. the SQL Server one, need restarting too - re-run"
+  echo "  whatever command established SQLSERVER_HOST:SQLSERVER_PORT)"
+  pkill -f "ssh.*-R 0.0.0.0:${NODE_TUNNEL_PORT}" 2>/dev/null || true
+fi
 
 echo "==> Ensuring the node-side iptables DROP rule for UDP ${NODE_TUNNEL_PORT} is present"
 # Java's krb5 client tries UDP first regardless of udp_preference_limit

@@ -30,11 +30,38 @@ else
 fi
 
 echo
-echo "=== Connect tunnel: node reachable on the Kerberos port? ==="
+echo "=== sshd GatewayPorts: reverse tunnels reachable from pods, not just locally? ==="
+# A running tunnel process is not sufficient - without GatewayPorts, sshd
+# silently binds -R forwards to loopback only, so pgrep-only checks pass
+# even when pods can't actually reach the tunnel (JDBC then fails with
+# "Connection refused" against the node's real IP).
+if ssh -i "$HOME/.crc/machines/crc/id_ed25519" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 core@127.0.0.1 "sudo grep -qx 'GatewayPorts yes' /etc/ssh/sshd_config" 2>/dev/null; then
+  pass "GatewayPorts enabled on the CRC node"
+else
+  fail "GatewayPorts not enabled - run scripts/kerberos/setup-kerberos.sh (reverse tunnels will look up but be unreachable from pods)"
+fi
+
+echo
+echo "=== Connect tunnel: node reachable on the Kerberos port, from a pod? ==="
 if pgrep -f "ssh.*-R 0.0.0.0:18088" >/dev/null 2>&1; then
-  pass "reverse tunnel process running"
+  NODE_IP="$(oc get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null)"
+  CONNECT_POD_FOR_TUNNEL="$(oc get pod -l app=connect -n confluent -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)"
+  if [[ -n "${CONNECT_POD_FOR_TUNNEL}" ]] && oc exec "${CONNECT_POD_FOR_TUNNEL}" -n confluent -c connect -- bash -c "exec 3<>/dev/tcp/${NODE_IP}/18088" >/dev/null 2>&1; then
+    pass "reverse tunnel process running and reachable from Connect's pod"
+  else
+    fail "tunnel process running but NOT reachable from Connect's pod (likely GatewayPorts) - run scripts/kerberos/setup-kerberos.sh"
+  fi
 else
   fail "no tunnel process found - run scripts/kerberos/setup-kerberos.sh"
+fi
+
+echo
+echo "=== SQL Server: login/user present for the connector's AD account? ==="
+SQLCMD_BIN="$(docker exec sqltest2 bash -c 'command -v sqlcmd || ls /opt/mssql-tools*/bin/sqlcmd 2>/dev/null | head -1' 2>/dev/null)"
+if [[ -n "${SQLCMD_BIN}" ]] && docker exec sqltest2 "${SQLCMD_BIN}" -S localhost -U sa -P "${SA_PASSWORD:-YourPassword123!}" -C -Q "SET NOCOUNT ON; SELECT 1 FROM sys.server_principals WHERE name = 'PSYNCOPATE\connect-svc'" 2>/dev/null | grep -q 1; then
+  pass "PSYNCOPATE\\connect-svc has a SQL Server login"
+else
+  fail "PSYNCOPATE\\connect-svc has no SQL Server login yet - run scripts/kerberos/setup-kerberos.sh"
 fi
 
 echo

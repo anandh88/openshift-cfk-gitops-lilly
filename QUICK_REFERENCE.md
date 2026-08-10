@@ -312,7 +312,8 @@ oc exec connect-0 -c connect -n confluent -- curl -s localhost:8083/connectors |
 oc exec connect-0 -c connect -n confluent -- curl -s localhost:8083/connectors/sqlserver-claims-connector/status | jq .status.state
 # Should output: "RUNNING"
 
-# Create SQL Server login (manual step)
+# Create SQL Server login (now automated by scripts/kerberos/setup-kerberos.sh
+# step 4 - only needed manually if running against a differently-named DB/login)
 sqlcmd -S localhost -U sa -P 'YourPassword123!' <<'EOF'
 CREATE LOGIN [PSYNCOPATE\connect-svc] FROM WINDOWS;
 GO
