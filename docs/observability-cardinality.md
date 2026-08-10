@@ -57,13 +57,15 @@ renders them all.
   (see the Producer Visibility distinction below); this stack only has
   broker-side aggregate produce metrics, never fabricated per-producer
   labels.
-- **`ruleNamespaceSelector`/`serviceMonitorNamespaceSelector` scoped to
-  `monitoring` only** - deliberately not cluster-wide, to avoid this
-  Prometheus instance evaluating rules or discovering targets across
-  namespaces this platform doesn't own (see
-  `docs/observability-architecture.md`'s note on the ~49 OpenShift-internal
-  rule groups that still leak through via the operator's own cluster-wide
-  RBAC - a known, documented gap, not something cardinality-managed here).
+- **`ruleNamespaceSelector`/`serviceMonitorNamespaceSelector`/
+  `podMonitorNamespaceSelector` scoped to `monitoring` only** (via
+  `matchLabels`, not `matchNames` - see
+  `docs/observability-architecture.md`'s note on that CRD-schema gotcha) -
+  deliberately not cluster-wide, to avoid this Prometheus instance
+  evaluating rules or discovering targets across namespaces this platform
+  doesn't own. Confirmed live this actually dropped the rule-group count
+  from 54 (including ~49 of OpenShift's own internal ones) down to exactly
+  5 - this stack's own.
 
 ## Broker-side vs. client-instrumented producer telemetry
 

@@ -146,15 +146,24 @@ itself says 3). `validate-observability.sh` reports this as a `WARN`, not
 a `FAIL`, since it's an accurate reflection of this environment's real
 capacity, not a stack bug.
 
-**Prometheus's rule/ServiceMonitor namespace watch is scoped to
-`monitoring`, but the operator's own RBAC can still list PrometheusRule
-objects cluster-wide** - confirmed live that ~49 of OpenShift's own
-internal alerting rule groups (etcd, kube-apiserver, machine-config, etc.)
-still show up in this Prometheus's `/api/v1/rules`, evaluating against
-metrics this Prometheus doesn't scrape (so they never fire - not a
-correctness bug, just wasted evaluation cycles). Not resolved in Phase 1;
-would need the operator itself restricted via a `--namespaces` flag or
-similar, a bigger change than this phase's scope.
+**Prometheus's rule/ServiceMonitor/PodMonitor namespace watch is scoped to
+`monitoring` only.** First attempt used `matchNames: [monitoring]` on
+`ruleNamespaceSelector`/`serviceMonitorNamespaceSelector`/
+`podMonitorNamespaceSelector` - this was silently rejected by Argo CD's
+server-side apply (`field not declared in schema`, confirmed via `oc get
+application observability -o jsonpath='{.status.conditions}'`), because
+these three fields are plain `metav1.LabelSelector` (matchLabels/
+matchExpressions only) on this cluster's installed Prometheus CRD, not
+the separate `NamespaceSelector` type (`any`/`matchNames`) that
+`ServiceMonitor.spec.namespaceSelector` uses - easy to conflate since both
+scope "which namespaces," but they're different Go types with different
+CRD schemas. The Application sat `OutOfSync` with the previous `{}` (all
+namespaces) config still actually running the whole time, which is why
+~49 of OpenShift's own internal alerting rule groups (etcd,
+kube-apiserver, machine-config, etc.) were visible in this Prometheus's
+`/api/v1/rules` for a while. Fixed with `matchLabels:
+{kubernetes.io/metadata.name: monitoring}` instead - confirmed live the
+rule group count dropped from 54 to exactly 5 (this stack's own).
 
 ## What's deferred, and why (dashboard coverage)
 
