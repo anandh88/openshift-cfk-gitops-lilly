@@ -65,12 +65,17 @@ spec:
         - name: kafka-ca
           configMap:
             name: kafka-ca
+  # 512m each, not the original 1024m - this node hit 98% memory allocated
+  # (confirmed live: TaskManager pod stuck Pending, "Insufficient memory")
+  # once Kafka was scaled to 3 brokers. This is a single-slot passthrough
+  # job with no real state - 512m/512m is plenty and this node has no more
+  # to give without touching something else again.
   jobManager:
     resource:
-      memory: 1024m
+      memory: 512m
       cpu: 0.5
   taskManager:
     replicas: 1
     resource:
-      memory: 1024m
+      memory: 512m
       cpu: 1
