@@ -41,6 +41,30 @@ spec:
       - --output-topic=processed-claims
     parallelism: 1
     upgradeMode: stateless
+  # Shared by both JobManager and TaskManager - required on both, not just
+  # TaskManager. In Application Mode the job's main() (which builds the
+  # KafkaSource/KafkaSink and reads flink-kafka-sasl/kafka-ca itself) runs on
+  # the JobManager, not just the TaskManager - confirmed live, the JobManager
+  # crashed with NoSuchFileException on /mnt/secrets/flink-kafka-sasl/plain.txt
+  # the first time this was scoped to taskManager.podTemplate only.
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          volumeMounts:
+            - name: flink-kafka-sasl
+              mountPath: /mnt/secrets/flink-kafka-sasl
+              readOnly: true
+            - name: kafka-ca
+              mountPath: /mnt/kafka-ca
+              readOnly: true
+      volumes:
+        - name: flink-kafka-sasl
+          secret:
+            secretName: flink-kafka-sasl
+        - name: kafka-ca
+          configMap:
+            name: kafka-ca
   jobManager:
     resource:
       memory: 1024m
@@ -50,21 +74,3 @@ spec:
     resource:
       memory: 1024m
       cpu: 1
-    podTemplate:
-      spec:
-        containers:
-          - name: flink-main-container
-            volumeMounts:
-              - name: flink-kafka-sasl
-                mountPath: /mnt/secrets/flink-kafka-sasl
-                readOnly: true
-              - name: kafka-ca
-                mountPath: /mnt/kafka-ca
-                readOnly: true
-        volumes:
-          - name: flink-kafka-sasl
-            secret:
-              secretName: flink-kafka-sasl
-          - name: kafka-ca
-            configMap:
-              name: kafka-ca
