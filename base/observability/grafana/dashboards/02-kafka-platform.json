@@ -645,7 +645,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "kafka_network_socketserver_value{job=\"kafka\", name=\"NetworkProcessorAvgIdlePercent\"}",
+          "expr": "max by (pod) (kafka_network_socketserver_value{job=\"kafka\", name=\"NetworkProcessorAvgIdlePercent\"})",
           "refId": "A",
           "legendFormat": "{{pod}}"
         }
@@ -711,7 +711,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "kafka_server_kafkarequesthandlerpool_oneminuterate{job=\"kafka\", name=\"RequestHandlerAvgIdlePercent\"}",
+          "expr": "max by (pod) (kafka_server_kafkarequesthandlerpool_oneminuterate{job=\"kafka\", name=\"RequestHandlerAvgIdlePercent\"})",
           "refId": "A",
           "legendFormat": "{{pod}}"
         }
