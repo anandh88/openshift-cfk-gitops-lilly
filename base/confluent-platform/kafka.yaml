@@ -49,6 +49,15 @@ spec:
     kRaftController:
       clusterRef:
         name: kraftcontroller
+    # Fixes Control Center next-gen's "Please set up Telemetry Reporter to
+    # view broker metrics" prompt. Confirmed live: controlcenter-0's own
+    # embedded Prometheus runs with --web.enable-otlp-receiver and
+    # scrape_configs: null - it never pulls metrics, it only accepts a push
+    # from each component. This tells the broker where to push to. Separate
+    # from metricReporter above, which feeds the older Kafka-topic-based
+    # ConfluentMetricsReporter pipeline, not C3 next-gen's Prometheus.
+    metricsClient:
+      url: http://controlcenter-prometheus.confluent.svc.cluster.local:9090
   podTemplate:
     serviceAccountName: kafka-sa
     podSecurityContext:

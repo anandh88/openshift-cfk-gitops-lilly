@@ -15,6 +15,11 @@ spec:
     name: crc-csi-hostpath-provisioner
   tls:
     secretRef: kafka-tls-secret
+  dependencies:
+    # Same fix as kafka.yaml - lets the controller push its own metrics to
+    # Control Center next-gen's embedded (push-only) Prometheus.
+    metricsClient:
+      url: http://controlcenter-prometheus.confluent.svc.cluster.local:9090
   podTemplate:
     serviceAccountName: kafka-sa
     podSecurityContext:
