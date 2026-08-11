@@ -235,6 +235,24 @@ spec:
           port: 9090
         - protocol: TCP
           port: 9093
+    # Kafka/KRaftController's own confluent.telemetry.exporter._c3 pushes
+    # OTLP metrics to controlcenter-prometheus:9090 (spec.dependencies.
+    # metricsClient on their CRs) - this is what feeds C3 next-gen's
+    # Brokers page. Confirmed live: without this rule, the broker's push
+    # gets a connection timeout (silently dropped, not refused) and C3
+    # shows "Please set up Telemetry Reporter to view broker metrics"
+    # even with metricsClient correctly configured and the exporter
+    # actually running.
+    - from:
+        - podSelector:
+            matchLabels:
+              app: kafka
+        - podSelector:
+            matchLabels:
+              app: kraftcontroller
+      ports:
+        - protocol: TCP
+          port: 9090
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
