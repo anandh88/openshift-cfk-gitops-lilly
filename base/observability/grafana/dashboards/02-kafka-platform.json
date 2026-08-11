@@ -1,7 +1,7 @@
 {
   "uid": "kafka-platform",
   "title": "02 - Kafka Platform (KRaft + Brokers + Topics)",
-  "description": "Consolidates the former 02/03/04/07/10 dashboards into one, per request - KRaft controller, broker cluster, and topics in a single view, with pie charts and gauges for at-a-glance health. Adapted from Confluent's own confluentinc/jmx-monitoring-stacks reference (kafka-cluster-kraft.json, kraft.json, kafka-topics-kraft.json). Every panel verified live against this cluster's Prometheus. Gaps filled on this pass: per-topic log-size/partition-count pies, Transaction Coordinator metrics (real, currently idle - no EOS producer in use), broker quota ceilings (real, currently unlimited). Still dropped (confirmed not present, not faked): tiered storage, Linux disk read/write bytes MBean, client-version tracking, acceptor blocked percent.",
+  "description": "Consolidates the former 02/03/04/07/10 dashboards into one, per request - KRaft controller, broker cluster, and topics in a single view, with pie charts and gauges for at-a-glance health. Adapted from Confluent's own confluentinc/jmx-monitoring-stacks reference (kafka-cluster-kraft.json, kraft.json, kafka-topics-kraft.json). Every panel verified live against this cluster's Prometheus. Gaps filled on this pass: per-topic log-size/partition-count pies, Transaction Coordinator metrics (real, currently idle - no EOS producer in use), broker quota ceilings (real, currently unlimited). Still dropped (confirmed not present, not faked): tiered storage, Linux disk read/write bytes MBean, client-version tracking, acceptor blocked percent. Gap pass against a user-provided reference dashboard: added Preferred Replica Imbalance, Under Min ISR Partitions, Online Partitions (derived), per-topic/per-broker message and request-rate breakdowns, Response Queue Size, and per-broker connection metrics - every existing panel kept unchanged. Confirmed still not applicable: ZooKeeper (KRaft-only cluster), Acceptor Blocked Percentage, client-version tracking (attributes don't exist on this exporter).",
   "tags": [
     "kafka",
     "kraft"
@@ -4360,6 +4360,661 @@
       ],
       "title": "Produce/Fetch Broker Quota",
       "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 124
+      },
+      "id": 67,
+      "panels": [],
+      "title": "Gaps found vs. reference dashboard (Preferred Replica Imbalance, Under-Min-ISR, per-topic/per-broker breakdowns)",
+      "type": "row",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 0,
+        "y": 125
+      },
+      "id": 68,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"PreferredReplicaImbalanceCount\"})",
+          "refId": "A",
+          "legendFormat": ""
+        }
+      ],
+      "title": "Preferred Replica Imbalance",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 4,
+        "y": 125
+      },
+      "id": 69,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(kafka_server_replicamanager_value{job=\"kafka\", name=\"UnderMinIsrPartitionCount\"})",
+          "refId": "A",
+          "legendFormat": ""
+        }
+      ],
+      "title": "Under Min ISR Partitions",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Derived (Global - Offline), not a direct metric - the reference dashboard treats this as a first-class stat.",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 8,
+        "y": 125
+      },
+      "id": 70,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"GlobalPartitionCount\"}) - sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"OfflinePartitionsCount\"})",
+          "refId": "A",
+          "legendFormat": ""
+        }
+      ],
+      "title": "Online Partitions",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Was only shown as a cluster-wide total before - broken out both ways here.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 128
+      },
+      "id": 71,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (topic) (kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"MessagesInPerSec\", topic!=\"\"})",
+          "refId": "A",
+          "legendFormat": "topic: {{topic}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"MessagesInPerSec\", topic=\"\"}",
+          "refId": "B",
+          "legendFormat": "broker: {{pod}}"
+        }
+      ],
+      "title": "Messages In, per Topic / per Broker",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Request Queue Size already existed; this is its counterpart.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 135
+      },
+      "id": 72,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kafka_network_requestchannel_value{job=\"kafka\", name=\"ResponseQueueSize\"}",
+          "refId": "A",
+          "legendFormat": "{{pod}}-{{processor}}"
+        }
+      ],
+      "title": "Response Queue Size (per processor)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Confirmed real: TotalProduceRequestsPerSec/TotalFetchRequestsPerSec carry a topic label, distinct from the byte-rate metrics already used elsewhere.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 135
+      },
+      "id": 73,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (topic) (kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"TotalProduceRequestsPerSec\", topic!=\"\"})",
+          "refId": "A",
+          "legendFormat": "{{topic}} produce"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (topic) (kafka_server_brokertopicmetrics_oneminuterate{job=\"kafka\", name=\"TotalFetchRequestsPerSec\", topic!=\"\"})",
+          "refId": "B",
+          "legendFormat": "{{topic}} fetch"
+        }
+      ],
+      "title": "Produce/Fetch Requests per sec, per Topic",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Only per-listener breakdowns existed before (Connections by Listener piechart, Connection Creation/Close Rate per Listener) - this adds the per-broker view.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 142
+      },
+      "id": 74,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (pod) (kafka_server_socket_server_metrics_connection_count{job=\"kafka\"})",
+          "refId": "A",
+          "legendFormat": "{{pod}} count"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (pod) (kafka_server_socket_server_metrics_connection_creation_rate{job=\"kafka\"})",
+          "refId": "B",
+          "legendFormat": "{{pod}} created/sec"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (pod) (kafka_server_socket_server_metrics_connection_close_rate{job=\"kafka\"})",
+          "refId": "C",
+          "legendFormat": "{{pod}} closed/sec"
+        }
+      ],
+      "title": "Connections count / creation / close rate, per Broker",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "These already exist as instant stats in Platform Health - this adds the trend-over-time view the reference dashboard's 'Replication' row has.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 149
+      },
+      "id": 75,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"GlobalPartitionCount\"}) - sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"OfflinePartitionsCount\"})",
+          "refId": "A",
+          "legendFormat": "online"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(kafka_server_replicamanager_value{job=\"kafka\", name=\"UnderReplicatedPartitions\"})",
+          "refId": "B",
+          "legendFormat": "under-replicated"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(kafka_server_replicamanager_value{job=\"kafka\", name=\"UnderMinIsrPartitionCount\"})",
+          "refId": "C",
+          "legendFormat": "under-min-isr"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(kafka_controller_kafkacontroller_value{job=\"kraftcontroller\", name=\"OfflinePartitionsCount\"})",
+          "refId": "D",
+          "legendFormat": "offline"
+        }
+      ],
+      "title": "Partition health trend (Online / Under-Replicated / Under-Min-ISR / Offline)",
+      "type": "timeseries"
     }
   ]
 }
