@@ -765,7 +765,7 @@ data:
                 },
                 "overrides": []
               },
-              "description": "WHAT: Per-namespace CPU usage against what it asked for (requests) and its ceiling (limits).\nWHY: A namespace whose usage tracks its limit line is the one starving everyone else.\nNORMAL: usage < requests\nPROBLEM: usage approaching or exceeding limits\nNEXT: Pod Operational Table filtered to that namespace.",
+              "description": "WHAT: Per-namespace CPU usage against what it asked for (requests) and its ceiling (limits). Requests are a scheduling reservation, not a runtime ceiling - usage running above requests is expected and not itself a problem.\nWHY: A namespace whose usage tracks its limit line is the one starving everyone else; the request line is only useful context for scheduling headroom, not a health boundary.\nNORMAL: usage comfortably under limits (usage vs requests can vary either way)\nPROBLEM: usage approaching or exceeding limits\nNEXT: Pod CPU row for per-pod limit%/throttling detail on the specific namespace.",
               "options": {
                 "legend": {
                   "displayMode": "list",
@@ -826,7 +826,7 @@ data:
                 },
                 "overrides": []
               },
-              "description": "WHAT: Per-namespace memory usage against requests/limits.\nWHY: OOMKilled events happen when usage crosses the limit line, not the request line.\nNORMAL: usage < requests\nPROBLEM: usage approaching limits\nNEXT: Kubernetes Scheduling/Failures row for OOMKilled detail on the specific pod.",
+              "description": "WHAT: Per-namespace memory usage against requests/limits. Requests are a scheduling reservation, not a runtime ceiling - usage above requests is normal and expected.\nWHY: OOMKilled events happen when usage crosses the limit line, not the request line - that's the only line that matters for memory health.\nNORMAL: usage comfortably under limits (usage vs requests can vary either way)\nPROBLEM: usage approaching limits\nNEXT: Kubernetes Scheduling/Failures row for OOMKilled detail on the specific pod.",
               "options": {
                 "legend": {
                   "displayMode": "list",
@@ -888,7 +888,7 @@ data:
                 },
                 "overrides": []
               },
-              "description": "WHAT: Per-pod CPU usage (cores), filterable by $component (the owning StatefulSet/Deployment - kafka, connect, schemaregistry, etc.) as well as $pod.\nWHY: Identifies which specific pod/component is consuming CPU.\nNORMAL: Flat, well under its request\nPROBLEM: Sustained climb or spikes to its limit\nNEXT: CPU usage/limit %% panel below.",
+              "description": "WHAT: Per-pod CPU usage (cores), filterable by $component (the owning StatefulSet/Deployment - kafka, connect, schemaregistry, etc.) as well as $pod. The request line (see Namespace Capacity row) is a scheduling reservation, not a ceiling - running above it is normal.\nWHY: Identifies which specific pod/component is consuming CPU.\nNORMAL: Flat, well under its limit\nPROBLEM: Sustained climb or spikes toward its limit\nNEXT: CPU usage/limit %% and CPU throttling %% panels below.",
               "options": {
                 "legend": {
                   "displayMode": "list",

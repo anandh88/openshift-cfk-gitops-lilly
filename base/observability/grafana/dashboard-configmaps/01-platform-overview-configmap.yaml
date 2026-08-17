@@ -47,7 +47,7 @@ data:
           "type": "text",
           "options": {
             "mode": "markdown",
-            "content": "[<- Dashboard 1: CFK Platform / Kubernetes Operations](/d/cfk-platform-operations)\n\n[Expand a collapsed row below for full Kafka/KRaft/Connect/Schema Registry/JVM/Flink detail](#)\n\n[Dashboard 3: Streaming Workload Operations ->](/d/streaming-workload-operations)"
+            "content": "[<- 00 - CFK Platform / Kubernetes Operations](/d/cfk-platform-operations) - check here first if this dashboard's own golden signals look unhealthy for reasons that might be infrastructure (pod not scheduled, CPU throttled, PVC full).\n\n[Expand a collapsed row below for full Kafka/KRaft/Connect/Schema Registry/JVM/Flink detail](#)\n\n[02 - Streaming Workload Operations ->](/d/streaming-workload-operations) - go here if every component above looks healthy but a specific topic, consumer group, connector, or Flink job is still misbehaving."
           },
           "description": "This dashboard is the golden-signal index across every Confluent/Flink component. Each row below links to the full deep-dive dashboard for that component.",
           "fieldConfig": {
@@ -92,7 +92,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "count(up{job=\"kafka\"} == 1)",
+              "expr": "count(up{job=\"kafka\"} == 1) or vector(0)",
               "refId": "A",
               "instant": true
             }
@@ -104,8 +104,12 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
+                    "color": "red",
                     "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 3
                   }
                 ]
               }
@@ -395,6 +399,14 @@ data:
                   {
                     "color": "green",
                     "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 50
+                  },
+                  {
+                    "color": "red",
+                    "value": 250
                   }
                 ]
               },
@@ -428,7 +440,66 @@ data:
             "y": 11
           },
           "id": 10,
-          "panels": [],
+          "panels": [
+            {
+              "id": 1221,
+              "title": "KRaft Controllers Up",
+              "type": "stat",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "expr": "count(up{job=\"kraftcontroller\"} == 1) or vector(0)",
+                  "refId": "A",
+                  "instant": true
+                }
+              ],
+              "gridPos": {
+                "x": 12,
+                "y": 12,
+                "w": 4,
+                "h": 4
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "red",
+                        "value": null
+                      },
+                      {
+                        "color": "green",
+                        "value": 1
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              },
+              "description": "WHAT: KRaft controller pods currently scrapeable.\nWHY: This lab runs a single KRaft controller (no separate ZooKeeper) - if its telemetry endpoint disappears, every other KRaft panel on this row goes stale/blank without explanation.\nNORMAL: 1\nPROBLEM: 0\nNEXT: Dashboard 00's StatefulSet/Deployment Health row for the kraftcontroller pod's actual Kubernetes status.",
+              "options": {
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "textMode": "auto",
+                "colorMode": "value",
+                "graphMode": "area"
+              }
+            }
+          ],
           "title": "KRaft Controller",
           "type": "row"
         },
@@ -644,9 +715,9 @@ data:
           },
           "id": 14,
           "gridPos": {
-            "x": 12,
+            "x": 16,
             "y": 12,
-            "w": 12,
+            "w": 8,
             "h": 4
           }
         },
@@ -680,7 +751,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "count(up{job=\"connect\"} == 1)",
+              "expr": "count(up{job=\"connect\"} == 1) or vector(0)",
               "refId": "A",
               "instant": true
             }
@@ -692,8 +763,12 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
+                    "color": "red",
                     "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
                   }
                 ]
               }
@@ -722,7 +797,7 @@ data:
           }
         },
         {
-          "title": "Connectors Failed",
+          "title": "Failed Tasks",
           "type": "stat",
           "datasource": {
             "type": "prometheus",
@@ -921,7 +996,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "count(up{job=\"schemaregistry\"} == 1)",
+              "expr": "count(up{job=\"schemaregistry\"} == 1) or vector(0)",
               "refId": "A",
               "instant": true
             }
@@ -933,8 +1008,12 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
+                    "color": "red",
                     "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
                   }
                 ]
               }
@@ -963,7 +1042,7 @@ data:
           }
         },
         {
-          "title": "Request rate",
+          "title": "SR Kafka Client Request Rate",
           "type": "timeseries",
           "datasource": {
             "type": "prometheus",
@@ -1097,7 +1176,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "count(up{job=\"controlcenter\"} == 1)",
+              "expr": "count(up{job=\"controlcenter\"} == 1) or vector(0)",
               "refId": "A",
               "instant": true
             }
@@ -1151,7 +1230,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "max(rest_utils_healthcheck_cluster_offline{job=\"controlcenter\"}) or vector(0)",
+              "expr": "max(rest_utils_healthcheck_cluster_offline{job=\"controlcenter\"})",
               "refId": "A",
               "instant": true
             }
@@ -1171,11 +1250,36 @@ data:
                     "value": 1
                   }
                 ]
-              }
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "0": {
+                      "text": "Healthy",
+                      "color": "green"
+                    },
+                    "1": {
+                      "text": "Offline",
+                      "color": "red"
+                    }
+                  }
+                },
+                {
+                  "type": "special",
+                  "options": {
+                    "match": "null+nan",
+                    "result": {
+                      "text": "UNKNOWN (telemetry gap)",
+                      "color": "yellow"
+                    }
+                  }
+                }
+              ]
             },
             "overrides": []
           },
-          "description": "WHAT: C3's own healthcheck flag for 'is the Kafka cluster it monitors offline'.\nWHY: C3 evaluates cluster reachability itself - this is its own opinion, not just an up/down proxy.\nNORMAL: 0\nPROBLEM: 1\nNEXT: Check C3's dependencies.kafka connection in base/confluent-platform/controlcenter.yaml.",
+          "description": "WHAT: Control Center's own cluster-offline healthcheck (0=online, 1=offline). Distinguish 3 states: if the 'Up' stat above is 0, the target is unreachable (RED, telemetry unavailable) - this panel showing UNKNOWN in that case is expected. If 'Up'=1 and this panel is also UNKNOWN, C3's healthcheck endpoint specifically stopped reporting even though the target is otherwise reachable - a narrower, still-actionable gap.\nWHY: A naive `or vector(0)` here would make a telemetry gap look identical to a genuinely healthy cluster.\nNORMAL: Healthy (0)\nPROBLEM: Offline (1), or UNKNOWN while Up=1 (investigate C3's healthcheck subsystem)\nNEXT: Check the 'Up' stat first, then C3 pod logs if Up=1 but this is UNKNOWN.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -1377,7 +1481,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "count(up{job=\"kafkarestproxy\"} == 1)",
+              "expr": "count(up{job=\"kafkarestproxy\"} == 1) or vector(0)",
               "refId": "A",
               "instant": true
             }
@@ -1389,8 +1493,12 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
+                    "color": "red",
                     "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
                   }
                 ]
               }
@@ -1620,8 +1728,12 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
+                    "color": "red",
                     "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
                   }
                 ]
               }
@@ -1853,8 +1965,12 @@ data:
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green",
+                        "color": "red",
                         "value": null
+                      },
+                      {
+                        "color": "green",
+                        "value": 3
                       }
                     ]
                   },
@@ -1912,8 +2028,16 @@ data:
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green",
+                        "color": "red",
                         "value": null
+                      },
+                      {
+                        "color": "green",
+                        "value": 1
+                      },
+                      {
+                        "color": "red",
+                        "value": 2
                       }
                     ]
                   },
@@ -2217,6 +2341,10 @@ data:
                       {
                         "color": "green",
                         "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 1
                       }
                     ]
                   },
@@ -5974,6 +6102,10 @@ data:
                       {
                         "color": "green",
                         "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 1
                       }
                     ]
                   }
@@ -7130,8 +7262,12 @@ data:
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green",
+                        "color": "red",
                         "value": null
+                      },
+                      {
+                        "color": "green",
+                        "value": 1
                       }
                     ]
                   },
@@ -7166,7 +7302,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "count(up{job=\"connect\",pod=~\"$pod\"} == 1)",
+                  "expr": "count(up{job=\"connect\",pod=~\"$pod\"} == 1) or vector(0)",
                   "refId": "A",
                   "legendFormat": ""
                 }
@@ -10228,8 +10364,12 @@ data:
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green",
+                        "color": "red",
                         "value": null
+                      },
+                      {
+                        "color": "green",
+                        "value": 1
                       }
                     ]
                   },
@@ -10264,7 +10404,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "count(up{job=\"schemaregistry\",pod=~\"$pod\"} == 1)",
+                  "expr": "count(up{job=\"schemaregistry\",pod=~\"$pod\"} == 1) or vector(0)",
                   "refId": "A",
                   "legendFormat": ""
                 }
@@ -10802,7 +10942,7 @@ data:
                   "legendFormat": "{{pod}}-{{client_id}}"
                 }
               ],
-              "title": "Request Rate",
+              "title": "SR Kafka Client Request Rate",
               "type": "timeseries"
             },
             {
@@ -10879,7 +11019,7 @@ data:
                   "legendFormat": "{{pod}}-{{client_id}}"
                 }
               ],
-              "title": "Response Rate",
+              "title": "SR Kafka Client Response Rate",
               "type": "timeseries"
             },
             {
@@ -10965,7 +11105,7 @@ data:
                   "legendFormat": "{{pod}}-{{client_id}} max"
                 }
               ],
-              "title": "Request Size (avg/max)",
+              "title": "SR Kafka Client Request Size (avg/max)",
               "type": "timeseries"
             },
             {
@@ -11051,7 +11191,7 @@ data:
                   "legendFormat": "{{pod}}-{{client_id}} out"
                 }
               ],
-              "title": "Incoming / Outgoing Byte Rate",
+              "title": "SR Kafka Client Incoming / Outgoing Byte Rate",
               "type": "timeseries"
             },
             {
@@ -11717,8 +11857,8 @@ data:
             },
             {
               "id": 1136,
-              "title": "Jetty (REST API): active connections & request queue size",
-              "description": "WHAT: the actual HTTP-server-side signal - how many REST clients are connected to SR and how many requests are queued waiting for a Jetty thread. WHY: this, not the Kafka-client connection count above, is the real 'is SR's REST API under load' signal. NORMAL: request queue size at 0. PROBLEM: request queue size sustained > 0 means Jetty's thread pool is saturated. NEXT: check busy_thread_count vs thread_pool_usage, then SR pod CPU in Dashboard 1.",
+              "title": "SR REST API: active connections & request queue size",
+              "description": "WHAT: Schema Registry's HTTP/REST server - active connections and queued requests.\nWHY: This is SR's actual client-facing API layer, distinct from its internal Kafka client (see SR Kafka Client panels above).\nNORMAL: Queue size near 0\nPROBLEM: Sustained non-zero queue - requests are arriving faster than Jetty's thread pool can drain them.\nNEXT: SR REST API: thread pool usage %% panel.",
               "type": "timeseries",
               "datasource": {
                 "type": "prometheus",
@@ -11738,7 +11878,7 @@ data:
                   },
                   "expr": "schemaregistry_confluent_jetty_metrics_connections_active{job=\"schemaregistry\",pod=~\"$pod\"}",
                   "refId": "A",
-                  "legendFormat": "{{pod}} active connections"
+                  "legendFormat": "active connections"
                 },
                 {
                   "datasource": {
@@ -11747,16 +11887,7 @@ data:
                   },
                   "expr": "schemaregistry_confluent_jetty_metrics_request_queue_size{job=\"schemaregistry\",pod=~\"$pod\"}",
                   "refId": "B",
-                  "legendFormat": "{{pod}} request queue size"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "schemaregistry_confluent_jetty_metrics_thread_pool_usage{job=\"schemaregistry\",pod=~\"$pod\"}",
-                  "refId": "C",
-                  "legendFormat": "{{pod}} thread pool usage"
+                  "legendFormat": "request queue size"
                 }
               ],
               "fieldConfig": {
@@ -11764,6 +11895,144 @@ data:
                   "unit": "short"
                 },
                 "overrides": []
+              }
+            },
+            {
+              "id": 1222,
+              "title": "SR REST API: thread pool usage %",
+              "type": "timeseries",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "expr": "schemaregistry_confluent_jetty_metrics_thread_pool_usage{job=\"schemaregistry\",pod=~\"$pod\"}",
+                  "refId": "A",
+                  "legendFormat": "thread pool usage"
+                }
+              ],
+              "gridPos": {
+                "h": 7,
+                "w": 12,
+                "x": 12,
+                "y": 47
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "percentunit",
+                  "custom": {}
+                },
+                "overrides": []
+              },
+              "description": "WHAT: Fraction of Jetty's HTTP thread pool currently busy (confirmed live 0-1 scale).\nWHY: Approaching 1.0 means SR's REST layer is saturated - new requests start queuing (see the queue-size panel).\nNORMAL: Low\nPROBLEM: Sustained near 100%%\nNEXT: Check SR CPU/heap (JVM row below) - a slow GC or CPU starvation is the usual cause.",
+              "options": {
+                "legend": {
+                  "displayMode": "list",
+                  "placement": "bottom"
+                },
+                "tooltip": {
+                  "mode": "multi"
+                }
+              }
+            },
+            {
+              "id": 1223,
+              "title": "SR REST API: request rate & error rate",
+              "type": "timeseries",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "expr": "schemaregistry_confluent_jetty_metrics_request_rate{job=\"schemaregistry\",pod=~\"$pod\"}",
+                  "refId": "A",
+                  "legendFormat": "requests/sec"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "expr": "schemaregistry_confluent_jetty_metrics_request_error_rate{job=\"schemaregistry\",pod=~\"$pod\"}",
+                  "refId": "B",
+                  "legendFormat": "errors/sec"
+                }
+              ],
+              "gridPos": {
+                "h": 7,
+                "w": 12,
+                "x": 0,
+                "y": 54
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "reqps",
+                  "custom": {}
+                },
+                "overrides": []
+              },
+              "description": "WHAT: SR's actual REST/HTTP traffic (schema registration/lookup calls from Connect, clients, etc.) and its error rate - previously unused metrics, confirmed live.\nWHY: This is the real 'is SR's public API healthy' signal, as distinct from the SR Kafka Client panels above.\nNORMAL: error rate near 0\nPROBLEM: Sustained non-zero error rate\nNEXT: SR pod logs for the specific 4xx/5xx being returned.",
+              "options": {
+                "legend": {
+                  "displayMode": "list",
+                  "placement": "bottom"
+                },
+                "tooltip": {
+                  "mode": "multi"
+                }
+              }
+            },
+            {
+              "id": 1224,
+              "title": "SR REST API: busy thread count",
+              "type": "timeseries",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "expr": "schemaregistry_confluent_jetty_metrics_busy_thread_count{job=\"schemaregistry\",pod=~\"$pod\"}",
+                  "refId": "A",
+                  "legendFormat": "busy threads"
+                }
+              ],
+              "gridPos": {
+                "h": 7,
+                "w": 12,
+                "x": 12,
+                "y": 54
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "custom": {}
+                },
+                "overrides": []
+              },
+              "description": "WHAT: Jetty threads actively handling a request right now (previously unused metric, confirmed live).\nWHY: Read alongside thread pool usage %% - a rising busy-thread count with usage approaching 100%% confirms saturation rather than a brief blip.\nNORMAL: Low, tracks request rate\nPROBLEM: Pinned near the pool's max size\nNEXT: Same as thread pool usage %% above.",
+              "options": {
+                "legend": {
+                  "displayMode": "list",
+                  "placement": "bottom"
+                },
+                "tooltip": {
+                  "mode": "multi"
+                }
               }
             }
           ]
@@ -11993,7 +12262,7 @@ data:
           },
           "id": 1220,
           "title": "Apache Flink (full detail)",
-          "description": "Every panel from the original 24-flink-mvp.json - cluster overview, checkpointing, throughput, backpressure, Kafka connector detail, JVM, job lifecycle, parallelism/slots, network/buffers, producer/sink detail, storage, and RocksDB state. See Dashboard 3 for the business-level summary view.",
+          "description": "Generic Flink platform/job-engine signals: JobManager/TaskManager availability, slots, checkpoints, backpressure, JVM. Workload-specific operator metrics (RocksDB state-backend detail, Kafka source/producer connector internals, per-partition offsets, watermarks, mailbox/buffer internals) live in Dashboard 03's 'Apache Flink: Business Workload' row instead - see req 12 of the observability review.",
           "type": "row",
           "panels": [
             {
@@ -12021,10 +12290,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 3,
-                "w": 4,
                 "x": 0,
-                "y": 1
+                "y": 1,
+                "w": 4,
+                "h": 3
               },
               "id": 1142,
               "options": {
@@ -12080,10 +12349,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 3,
-                "w": 4,
                 "x": 4,
-                "y": 1
+                "y": 1,
+                "w": 4,
+                "h": 3
               },
               "id": 1143,
               "options": {
@@ -12139,10 +12408,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 3,
-                "w": 4,
                 "x": 8,
-                "y": 1
+                "y": 1,
+                "w": 4,
+                "h": 3
               },
               "id": 1144,
               "options": {
@@ -12198,10 +12467,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 3,
-                "w": 4,
                 "x": 12,
-                "y": 1
+                "y": 1,
+                "w": 4,
+                "h": 3
               },
               "id": 1145,
               "options": {
@@ -12257,10 +12526,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 3,
-                "w": 4,
                 "x": 16,
-                "y": 1
+                "y": 1,
+                "w": 4,
+                "h": 3
               },
               "id": 1146,
               "options": {
@@ -12283,7 +12552,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "max(flink_jobmanager_job_uptime{job_name=~\"$job\"})",
+                  "expr": "max(flink_jobmanager_job_uptime{job_name=~\"$flink_job\"})",
                   "refId": "A",
                   "legendFormat": ""
                 }
@@ -12320,10 +12589,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 3,
-                "w": 4,
                 "x": 20,
-                "y": 1
+                "y": 1,
+                "w": 4,
+                "h": 3
               },
               "id": 1147,
               "options": {
@@ -12346,7 +12615,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "sum(flink_jobmanager_job_numRestarts{job_name=~\"$job\"})",
+                  "expr": "sum(flink_jobmanager_job_numRestarts{job_name=~\"$flink_job\"})",
                   "refId": "A",
                   "legendFormat": ""
                 }
@@ -12382,10 +12651,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 6,
-                "w": 8,
                 "x": 0,
-                "y": 4
+                "y": 4,
+                "w": 8,
+                "h": 6
               },
               "id": 1148,
               "options": {
@@ -12453,10 +12722,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 6,
-                "w": 4,
                 "x": 8,
-                "y": 4
+                "y": 4,
+                "w": 4,
+                "h": 6
               },
               "id": 1149,
               "options": {
@@ -12526,10 +12795,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 6,
-                "w": 12,
                 "x": 12,
-                "y": 4
+                "y": 4,
+                "w": 12,
+                "h": 6
               },
               "id": 1150,
               "options": {
@@ -12589,10 +12858,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 8,
-                "w": 8,
                 "x": 0,
-                "y": 11
+                "y": 10,
+                "w": 8,
+                "h": 8
               },
               "id": 1151,
               "maxDataPoints": 1,
@@ -12625,7 +12894,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "sum(flink_jobmanager_job_numberOfCompletedCheckpoints{job_name=~\"$job\"})",
+                  "expr": "sum(flink_jobmanager_job_numberOfCompletedCheckpoints{job_name=~\"$flink_job\"})",
                   "refId": "A",
                   "legendFormat": "completed"
                 },
@@ -12634,7 +12903,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "sum(flink_jobmanager_job_numberOfFailedCheckpoints{job_name=~\"$job\"})",
+                  "expr": "sum(flink_jobmanager_job_numberOfFailedCheckpoints{job_name=~\"$flink_job\"})",
                   "refId": "B",
                   "legendFormat": "failed"
                 },
@@ -12643,7 +12912,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "sum(flink_jobmanager_job_numberOfInProgressCheckpoints{job_name=~\"$job\"})",
+                  "expr": "sum(flink_jobmanager_job_numberOfInProgressCheckpoints{job_name=~\"$flink_job\"})",
                   "refId": "C",
                   "legendFormat": "in progress"
                 }
@@ -12692,10 +12961,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 8,
-                "w": 8,
                 "x": 8,
-                "y": 11
+                "y": 10,
+                "w": 8,
+                "h": 8
               },
               "id": 1152,
               "options": {
@@ -12720,7 +12989,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_jobmanager_job_lastCheckpointDuration{job_name=~\"$job\"}",
+                  "expr": "flink_jobmanager_job_lastCheckpointDuration{job_name=~\"$flink_job\"}",
                   "refId": "A",
                   "legendFormat": "{{job_name}}"
                 }
@@ -12769,10 +13038,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 8,
-                "w": 8,
                 "x": 16,
-                "y": 11
+                "y": 10,
+                "w": 8,
+                "h": 8
               },
               "id": 1153,
               "options": {
@@ -12797,7 +13066,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_jobmanager_job_lastCheckpointSize{job_name=~\"$job\"}",
+                  "expr": "flink_jobmanager_job_lastCheckpointSize{job_name=~\"$flink_job\"}",
                   "refId": "A",
                   "legendFormat": "{{job_name}}"
                 }
@@ -12846,10 +13115,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 8,
-                "w": 16,
                 "x": 0,
-                "y": 20
+                "y": 18,
+                "w": 16,
+                "h": 8
               },
               "id": 1154,
               "options": {
@@ -12874,7 +13143,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "sum by (operator_name) (flink_taskmanager_job_task_operator_numRecordsInPerSecond{job_name=~\"$job\"})",
+                  "expr": "sum by (operator_name) (flink_taskmanager_job_task_operator_numRecordsInPerSecond{job_name=~\"$flink_job\"})",
                   "refId": "A",
                   "legendFormat": "{{operator_name}} in"
                 },
@@ -12883,7 +13152,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "sum by (operator_name) (flink_taskmanager_job_task_operator_numRecordsOutPerSecond{job_name=~\"$job\"})",
+                  "expr": "sum by (operator_name) (flink_taskmanager_job_task_operator_numRecordsOutPerSecond{job_name=~\"$flink_job\"})",
                   "refId": "B",
                   "legendFormat": "{{operator_name}} out"
                 }
@@ -12919,10 +13188,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 8,
-                "w": 8,
                 "x": 16,
-                "y": 20
+                "y": 18,
+                "w": 8,
+                "h": 8
               },
               "id": 1155,
               "options": {
@@ -12943,99 +13212,13 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "sum by (operator_name) (flink_taskmanager_job_task_operator_numRecordsOutPerSecond{job_name=~\"$job\"})",
+                  "expr": "sum by (operator_name) (flink_taskmanager_job_task_operator_numRecordsOutPerSecond{job_name=~\"$flink_job\"})",
                   "refId": "A",
                   "legendFormat": "{{operator_name}}"
                 }
               ],
               "title": "Records Out/sec by Operator (current)",
               "type": "bargauge"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "dateTimeAsIso"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 24,
-                "x": 0,
-                "y": 28
-              },
-              "id": 1156,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_currentInputWatermark{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "{{operator_name}} input wm"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_currentOutputWatermark{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "{{operator_name}} output wm"
-                }
-              ],
-              "title": "Watermark lag (input vs output, per operator)",
-              "type": "timeseries"
             },
             {
               "datasource": {
@@ -13078,10 +13261,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 8,
-                "w": 16,
                 "x": 0,
-                "y": 36
+                "y": 26,
+                "w": 16,
+                "h": 8
               },
               "id": 1157,
               "options": {
@@ -13106,7 +13289,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_taskmanager_job_task_busyTimeMsPerSecond{job_name=~\"$job\"}",
+                  "expr": "flink_taskmanager_job_task_busyTimeMsPerSecond{job_name=~\"$flink_job\"}",
                   "refId": "A",
                   "legendFormat": "{{task_name}} busy"
                 },
@@ -13115,7 +13298,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_taskmanager_job_task_idleTimeMsPerSecond{job_name=~\"$job\"}",
+                  "expr": "flink_taskmanager_job_task_idleTimeMsPerSecond{job_name=~\"$flink_job\"}",
                   "refId": "B",
                   "legendFormat": "{{task_name}} idle"
                 },
@@ -13124,7 +13307,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_taskmanager_job_task_backPressuredTimeMsPerSecond{job_name=~\"$job\"}",
+                  "expr": "flink_taskmanager_job_task_backPressuredTimeMsPerSecond{job_name=~\"$flink_job\"}",
                   "refId": "C",
                   "legendFormat": "{{task_name}} backpressured"
                 }
@@ -13166,10 +13349,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 8,
-                "w": 8,
                 "x": 16,
-                "y": 36
+                "y": 26,
+                "w": 8,
+                "h": 8
               },
               "id": 1158,
               "options": {
@@ -13190,176 +13373,13 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "max(flink_taskmanager_job_task_backPressuredTimeMsPerSecond{job_name=~\"$job\"}) / 1000",
+                  "expr": "max(flink_taskmanager_job_task_backPressuredTimeMsPerSecond{job_name=~\"$flink_job\"}) / 1000",
                   "refId": "A",
                   "legendFormat": ""
                 }
               ],
               "title": "Worst Backpressure Ratio (any task)",
               "type": "gauge"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "Standard Flink Kafka connector metric (per the Flink 'new Prometheus connector' blog) - records the source's consumer group is behind by.",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 0,
-                "y": 45
-              },
-              "id": 1159,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaSourceReader_KafkaConsumer_records_lag_max{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "{{operator_name}}"
-                }
-              ],
-              "title": "Kafka Source Consumer Lag (max)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "Fixed: real metric names have a KafkaSourceReader_ prefix this panel was missing (silently querying names that don't exist, showing No Data).",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 12,
-                "y": 45
-              },
-              "id": 1160,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaSourceReader_commitsSucceeded{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "{{operator_name}} succeeded"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaSourceReader_commitsFailed{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "{{operator_name}} failed"
-                }
-              ],
-              "title": "Kafka Sink Commits: Succeeded vs Failed",
-              "type": "timeseries"
             },
             {
               "datasource": {
@@ -13402,10 +13422,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 8,
                 "x": 0,
-                "y": 53
+                "y": 34,
+                "w": 8,
+                "h": 7
               },
               "id": 1161,
               "options": {
@@ -13488,10 +13508,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 8,
                 "x": 8,
-                "y": 53
+                "y": 34,
+                "w": 8,
+                "h": 7
               },
               "id": 1162,
               "options": {
@@ -13574,10 +13594,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 8,
                 "x": 16,
-                "y": 53
+                "y": 34,
+                "w": 8,
+                "h": 7
               },
               "id": 1163,
               "options": {
@@ -13648,10 +13668,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 3,
-                "w": 4,
                 "x": 0,
-                "y": 61
+                "y": 41,
+                "w": 4,
+                "h": 3
               },
               "id": 1164,
               "options": {
@@ -13674,7 +13694,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "sum(flink_jobmanager_job_fullRestarts{job_name=~\"$job\"})",
+                  "expr": "sum(flink_jobmanager_job_fullRestarts{job_name=~\"$flink_job\"})",
                   "refId": "A",
                   "legendFormat": ""
                 }
@@ -13707,10 +13727,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 3,
-                "w": 4,
                 "x": 4,
-                "y": 61
+                "y": 41,
+                "w": 4,
+                "h": 3
               },
               "id": 1165,
               "options": {
@@ -13733,7 +13753,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "max(flink_jobmanager_job_downtime{job_name=~\"$job\"})",
+                  "expr": "max(flink_jobmanager_job_downtime{job_name=~\"$flink_job\"})",
                   "refId": "A",
                   "legendFormat": ""
                 }
@@ -13766,10 +13786,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 3,
-                "w": 4,
                 "x": 8,
-                "y": 61
+                "y": 41,
+                "w": 4,
+                "h": 3
               },
               "id": 1166,
               "options": {
@@ -13792,7 +13812,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "max(flink_jobmanager_job_totalNumberOfCheckpoints{job_name=~\"$job\"})",
+                  "expr": "max(flink_jobmanager_job_totalNumberOfCheckpoints{job_name=~\"$flink_job\"})",
                   "refId": "A",
                   "legendFormat": ""
                 }
@@ -13825,10 +13845,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 3,
-                "w": 4,
                 "x": 12,
-                "y": 61
+                "y": 41,
+                "w": 4,
+                "h": 3
               },
               "id": 1167,
               "options": {
@@ -13851,7 +13871,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "max(flink_jobmanager_job_lastCompletedCheckpointId{job_name=~\"$job\"})",
+                  "expr": "max(flink_jobmanager_job_lastCompletedCheckpointId{job_name=~\"$flink_job\"})",
                   "refId": "A",
                   "legendFormat": ""
                 }
@@ -13884,10 +13904,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 3,
-                "w": 4,
                 "x": 16,
-                "y": 61
+                "y": 41,
+                "w": 4,
+                "h": 3
               },
               "id": 1168,
               "options": {
@@ -13947,10 +13967,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 3,
-                "w": 4,
                 "x": 20,
-                "y": 61
+                "y": 41,
+                "w": 4,
+                "h": 3
               },
               "id": 1169,
               "options": {
@@ -14022,10 +14042,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 12,
                 "x": 0,
-                "y": 64
+                "y": 44,
+                "w": 12,
+                "h": 7
               },
               "id": 1170,
               "options": {
@@ -14050,7 +14070,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_jobmanager_job_createdTime{job_name=~\"$job\"}",
+                  "expr": "flink_jobmanager_job_createdTime{job_name=~\"$flink_job\"}",
                   "refId": "A",
                   "legendFormat": "created"
                 },
@@ -14059,7 +14079,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_jobmanager_job_deployingTime{job_name=~\"$job\"}",
+                  "expr": "flink_jobmanager_job_deployingTime{job_name=~\"$flink_job\"}",
                   "refId": "B",
                   "legendFormat": "deploying"
                 },
@@ -14068,7 +14088,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_jobmanager_job_initializingTime{job_name=~\"$job\"}",
+                  "expr": "flink_jobmanager_job_initializingTime{job_name=~\"$flink_job\"}",
                   "refId": "C",
                   "legendFormat": "initializing"
                 },
@@ -14077,7 +14097,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_jobmanager_job_runningTime{job_name=~\"$job\"}",
+                  "expr": "flink_jobmanager_job_runningTime{job_name=~\"$flink_job\"}",
                   "refId": "D",
                   "legendFormat": "running"
                 }
@@ -14126,10 +14146,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 12,
                 "x": 12,
-                "y": 64
+                "y": 44,
+                "w": 12,
+                "h": 7
               },
               "id": 1171,
               "options": {
@@ -14154,7 +14174,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_jobmanager_job_restartingTime{job_name=~\"$job\"}",
+                  "expr": "flink_jobmanager_job_restartingTime{job_name=~\"$flink_job\"}",
                   "refId": "A",
                   "legendFormat": "restarting"
                 },
@@ -14163,7 +14183,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_jobmanager_job_failingTime{job_name=~\"$job\"}",
+                  "expr": "flink_jobmanager_job_failingTime{job_name=~\"$flink_job\"}",
                   "refId": "B",
                   "legendFormat": "failing"
                 },
@@ -14172,7 +14192,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_jobmanager_job_cancellingTime{job_name=~\"$job\"}",
+                  "expr": "flink_jobmanager_job_cancellingTime{job_name=~\"$flink_job\"}",
                   "refId": "C",
                   "legendFormat": "cancelling"
                 }
@@ -14198,10 +14218,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 12,
                 "x": 0,
-                "y": 72
+                "y": 51,
+                "w": 12,
+                "h": 7
               },
               "id": 1172,
               "options": {
@@ -14222,7 +14242,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "count by (operator_name) (flink_taskmanager_job_task_operator_numRecordsIn{job_name=~\"$job\"})",
+                  "expr": "count by (operator_name) (flink_taskmanager_job_task_operator_numRecordsIn{job_name=~\"$flink_job\"})",
                   "refId": "A",
                   "legendFormat": "subtasks"
                 }
@@ -14255,10 +14275,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 6,
                 "x": 12,
-                "y": 72
+                "y": 51,
+                "w": 6,
+                "h": 7
               },
               "id": 1173,
               "options": {
@@ -14314,10 +14334,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 6,
                 "x": 18,
-                "y": 72
+                "y": 51,
+                "w": 6,
+                "h": 7
               },
               "id": 1174,
               "options": {
@@ -14389,10 +14409,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 24,
                 "x": 0,
-                "y": 80
+                "y": 58,
+                "w": 24,
+                "h": 7
               },
               "id": 1175,
               "options": {
@@ -14417,7 +14437,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_jobmanager_job_lastCheckpointFullSize{job_name=~\"$job\"}",
+                  "expr": "flink_jobmanager_job_lastCheckpointFullSize{job_name=~\"$flink_job\"}",
                   "refId": "A",
                   "legendFormat": "full size"
                 },
@@ -14426,7 +14446,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_jobmanager_job_lastCheckpointPersistedData{job_name=~\"$job\"}",
+                  "expr": "flink_jobmanager_job_lastCheckpointPersistedData{job_name=~\"$flink_job\"}",
                   "refId": "B",
                   "legendFormat": "persisted"
                 },
@@ -14435,7 +14455,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_jobmanager_job_lastCheckpointProcessedData{job_name=~\"$job\"}",
+                  "expr": "flink_jobmanager_job_lastCheckpointProcessedData{job_name=~\"$flink_job\"}",
                   "refId": "C",
                   "legendFormat": "processed"
                 }
@@ -14484,10 +14504,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 24,
                 "x": 0,
-                "y": 88
+                "y": 65,
+                "w": 24,
+                "h": 7
               },
               "id": 1176,
               "options": {
@@ -14512,7 +14532,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "sum by (task_name) (flink_taskmanager_job_task_numBytesInPerSecond{job_name=~\"$job\"})",
+                  "expr": "sum by (task_name) (flink_taskmanager_job_task_numBytesInPerSecond{job_name=~\"$flink_job\"})",
                   "refId": "A",
                   "legendFormat": "{{task_name}} in"
                 },
@@ -14521,7 +14541,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "sum by (task_name) (flink_taskmanager_job_task_numBytesOutPerSecond{job_name=~\"$job\"})",
+                  "expr": "sum by (task_name) (flink_taskmanager_job_task_numBytesOutPerSecond{job_name=~\"$flink_job\"})",
                   "refId": "B",
                   "legendFormat": "{{task_name}} out"
                 }
@@ -14570,10 +14590,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 12,
                 "x": 0,
-                "y": 96
+                "y": 72,
+                "w": 12,
+                "h": 7
               },
               "id": 1177,
               "options": {
@@ -14598,7 +14618,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_taskmanager_job_task_hardBackPressuredTimeMsPerSecond{job_name=~\"$job\"}",
+                  "expr": "flink_taskmanager_job_task_hardBackPressuredTimeMsPerSecond{job_name=~\"$flink_job\"}",
                   "refId": "A",
                   "legendFormat": "{{task_name}} hard"
                 },
@@ -14607,7 +14627,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "flink_taskmanager_job_task_softBackPressuredTimeMsPerSecond{job_name=~\"$job\"}",
+                  "expr": "flink_taskmanager_job_task_softBackPressuredTimeMsPerSecond{job_name=~\"$flink_job\"}",
                   "refId": "B",
                   "legendFormat": "{{task_name}} soft"
                 }
@@ -14644,10 +14664,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 6,
                 "x": 12,
-                "y": 96
+                "y": 72,
+                "w": 6,
+                "h": 7
               },
               "id": 1178,
               "options": {
@@ -14670,99 +14690,13 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "max(flink_taskmanager_job_task_isBackPressured{job_name=~\"$job\"})",
+                  "expr": "max(flink_taskmanager_job_task_isBackPressured{job_name=~\"$flink_job\"})",
                   "refId": "A",
                   "legendFormat": ""
                 }
               ],
               "title": "Is Backpressured (any task)",
               "type": "stat"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 6,
-                "x": 18,
-                "y": 96
-              },
-              "id": 1179,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_mailboxLatencyMs{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "latency (ms)"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_mailboxMailsPerSecond{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "mails/sec"
-                }
-              ],
-              "title": "Mailbox latency / throughput",
-              "type": "timeseries"
             },
             {
               "datasource": {
@@ -14794,10 +14728,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
+                "x": 18,
+                "y": 72,
                 "w": 6,
-                "x": 0,
-                "y": 104
+                "h": 7
               },
               "id": 1180,
               "options": {
@@ -14825,1454 +14759,6 @@ data:
               ],
               "title": "TaskManager Shuffle Memory Used",
               "type": "gauge"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "percentunit"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 18,
-                "x": 6,
-                "y": 104
-              },
-              "id": 1181,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_buffers_inPoolUsage{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "{{task_name}} in pool"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_buffers_outPoolUsage{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "{{task_name}} out pool"
-                }
-              ],
-              "title": "Buffer pool usage, in/out (per task)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 0,
-                "y": 111
-              },
-              "id": 1182,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_buffers_inputQueueLength{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "{{task_name}} length"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_buffers_inputQueueSize{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "{{task_name}} size (bytes)"
-                }
-              ],
-              "title": "Input queue length / size (per task)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "ops"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 12,
-                "y": 111
-              },
-              "id": 1183,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_numBuffersInRemotePerSecond{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "{{task_name}} remote"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_numBuffersInLocalPerSecond{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "{{task_name}} local"
-                }
-              ],
-              "title": "Buffers In-Remote vs In-Local per sec (per task)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "records-lead-min: how far ahead of the consumer's position the latest available offset is. Reports NaN until the consumer has a real lag baseline - real metric, additive to the existing records_lag_max panel above.",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 8,
-                "x": 0,
-                "y": 119
-              },
-              "id": 1184,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaSourceReader_KafkaConsumer_records_lead_min{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "{{operator_name}}"
-                }
-              ],
-              "title": "Kafka Source Consumer Lag (lead min)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "ms"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 8,
-                "x": 8,
-                "y": 119
-              },
-              "id": 1185,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaSourceReader_KafkaConsumer_fetch_latency_avg{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "avg"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaSourceReader_KafkaConsumer_fetch_latency_max{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "max"
-                }
-              ],
-              "title": "Kafka Consumer Fetch Latency (avg/max)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "ops"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 8,
-                "x": 16,
-                "y": 119
-              },
-              "id": 1186,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaSourceReader_KafkaConsumer_records_consumed_rate{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "{{operator_name}}"
-                }
-              ],
-              "title": "Kafka Consumer Records Consumed / sec",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "Direct answer to 'how many messages have been consumed from this specific topic' - per-partition committed and current read offsets on raw-claims.",
-              "fieldConfig": {
-                "defaults": {
-                  "custom": {
-                    "align": "auto",
-                    "cellOptions": {
-                      "type": "auto"
-                    }
-                  }
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 0,
-                "y": 126
-              },
-              "id": 1187,
-              "options": {
-                "cellHeight": "sm",
-                "footer": {
-                  "countRows": false,
-                  "fields": "",
-                  "reducer": [
-                    "sum"
-                  ],
-                  "show": false
-                },
-                "showHeader": true
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaSourceReader_topic_partition_committedOffset{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "committed"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaSourceReader_topic_partition_currentOffset{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "current"
-                }
-              ],
-              "title": "raw-claims: Committed vs Current Offset, by partition",
-              "type": "table"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 12,
-                "y": 126
-              },
-              "id": 1188,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaSourceReader_topic_partition_committedOffset{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "{{partition}} committed"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaSourceReader_topic_partition_currentOffset{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "{{partition}} current"
-                }
-              ],
-              "title": "Offsets over time (committed vs current, by partition)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "decimals": 0,
-                  "mappings": [],
-                  "noValue": "0",
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 0,
-                "y": 133
-              },
-              "id": 1189,
-              "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                  "calcs": [
-                    "lastNotNull"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "textMode": "auto"
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "max(flink_taskmanager_job_task_operator_KafkaSourceReader_KafkaConsumer_assigned_partitions{job_name=~\"$job\"})",
-                  "refId": "A",
-                  "legendFormat": ""
-                }
-              ],
-              "title": "Assigned Partitions",
-              "type": "stat"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "decimals": 0,
-                  "mappings": [],
-                  "noValue": "0",
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      }
-                    ]
-                  },
-                  "unit": "percentunit"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 6,
-                "y": 133
-              },
-              "id": 1190,
-              "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                  "calcs": [
-                    "lastNotNull"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "textMode": "auto"
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "max(flink_taskmanager_job_task_operator_KafkaSourceReader_KafkaConsumer_io_ratio{job_name=~\"$job\"})",
-                  "refId": "A",
-                  "legendFormat": ""
-                }
-              ],
-              "title": "Consumer IO Ratio",
-              "type": "stat"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "decimals": 0,
-                  "mappings": [],
-                  "noValue": "0",
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 12,
-                "y": 133
-              },
-              "id": 1191,
-              "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                  "calcs": [
-                    "lastNotNull"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "textMode": "auto"
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "sum(flink_taskmanager_job_task_operator_KafkaSourceReader_KafkaConsumer_rebalance_total{job_name=~\"$job\"})",
-                  "refId": "A",
-                  "legendFormat": ""
-                }
-              ],
-              "title": "Consumer Rebalances (total)",
-              "type": "stat"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "decimals": 0,
-                  "mappings": [],
-                  "noValue": "0",
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      }
-                    ]
-                  },
-                  "unit": "ms"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 18,
-                "y": 133
-              },
-              "id": 1192,
-              "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                  "calcs": [
-                    "lastNotNull"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "textMode": "auto"
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "max(flink_taskmanager_job_task_operator_KafkaSourceReader_KafkaConsumer_commit_latency_avg{job_name=~\"$job\"})",
-                  "refId": "A",
-                  "legendFormat": ""
-                }
-              ],
-              "title": "Consumer Commit Latency (avg)",
-              "type": "stat"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 8,
-                "x": 0,
-                "y": 138
-              },
-              "id": 1193,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaProducer_batch_size_avg{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "avg"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaProducer_batch_size_max{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "max"
-                }
-              ],
-              "title": "Producer Batch Size (avg/max)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "bytes"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 8,
-                "x": 8,
-                "y": 138
-              },
-              "id": 1194,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaProducer_buffer_available_bytes{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "available"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaProducer_buffer_total_bytes{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "total"
-                }
-              ],
-              "title": "Producer Buffer Pool Available / Total",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "ms"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 8,
-                "x": 16,
-                "y": 138
-              },
-              "id": 1195,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaProducer_request_latency_avg{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "avg"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaProducer_request_latency_max{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "max"
-                }
-              ],
-              "title": "Producer Request Latency (avg/max)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "ops"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 0,
-                "y": 145
-              },
-              "id": 1196,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaProducer_record_send_rate{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "send rate"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_KafkaProducer_record_error_rate{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "error rate"
-                }
-              ],
-              "title": "Producer Record Send Rate / Error Rate",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "decimals": 0,
-                  "mappings": [],
-                  "noValue": "0",
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 12,
-                "y": 145
-              },
-              "id": 1197,
-              "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                  "calcs": [
-                    "lastNotNull"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "textMode": "auto"
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "max(flink_taskmanager_job_task_operator_KafkaProducer_compression_rate_avg{job_name=~\"$job\"})",
-                  "refId": "A",
-                  "legendFormat": ""
-                }
-              ],
-              "title": "Producer Compression Ratio (avg)",
-              "type": "stat"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "The exactly-once sink's own commit-protocol bookkeeping, one layer below the raw Kafka producer metrics.",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "decimals": 0,
-                  "mappings": [],
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 8,
-                "w": 8,
-                "x": 0,
-                "y": 153
-              },
-              "id": 1198,
-              "maxDataPoints": 1,
-              "options": {
-                "legend": {
-                  "displayMode": "table",
-                  "placement": "right",
-                  "showLegend": true,
-                  "values": [
-                    "value",
-                    "percent"
-                  ]
-                },
-                "pieType": "pie",
-                "reduceOptions": {
-                  "calcs": [
-                    "lastNotNull"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "sum(flink_taskmanager_job_task_operator_successfulCommittables{job_name=~\"$job\"})",
-                  "refId": "A",
-                  "legendFormat": "successful"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "sum(flink_taskmanager_job_task_operator_failedCommittables{job_name=~\"$job\"})",
-                  "refId": "B",
-                  "legendFormat": "failed"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "sum(flink_taskmanager_job_task_operator_retriedCommittables{job_name=~\"$job\"})",
-                  "refId": "C",
-                  "legendFormat": "retried"
-                }
-              ],
-              "title": "Committables: Successful vs Failed vs Retried",
-              "type": "piechart"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 8,
-                "w": 16,
-                "x": 8,
-                "y": 153
-              },
-              "id": 1199,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_pendingCommittables{job_name=~\"$job\"}",
-                  "refId": "A",
-                  "legendFormat": "pending"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_currentSendTime{job_name=~\"$job\"}",
-                  "refId": "B",
-                  "legendFormat": "current send time (ms)"
-                }
-              ],
-              "title": "Pending Committables / Current Send Time",
-              "type": "timeseries"
             },
             {
               "datasource": {
@@ -16315,10 +14801,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 8,
                 "x": 0,
-                "y": 162
+                "y": 79,
+                "w": 8,
+                "h": 7
               },
               "id": 1200,
               "options": {
@@ -16419,10 +14905,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 8,
                 "x": 8,
-                "y": 162
+                "y": 79,
+                "w": 8,
+                "h": 7
               },
               "id": 1201,
               "options": {
@@ -16505,10 +14991,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 8,
                 "x": 16,
-                "y": 162
+                "y": 79,
+                "w": 8,
+                "h": 7
               },
               "id": 1202,
               "options": {
@@ -16609,10 +15095,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 12,
                 "x": 0,
-                "y": 169
+                "y": 86,
+                "w": 12,
+                "h": 7
               },
               "id": 1203,
               "options": {
@@ -16695,10 +15181,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 12,
                 "x": 12,
-                "y": 169
+                "y": 86,
+                "w": 12,
+                "h": 7
               },
               "id": 1204,
               "options": {
@@ -16799,10 +15285,10 @@ data:
                 "overrides": []
               },
               "gridPos": {
-                "h": 7,
-                "w": 24,
                 "x": 0,
-                "y": 177
+                "y": 93,
+                "w": 24,
+                "h": 7
               },
               "id": 1205,
               "options": {
@@ -16834,625 +15320,19 @@ data:
               ],
               "title": "Container Disk (ephemeral-storage) Used, JM + TM",
               "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "RocksDB-internal errors (corruption, IO failures during compaction/flush). Real metric, currently 0.",
-              "fieldConfig": {
-                "defaults": {
-                  "decimals": 0,
-                  "mappings": [],
-                  "noValue": "0",
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 1
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 0,
-                "y": 185
-              },
-              "id": 1206,
-              "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                  "calcs": [
-                    "lastNotNull"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "textMode": "auto"
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_background_errors",
-                  "refId": "A",
-                  "legendFormat": ""
-                }
-              ],
-              "title": "Background Errors",
-              "type": "stat"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "1 means RocksDB has currently stopped accepting writes (memtables full, compaction can't keep up). The clearest possible write-stall signal.",
-              "fieldConfig": {
-                "defaults": {
-                  "decimals": 0,
-                  "mappings": [],
-                  "noValue": "0",
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 1
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 6,
-                "y": 185
-              },
-              "id": 1207,
-              "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                  "calcs": [
-                    "lastNotNull"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "textMode": "auto"
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_is_write_stopped",
-                  "refId": "A",
-                  "legendFormat": ""
-                }
-              ],
-              "title": "Write Stopped",
-              "type": "stat"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "Non-zero means writes are being throttled (soft stall) even if not fully stopped.",
-              "fieldConfig": {
-                "defaults": {
-                  "decimals": 0,
-                  "mappings": [],
-                  "noValue": "0",
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      }
-                    ]
-                  },
-                  "unit": "Bps"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 12,
-                "y": 185
-              },
-              "id": 1208,
-              "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                  "calcs": [
-                    "lastNotNull"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "textMode": "auto"
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_actual_delayed_write_rate",
-                  "refId": "A",
-                  "legendFormat": ""
-                }
-              ],
-              "title": "Delayed Write Rate",
-              "type": "stat"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "",
-              "fieldConfig": {
-                "defaults": {
-                  "decimals": 0,
-                  "mappings": [],
-                  "noValue": "0",
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 18,
-                "y": 185
-              },
-              "id": 1209,
-              "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                  "calcs": [
-                    "lastNotNull"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "textMode": "auto"
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_num_running_compactions",
-                  "refId": "A",
-                  "legendFormat": ""
-                }
-              ],
-              "title": "Running Compactions",
-              "type": "stat"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "Real RocksDB data size for this job's own keyed state (a per-bucket running counter, deliberately tiny). Grows as more distinct keys/updates accumulate.",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "bytes"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 0,
-                "y": 189
-              },
-              "id": 1210,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_estimate_live_data_size",
-                  "refId": "A",
-                  "legendFormat": "estimated live data"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_live_sst_files_size",
-                  "refId": "B",
-                  "legendFormat": "live SST files"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_total_sst_files_size",
-                  "refId": "C",
-                  "legendFormat": "total SST files"
-                }
-              ],
-              "title": "Data Size (live / total SST files)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "In-memory write buffer before flush to an SST file on disk.",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "bytes"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 12,
-                "y": 189
-              },
-              "id": 1211,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_cur_size_active_mem_table",
-                  "refId": "A",
-                  "legendFormat": "active memtable"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_cur_size_all_mem_tables",
-                  "refId": "B",
-                  "legendFormat": "all memtables"
-                }
-              ],
-              "title": "MemTable Size (active / all)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "Sustained non-zero pending values (not just running) mean RocksDB's background threads can't keep up with the write rate - the real root cause behind write stalls.",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "short"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 0,
-                "y": 196
-              },
-              "id": 1212,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_compaction_pending",
-                  "refId": "A",
-                  "legendFormat": "compaction pending"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_mem_table_flush_pending",
-                  "refId": "B",
-                  "legendFormat": "flush pending"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_num_running_flushes",
-                  "refId": "C",
-                  "legendFormat": "running flushes"
-                }
-              ],
-              "title": "Compaction / Flush Pending",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "description": "Block cache holds hot, uncompressed data blocks for reads. Confirmed real non-zero baseline usage even with near-empty state - RocksDB's own bookkeeping overhead.",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 10,
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "showPoints": "never",
-                    "spanNulls": true,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "bytes"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 12,
-                "y": 196
-              },
-              "id": 1213,
-              "options": {
-                "legend": {
-                  "calcs": [
-                    "mean",
-                    "lastNotNull",
-                    "max"
-                  ],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_block_cache_usage",
-                  "refId": "A",
-                  "legendFormat": "used"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "prometheus"
-                  },
-                  "expr": "flink_taskmanager_job_task_operator_claims_seen_per_bucket_rocksdb_block_cache_capacity",
-                  "refId": "B",
-                  "legendFormat": "capacity"
-                }
-              ],
-              "title": "Block Cache Usage / Capacity",
-              "type": "timeseries"
             }
           ]
         }
       ],
       "links": [
         {
-          "title": "Dashboard 1: CFK Platform / Kubernetes Operations",
+          "title": "00 - CFK Platform / Kubernetes Operations",
           "type": "link",
           "url": "/d/cfk-platform-operations",
           "icon": "dashboard"
         },
         {
-          "title": "Dashboard 3: Streaming Workload Operations",
+          "title": "02 - Streaming Workload Operations",
           "type": "link",
           "url": "/d/streaming-workload-operations",
           "icon": "dashboard"
@@ -17499,14 +15379,14 @@ data:
             "sort": 1
           },
           {
-            "name": "connector",
+            "name": "flink_job",
             "type": "query",
-            "label": "Connector",
+            "label": "Flink Job",
             "datasource": {
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "query": "label_values(kafka_connect_connector_task_metrics_batch_size_avg{job=\"connect\"}, connector)",
+            "query": "label_values(flink_jobmanager_job_uptime, job_name)",
             "refresh": 2,
             "multi": true,
             "includeAll": true,
