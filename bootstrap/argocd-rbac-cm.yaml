@@ -1,5 +1,5 @@
 # Argo CD RBAC: default-deny (readonly), with platform-admin/developer/viewer
-# roles and mkurre bound to platform-admin for full local-cluster control.
+# roles and anandh88 bound to platform-admin for full local-cluster control.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -22,5 +22,5 @@ data:
     p, role:developer, applications, sync, */*, allow
     p, role:developer, logs, get, */*, allow
     p, role:viewer, applications, get, */*, allow
-    g, mkurre, role:platform-admin
+    g, anandh88, role:platform-admin
   scopes: "[groups, email]"

@@ -822,7 +822,7 @@ oc delete pod -n flink-jobs -l type=flink-native-kubernetes   (force a fresh pul
 Flink Kubernetes Operator reconciles flink-deployment.yaml → JobManager → TaskManager(s)
 ```
 
-> **Implementation Finding.** `.github/workflows/ci-flink-build.yaml` is a complete, correctly-written pipeline — checkout, `mvn package -DskipTests`, `docker/build-push-action` to `ghcr.io/mkurre/flink-jobs/claims-processor`, tagged `sha-<short-sha>`, then an automated commit bumping `base/flink-jobs/flink-application.yaml`'s `spec.image` to match. It targets the **unused** `FlinkApplication` CRD (§23), not the deployed `FlinkDeployment`, and per its own Dockerfile's header comment, **it has never actually run in this environment** — no GitHub Actions execution has occurred, and no `ghcr.io` image has ever been published. The image actually running today was built and pushed by hand, straight to the CRC-internal registry, using the exact three commands shown above. If you wire this CI pipeline up for real, retarget it at `flink-deployment.yaml`'s `spec.image` field, not `flink-application.yaml`'s.
+> **Implementation Finding.** `.github/workflows/ci-flink-build.yaml` is a complete, correctly-written pipeline — checkout, `mvn package -DskipTests`, `docker/build-push-action` to `ghcr.io/anandh88/flink-jobs/claims-processor`, tagged `sha-<short-sha>`, then an automated commit bumping `base/flink-jobs/flink-application.yaml`'s `spec.image` to match. It targets the **unused** `FlinkApplication` CRD (§23), not the deployed `FlinkDeployment`, and per its own Dockerfile's header comment, **it has never actually run in this environment** — no GitHub Actions execution has occurred, and no `ghcr.io` image has ever been published. The image actually running today was built and pushed by hand, straight to the CRC-internal registry, using the exact three commands shown above. If you wire this CI pipeline up for real, retarget it at `flink-deployment.yaml`'s `spec.image` field, not `flink-application.yaml`'s.
 
 **The code itself**, `com.statefarm.flink.ClaimsProcessorJob`:
 
@@ -1120,7 +1120,7 @@ oc login -u kubeadmin -p "$(crc console --credentials -o json | jq -r '.clusterC
 ## 39. Bootstrap Platform Services
 
 ```bash
-git clone https://github.com/mkurre/openshift-cfk-gitops.git
+git clone https://github.com/anandh88/openshift-cfk-gitops-lilly.git
 cd openshift-cfk-gitops
 ./scripts/bootstrap.sh
 ```

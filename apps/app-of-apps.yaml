@@ -9,7 +9,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/mkurre/openshift-cfk-gitops.git
+    repoURL: https://github.com/anandh88/openshift-cfk-gitops-lilly.git
     targetRevision: main
     path: apps
   destination:

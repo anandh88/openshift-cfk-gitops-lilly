@@ -41,7 +41,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/mkurre/flink-jobs/claims-processor
+          images: ghcr.io/anandh88/flink-jobs/claims-processor
           tags: |
             type=sha,format=short
             type=ref,event=branch
@@ -61,7 +61,7 @@ jobs:
           curl -sL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
           short_sha=$(git rev-parse --short HEAD)
-          yq -i ".spec.image = \"ghcr.io/mkurre/flink-jobs/claims-processor:sha-${short_sha}\"" \
+          yq -i ".spec.image = \"ghcr.io/anandh88/flink-jobs/claims-processor:sha-${short_sha}\"" \
             base/flink-jobs/flink-application.yaml
 
       - name: Commit and push updated manifest
