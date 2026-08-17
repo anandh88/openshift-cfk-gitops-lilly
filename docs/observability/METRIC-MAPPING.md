@@ -8,6 +8,15 @@ alone — every "Actual Prometheus Metric" column is something this cluster is r
 emitting right now, and every "Available?" classification reflects what was actually
 observed, not what Confluent's docs say *should* exist.
 
+Also cross-checked against three official Confluent references at the user's request:
+[Health+ telemetry-reporter-metrics docs](https://docs.confluent.io/platform/current/health-plus/telemetry-reporter-metrics.html#c3),
+[confluentinc/jmx-monitoring-stacks](https://github.com/confluentinc/jmx-monitoring-stacks) (the
+`jmxexporter-prometheus-grafana` stack's dashboard JSONs), and
+[confluentinc/cp-demo](https://github.com/confluentinc/cp-demo). Every metric name pulled
+from those references was independently re-verified live in this cluster before being
+added — see "Cross-checked against official Confluent references" below for what matched,
+what didn't, and why.
+
 ## CFK Prometheus configuration — how metrics collection is actually wired
 
 **Finding: none of the six CFK CRs in `base/confluent-platform/` set `spec.metrics` at
@@ -227,3 +236,55 @@ dashboard here uses ZooKeeper-era assumptions (no `SessionExpireListener`, no
   Server → Kafka pipeline, because that pipeline is a Kafka Connect source connector, not
   a hand-written producer app — Connect's own `source-task-metrics` (poll/write rate,
   batch time) are the correct and only available proxy, and that's what Dashboard 3 uses.
+
+## Cross-checked against official Confluent references
+
+### Health+ telemetry-reporter-metrics.html#c3
+
+That doc describes metrics Confluent's cloud-hosted Health+ service receives via the
+**Confluent Telemetry Reporter** — a separate push pipeline (OTLP → Control Center's
+embedded Prometheus, or onward to Confluent Cloud) distinct from the local
+JMX-Prometheus-exporter path this repo's `base/observability` scrapes. Checked live:
+`confluent_telemetry_httpexporter_*` / `confluent_telemetry_kafkaexporter_*` (the
+telemetry reporter's own send/batch counters) return **zero series** on this cluster right
+now — this on-prem lab has no Confluent Cloud API key configured, so that push path is
+inactive, not broken.
+
+The doc's underlying *application-level* signals are still real and available, just under
+different local metric names:
+
+| Health+ metric | Local equivalent (confirmed live) | Added |
+|---|---|---|
+| `consumer_group/total_lag` | `kafka_consumer_consumer_fetch_manager_metrics_records_lag_max{job="controlcenter"}` — C3's own Kafka Streams consumer lag on `_confluent-alerts`/`_confluent-command`/metrics topics | Yes — new "Control Center (full detail)" row |
+| `jersey/*` (ACL operations) | `rest_utils_jersey_metrics_kafka_acls_get_request_{rate,latency_avg,error_rate}` | Yes |
+| `jersey/*` (topic defaults/configurations) | `rest_utils_jersey_metrics_kafka_get_topic_default{s,_config}_request_{rate,error_rate}` | Yes |
+| `healthcheck/cluster_offline` etc. | `rest_utils_healthcheck_cluster_offline` (already dashboarded in Dashboard 2's Control Center row before this cross-check) | Already present |
+
+### confluentinc/jmx-monitoring-stacks (`jmxexporter-prometheus-grafana`)
+
+Confluent's own official Prometheus/Grafana reference stack. Pulled every dashboard JSON
+under `assets/grafana/provisioning/dashboards/` and diffed panel titles/PromQL against
+what's here. Two real, confirmed-live gaps found and fixed:
+
+| Official dashboard | Panel | Official metric name | This deployment's actual metric name | Added |
+|---|---|---|---|---|
+| `kraft.json` | Metadata Error Count | `kafka_controller_kafkacontroller_value{name="MetadataErrorCount"}` | same name, confirmed live (value 0) | Yes — KRaft row |
+| `rest-proxy.json` | Busy Threads / Thread Pool Usage % / Connections Active / Request Queue Size / Connections Opened-Closed-Accepted Rate | `kafka_rest_jetty_metrics_*` | **`kafkarestproxy_confluent_jetty_metrics_*`** — the official dashboard's plain `kafka_rest_jetty_metrics_*` names return **zero series** here; this deployment's exporter uses a `kafkarestproxy_confluent_`-prefixed variant instead (same pattern as Schema Registry's `schemaregistry_confluent_jetty_metrics_*`, found in an earlier pass) | Yes — new "Kafka REST Proxy (full detail)" row |
+
+Also checked `kafka-quotas.json`'s per-user throttle-time panels
+(`kafka_server_{produce,fetch,request}_throttle_time{user=~...}`) — confirmed **zero
+series** in this deployment (this cluster has no per-user quota assigned, only the
+broker-aggregate quota gauge already dashboarded is populated) — not added, since adding
+a panel for a metric with no data here would violate the "no dashboard that shows no
+data" rule. `kafka-lag-exporter.json` exists in the official stack precisely because
+official Confluent tooling *also* needs a separate exporter for true per-consumer-group
+lag — confirming (not just asserting) the gap already documented above under "No true
+per-consumer-group lag breakdown."
+
+### confluentinc/cp-demo
+
+No dedicated Grafana/Prometheus assets in this repo (it's an end-to-end CP demo, not a
+monitoring reference). Its `docker-compose.yml` confirms the same Confluent Telemetry
+Reporter → Control Center's embedded Prometheus (OTLP) architecture already documented
+above and in `base/confluent-platform/kafka.yaml`'s own comments — used as an
+architecture cross-check, no new panels came from it.

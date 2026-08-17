@@ -6998,6 +6998,60 @@
               "mode": "multi"
             }
           }
+        },
+        {
+          "id": 1233,
+          "title": "Metadata Error Count",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 209,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafka_controller_kafkacontroller_value{name=\"MetadataErrorCount\",job=\"kraftcontroller\",pod=~\"$pod\"})",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: errors encountered applying metadata log records on this controller. WHY: Confluent's own official jmx-monitoring-stacks KRaft dashboard (github.com/confluentinc/jmx-monitoring-stacks) treats this as a top-level KRaft health signal alongside ActiveControllerCount/OfflinePartitions - found missing here during a cross-check against that reference. NORMAL: 0. PROBLEM: >0 - the controller failed to apply a metadata change. NEXT: oc logs kraftcontroller-0/1/2 around the time of the increase.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "auto"
+          }
         }
       ]
     },
@@ -17732,6 +17786,554 @@
           ],
           "title": "Block Cache Usage / Capacity",
           "type": "timeseries"
+        }
+      ]
+    },
+    {
+      "collapsed": true,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "id": 1232,
+      "title": "Control Center (full detail) - Health+ telemetry-reporter cross-check",
+      "description": "Added after cross-checking https://docs.confluent.io/platform/current/health-plus/telemetry-reporter-metrics.html#c3 - the doc describes metrics Confluent's cloud-hosted Health+ service receives via the Confluent Telemetry Reporter (a separate push pipeline this on-prem lab doesn't use, confirmed live: confluent_telemetry_httpexporter_* returns zero series here). The same underlying signals (consumer lag, ACL jersey metrics, topic-defaults jersey metrics) are exposed locally via the standard JMX-Prometheus path under different metric names, confirmed live and added here.",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 49
+      },
+      "panels": [
+        {
+          "id": 1227,
+          "title": "Control Center's own internal consumer lag (Streams state stores, alerts/command topics)",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 24,
+            "h": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_consumer_consumer_fetch_manager_metrics_records_lag_max{job=\"controlcenter\",pod=~\"$pod\"}",
+              "refId": "A",
+              "legendFormat": "{{client_id}} / {{topic}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "description": "WHAT: lag of Control Center's own internal Kafka Streams consumers (StreamThread/StateUpdater/restore-consumer) reading its _confluent-alerts, _confluent-command, and metrics topics. Confluent's official Health+ telemetry reporter reports this exact signal as consumer_group/total_lag - this is the same lag, exposed locally via the JMX-Prometheus path instead of pushed to Confluent Cloud (see docs.confluent.io health-plus/telemetry-reporter-metrics). WHY: if C3 itself falls behind on its own topics, its UI shows stale data even though the underlying Kafka cluster is fine. NORMAL: near 0 / NaN (JMX reports NaN, not 0, when idle - not an error). PROBLEM: a large, growing lag value. NEXT: check controlcenter-0 pod CPU/memory in Dashboard 1.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 1228,
+          "title": "ACL API request rate",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 8,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rest_utils_jersey_metrics_kafka_acls_get_request_rate{job=\"controlcenter\",pod=~\"$pod\"})",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: rate of ACL-listing requests against Control Center's REST API. Maps to the 'ACL operations' jersey metrics documented in Confluent's Health+ telemetry reporter reference. NORMAL: low/zero in this lab (no automation querying ACLs). PROBLEM: N/A by itself - a traffic signal, not a health signal.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 1229,
+          "title": "ACL API error rate",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 6,
+            "y": 8,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rest_utils_jersey_metrics_kafka_acls_get_request_error_rate{job=\"controlcenter\",pod=~\"$pod\"})",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: ACL-listing request errors. NORMAL: 0. PROBLEM: >0 - check C3's RBAC/authorizer configuration.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 1230,
+          "title": "Topic-defaults API request rate",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 8,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rest_utils_jersey_metrics_kafka_get_topic_defaults_request_rate{job=\"controlcenter\",pod=~\"$pod\"})",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: rate of 'get topic defaults/configuration' requests against C3's REST API - the endpoints Confluent's Health+ docs specifically call out under 'Topic defaults and configurations'. NORMAL: low/zero in this lab.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 1231,
+          "title": "Topic-defaults API error rate",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 18,
+            "y": 8,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rest_utils_jersey_metrics_kafka_get_topic_default_config_request_error_rate{job=\"controlcenter\",pod=~\"$pod\"})",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: errors on the topic-defaults/config endpoints. NORMAL: 0. PROBLEM: >0.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "auto"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": true,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "id": 1239,
+      "title": "Kafka REST Proxy (full detail) - jmx-monitoring-stacks cross-check",
+      "description": "Added after cross-checking github.com/confluentinc/jmx-monitoring-stacks's rest-proxy.json - its own official REST Proxy dashboard leads with exactly these Jetty thread-pool/connection panels, which were missing here (this deployment previously only had Up/CPU/Memory/one jersey endpoint for REST Proxy). All confirmed live under the kafkarestproxy_confluent_jetty_metrics_* naming this deployment's exporter actually uses (the upstream dashboard's plain kafka_rest_jetty_metrics_* names return zero series here - naming differs by CFK version/exporter config, values verified directly rather than assumed).",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 51
+      },
+      "panels": [
+        {
+          "id": 1234,
+          "title": "Busy Thread Count",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafkarestproxy_confluent_jetty_metrics_busy_thread_count{job=\"kafkarestproxy\",pod=~\"$pod\"})",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Jetty threads currently handling a request. WHY: matches Confluent's own official REST Proxy dashboard's primary row. NORMAL: low, well under the thread pool size. PROBLEM: pinned near the pool max alongside a growing Request Queue Size - REST Proxy is saturated.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 1235,
+          "title": "Thread Pool Usage %",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 6,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafkarestproxy_confluent_jetty_metrics_thread_pool_usage{job=\"kafkarestproxy\",pod=~\"$pod\"}) * 100",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 70
+                  },
+                  {
+                    "color": "red",
+                    "value": 90
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: % of the Jetty thread pool in use. NORMAL: < 70%. PROBLEM: > 90% sustained.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 1236,
+          "title": "Active Connections",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kafkarestproxy_confluent_jetty_metrics_connections_active{job=\"kafkarestproxy\",pod=~\"$pod\"})",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: current REST client connections. NORMAL: matches expected client count.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 1237,
+          "title": "Request Queue Size",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 4,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafkarestproxy_confluent_jetty_metrics_request_queue_size{job=\"kafkarestproxy\",pod=~\"$pod\"}",
+              "refId": "A",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "description": "WHAT: requests waiting for a free Jetty thread. WHY: this is REST Proxy's own saturation signal - the same metric family Confluent's official dashboard leads with. NORMAL: 0. PROBLEM: sustained > 0 - raise the thread pool size or investigate slow downstream Kafka calls.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 1238,
+          "title": "Connections Opened/Closed/Accepted Rate",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 4,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafkarestproxy_confluent_jetty_metrics_connections_opened_rate{job=\"kafkarestproxy\",pod=~\"$pod\"}",
+              "refId": "A",
+              "legendFormat": "{{pod}} opened"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafkarestproxy_confluent_jetty_metrics_connections_closed_rate{job=\"kafkarestproxy\",pod=~\"$pod\"}",
+              "refId": "B",
+              "legendFormat": "{{pod}} closed"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafkarestproxy_confluent_jetty_metrics_connections_accepted_rate{job=\"kafkarestproxy\",pod=~\"$pod\"}",
+              "refId": "C",
+              "legendFormat": "{{pod}} accepted"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "description": "WHAT: connection churn rate. WHY: steady non-zero churn (vs. a small number of stable connections) usually means clients are reconnecting repeatedly.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
         }
       ]
     }
