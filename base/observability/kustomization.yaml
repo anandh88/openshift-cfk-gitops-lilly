@@ -15,9 +15,5 @@ resources:
   - rules/infra-rules.yaml
   - grafana/dashboard-configmaps/00-cfk-platform-operations-configmap.yaml
   - grafana/dashboard-configmaps/01-platform-overview-configmap.yaml
-  - grafana/dashboard-configmaps/02-kafka-platform-configmap.yaml
   - grafana/dashboard-configmaps/03-streaming-workload-operations-configmap.yaml
-  - grafana/dashboard-configmaps/08-connect-platform-configmap.yaml
   - grafana/dashboard-configmaps/10-schema-registry-configmap.yaml
-  - grafana/dashboard-configmaps/24-flink-mvp-configmap.yaml
-  - grafana/dashboard-configmaps/23-jvm-deep-dive-configmap.yaml
