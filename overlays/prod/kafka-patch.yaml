@@ -13,6 +13,11 @@ spec:
             labelSelector:
               matchLabels:
                 app: kafka
+    envVars:
+      # Larger heap for production scale, still capped at 6g per Confluent's
+      # guidance (heap rarely needs to exceed 6GB even on busy clusters).
+      - name: KAFKA_HEAP_OPTS
+        value: "-Xms6g -Xmx6g -XX:MetaspaceSize=96m -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35"
     resources:
       requests:
         cpu: 2

@@ -64,6 +64,15 @@ spec:
               labelSelector:
                 matchLabels:
                   app: kafka
+    envVars:
+      # Xms=Xmx avoids heap-resize GC pauses; sized to stay safe under the
+      # local overlay's 3Gi container memory limit (leaves headroom for the
+      # OS page cache Kafka relies on, off-heap buffers, metaspace, threads).
+      # Override per-environment (see overlays/prod/kafka-patch.yaml) where
+      # more memory is available - Confluent's guidance is heap rarely needs
+      # to exceed 6GB even for large production brokers.
+      - name: KAFKA_HEAP_OPTS
+        value: "-Xms1200m -Xmx1200m -XX:MetaspaceSize=96m -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35"
     resources:
       requests:
         cpu: 500m
