@@ -10193,6 +10193,307 @@ data:
               ],
               "title": "Source Record Active Count (avg/max)",
               "type": "timeseries"
+            },
+            {
+              "id": 1221,
+              "title": "Connect->Kafka: Failed Authentications",
+              "type": "stat",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "gridPos": {
+                "x": 0,
+                "y": 116,
+                "w": 4,
+                "h": 4
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "expr": "sum(kafka_connect_connect_metrics_failed_authentication_total{job=\"connect\",pod=~\"$pod\"})",
+                  "refId": "A",
+                  "instant": true
+                }
+              ],
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 1
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              },
+              "description": "WHAT: SASL/Kerberos authentication failures on Connect's connection to the Kafka brokers. WHY: this pipeline is Kerberos-authenticated end to end - a failed auth here means Connect can't talk to Kafka at all, distinct from a task-level processing error. NORMAL: 0. PROBLEM: >0 - check the connect-keytab SealedSecret / krb5.conf / AD trust. NEXT: oc logs connect-0 for the SASL exception, then scripts/kerberos/setup-kerberos.sh.",
+              "options": {
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ]
+                },
+                "textMode": "auto"
+              }
+            },
+            {
+              "id": 1222,
+              "title": "Connect->Kafka: Successful Authentications",
+              "type": "stat",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "gridPos": {
+                "x": 4,
+                "y": 116,
+                "w": 4,
+                "h": 4
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "expr": "sum(kafka_connect_connect_metrics_successful_authentication_total{job=\"connect\",pod=~\"$pod\"})",
+                  "refId": "A",
+                  "instant": true
+                }
+              ],
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              },
+              "description": "WHAT: successful SASL/Kerberos authentications. NORMAL: matches the number of broker connections Connect has established. PROBLEM: not applicable alone - cross-check against Failed Authentications.",
+              "options": {
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ]
+                },
+                "textMode": "auto"
+              }
+            },
+            {
+              "id": 1223,
+              "title": "Connect Coordinator: Failed Rebalances",
+              "type": "stat",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "gridPos": {
+                "x": 8,
+                "y": 116,
+                "w": 4,
+                "h": 4
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "expr": "sum(kafka_connect_connect_coordinator_metrics_failed_rebalance_total{job=\"connect\",pod=~\"$pod\"})",
+                  "refId": "A",
+                  "instant": true
+                }
+              ],
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 1
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              },
+              "description": "WHAT: rebalances that failed to complete (distinct from the worker-level 'completed rebalances' counter elsewhere in this row). WHY: a failed rebalance can leave connectors/tasks unassigned. NORMAL: 0. PROBLEM: any nonzero/climbing value. NEXT: oc logs connect-0 around the time of the failure for the rebalance exception.",
+              "options": {
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ]
+                },
+                "textMode": "auto"
+              }
+            },
+            {
+              "id": 1224,
+              "title": "Connect Coordinator: Assigned Connectors / Tasks",
+              "type": "stat",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "gridPos": {
+                "x": 12,
+                "y": 116,
+                "w": 4,
+                "h": 4
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "expr": "kafka_connect_connect_coordinator_metrics_assigned_connectors{job=\"connect\",pod=~\"$pod\"}",
+                  "refId": "A",
+                  "instant": true
+                }
+              ],
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              },
+              "description": "WHAT: connectors currently assigned to this worker by the group coordinator. NORMAL: matches the number of connectors actually configured (1 in this deployment - the SQL Server JDBC source). PROBLEM: 0 while connectors are configured - the worker isn't picking up assigned work.",
+              "options": {
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ]
+                },
+                "textMode": "auto"
+              }
+            },
+            {
+              "id": 1225,
+              "title": "Connect->Kafka connection creation/close rate",
+              "type": "timeseries",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "gridPos": {
+                "x": 0,
+                "y": 120,
+                "w": 12,
+                "h": 8
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "expr": "kafka_connect_connect_metrics_connection_creation_rate{job=\"connect\",pod=~\"$pod\"}",
+                  "refId": "A",
+                  "legendFormat": "{{pod}} created"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "expr": "kafka_connect_connect_metrics_connection_close_rate{job=\"connect\",pod=~\"$pod\"}",
+                  "refId": "B",
+                  "legendFormat": "{{pod}} closed"
+                }
+              ],
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short"
+                },
+                "overrides": []
+              },
+              "description": "WHAT: rate of new/closed connections from Connect to the Kafka brokers. WHY: a steady non-zero churn (rather than a small number of stable long-lived connections) usually means something is repeatedly reconnecting. NORMAL: near 0 once the worker is stable. PROBLEM: sustained nonzero rate. NEXT: check for broker-side connection drops or client misconfiguration.",
+              "options": {
+                "legend": {
+                  "displayMode": "list",
+                  "placement": "bottom"
+                },
+                "tooltip": {
+                  "mode": "multi"
+                }
+              }
+            },
+            {
+              "id": 1226,
+              "title": "Time since last task error, by connector/task",
+              "type": "timeseries",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "gridPos": {
+                "x": 12,
+                "y": 120,
+                "w": 12,
+                "h": 8
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "expr": "time() - kafka_connect_task_error_metrics_last_error_timestamp{job=\"connect\",pod=~\"$pod\"} > 0",
+                  "refId": "A",
+                  "legendFormat": "{{connector}}-{{task}}"
+                }
+              ],
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "s"
+                },
+                "overrides": []
+              },
+              "description": "WHAT: seconds elapsed since this task's most recent recorded error (0/absent if it has never errored). WHY: correlate a recent error against other signals (Kafka latency, source system availability) at the same point in time. NORMAL: absent, or a large/growing number (no recent errors). PROBLEM: a small/recently-reset value appearing after being absent - a fresh error just happened. NEXT: 08's Task Errors metrics row (folded into this same collapsed section) for the error type.",
+              "options": {
+                "legend": {
+                  "displayMode": "list",
+                  "placement": "bottom"
+                },
+                "tooltip": {
+                  "mode": "multi"
+                }
+              }
             }
           ]
         },
