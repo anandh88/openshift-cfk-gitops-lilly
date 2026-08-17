@@ -154,3 +154,62 @@ well-reasoned troubleshooting improvements. They're listed here, not
 implemented in the same pass as the P0 corrections (native lag emitter,
 PromQL rate/window bugs), because each is independently substantial and
 this list should be worked through deliberately rather than rushed.
+
+## Dashboard 1 second-pass critique (user-supplied)
+
+A follow-up review of Dashboard 1 found a real `gridPos` overlap (CPU
+throttling panel colliding with the Pod Memory row) plus two more PromQL
+bugs (the Pod Operational Table's `max by (pod, namespace)` was dropping
+the `phase` label needed to actually show status; the OOMKilled stat's
+`or vector(0)` was placed inside `count()`, so an empty result produced
+`count(vector(0)) == 1` instead of `0`). Root cause: incremental patch
+scripts were adding panels with manually-picked `y` coordinates instead of
+recomputing the full layout, and a hand-rolled row-id assignment that
+didn't share a counter with the nested panels' own ids.
+
+Fixed by rebuilding Dashboard 1's generator function (`build_platform_ops`
+in the generation script) rather than patching further: every row past the
+first three (Platform Golden Signals, Node Health, Pod Operational Table)
+is now a properly `collapsed: true` row built from its own `Layout()`
+instance that shares a single global id counter with the rest of the
+dashboard, so gridPos and panel ids can no longer collide the way they did
+before. Also fixed in the same pass: replaced every hardcoded
+`namespace=~"confluent|monitoring|..."` regex baked directly into a
+panel's PromQL with the `$namespace` Grafana variable (the variable's own
+`label_values()` query still uses that regex to scope which namespaces
+appear in the dropdown, but the panels themselves now genuinely respect
+whatever the user selects); added a `$component` variable
+(`kube_pod_owner`'s `owner_name`); added a per-node CPU/memory table
+(`sum by (node)`) alongside the existing cluster-wide allocation stat, so
+the pattern generalizes to a real multi-node cluster instead of only
+working by coincidence on this single-node CRC lab; fixed the CoreDNS and
+kube-scheduler Layer 1B panel titles that promised two metrics (rate +
+latency, attempts + duration) but only queried one, either by adding the
+missing query or splitting into separate panels; added a CoreDNS
+error-*ratio* panel (not just a raw error rate) plus an rcode breakdown,
+and a kube-apiserver P99-latency-by-verb breakdown alongside the existing
+overall P99 stat.
+
+**Still not done from that review** (documented, not silently dropped):
+a full "Top slow API resources" table (verb+resource combined, would need
+a `topk()` over a 2-label group — the current by-verb breakdown is a
+partial step toward this); etcd, admission-webhook latency,
+ClusterOperator/ClusterVersion/MachineConfigPool status, and CSI health
+remain P1 items pending further RBAC/network investigation beyond the
+`system:monitoring` binding already granted; the node-exporter federation
+question (whether OpenShift's core cluster-monitoring-operator runs a
+node-exporter DaemonSet reachable directly, independent of the
+User-Workload-Monitoring stack confirmed absent on this CRC cluster) was
+raised but not yet investigated — a real, well-scoped next step, not
+dismissed.
+
+**Verification caveat**: this pass's PromQL was validated by direct code
+review and by matching patterns already confirmed live earlier in this
+session, rather than by a fresh live query-by-query check against
+Prometheus — the cluster was under severe CPU/memory pressure at the time
+(the same pre-existing overcommit documented throughout this file),
+degrading to the point that even simple Prometheus queries were timing
+out. This got worse after adding the Layer 1B scrape targets on top of an
+already ~96-99%-requested single node. Revisiting the CRC resource sizing
+question (raised and left unresolved earlier this session) is now
+overdue - it's blocking verification work, not just affecting UX.
