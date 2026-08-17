@@ -34,8 +34,8 @@
       "type": "row"
     },
     {
-      "title": "Pods Running",
-      "type": "stat",
+      "title": "Pod Status Distribution",
+      "type": "piechart",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -48,87 +48,37 @@
           },
           "expr": "sum(kube_pod_status_phase{namespace=~\"$namespace\", phase=\"Running\"})",
           "refId": "A",
+          "legendFormat": "Running",
           "instant": true
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
         },
-        "overrides": []
-      },
-      "description": "WHAT: Count of platform pods in Running phase.\nWHY: The baseline healthy-pod count for this stack.\nNORMAL: One entry per expected replica (kafka x3, connect x1, schemaregistry x1, controlcenter x1, kafkarestproxy x1, kraftcontroller x1, flink JM+TM, operators).\nPROBLEM: A drop from the expected count.\nNEXT: Pod Operational Table below to see which pod left Running.",
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "area"
-      },
-      "id": 2,
-      "gridPos": {
-        "x": 0,
-        "y": 1,
-        "w": 4,
-        "h": 4
-      }
-    },
-    {
-      "title": "Pods Pending",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
           "expr": "sum(kube_pod_status_phase{namespace=~\"$namespace\", phase=\"Pending\"} or vector(0))",
-          "refId": "A",
+          "refId": "B",
+          "legendFormat": "Pending",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(kube_pod_status_phase{namespace=~\"$namespace\", phase=\"Failed\"} or vector(0))",
+          "refId": "C",
+          "legendFormat": "Failed",
           "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 3
-              }
-            ]
-          }
+          "unit": "short"
         },
         "overrides": []
       },
-      "description": "WHAT: Pods stuck in Pending.\nWHY: Usually scheduling or PVC-binding failures.\nNORMAL: 0\nPROBLEM: Sustained > 0\nNEXT: Kubernetes Scheduling/Failures row - check PVC binding and node capacity.",
+      "description": "WHAT: Current split of platform pods by phase.\nWHY: One glance at the whole stack's health instead of three separate counters.\nNORMAL: All Running (one wedge).\nPROBLEM: Any Pending/Failed wedge appears.\nNEXT: Pod Operational Table below to see which pod left Running.",
       "options": {
         "reduceOptions": {
           "calcs": [
@@ -137,21 +87,33 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "area"
+        "pieType": "donut",
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "tooltip": {
+          "mode": "single"
+        }
       },
-      "id": 3,
+      "id": 2,
       "gridPos": {
-        "x": 4,
+        "x": 0,
         "y": 1,
-        "w": 4,
-        "h": 4
+        "w": 6,
+        "h": 8
       }
     },
     {
-      "title": "Pods Failed",
-      "type": "stat",
+      "title": "Cluster CPU: Requested vs Remaining",
+      "type": "piechart",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -162,31 +124,29 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(kube_pod_status_phase{namespace=~\"$namespace\", phase=\"Failed\"} or vector(0))",
+          "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=~\"$namespace\"})",
           "refId": "A",
+          "legendFormat": "Requested",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "clamp_min(sum(kube_node_status_allocatable{resource=\"cpu\"}) - sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=~\"$namespace\"}), 0)",
+          "refId": "B",
+          "legendFormat": "Remaining",
           "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          }
+          "unit": "short"
         },
         "overrides": []
       },
-      "description": "WHAT: Pods in Failed phase.\nWHY: Container exited non-zero and was not restarted.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: oc describe pod / oc logs on the failed pod.",
+      "description": "WHAT: This stack's CPU requests vs what's left of the cluster's allocatable CPU (single-node CRC lab, so cluster == node; see the per-node bar gauges in Node Health for the multi-node-portable version).\nWHY: This CRC node has repeatedly hit >90% requested, causing liveness-probe timeouts across every pod (Grafana, Prometheus, Connect, Control Center all observed flapping under this condition).\nNORMAL: Remaining wedge clearly visible.\nPROBLEM: Remaining wedge near-zero -> scheduler starves even trivial health-check handlers.\nNEXT: Reduce component resource requests, or raise CRC's `crc config set cpus/memory` allocation and restart CRC.",
       "options": {
         "reduceOptions": {
           "calcs": [
@@ -195,16 +155,164 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "area"
+        "pieType": "donut",
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 6,
+        "y": 1,
+        "w": 6,
+        "h": 8
+      }
+    },
+    {
+      "title": "Cluster Memory: Requested vs Remaining",
+      "type": "piechart",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=~\"$namespace\"})",
+          "refId": "A",
+          "legendFormat": "Requested",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "clamp_min(sum(kube_node_status_allocatable{resource=\"memory\"}) - sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=~\"$namespace\"}), 0)",
+          "refId": "B",
+          "legendFormat": "Remaining",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "description": "WHAT: This stack's memory requests vs what's left of the cluster's allocatable memory.\nWHY: Same overcommit risk as CPU - this node has been observed at 99-100% memory requests.\nNORMAL: Remaining wedge clearly visible.\nPROBLEM: Remaining wedge near-zero.\nNEXT: Same remediation as Cluster CPU: Requested vs Remaining.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "pieType": "donut",
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "tooltip": {
+          "mode": "single"
+        }
       },
       "id": 4,
       "gridPos": {
-        "x": 8,
+        "x": 12,
         "y": 1,
-        "w": 4,
-        "h": 4
+        "w": 6,
+        "h": 8
+      }
+    },
+    {
+      "title": "Prometheus Targets: Up vs Down",
+      "type": "piechart",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(up{namespace=~\"$namespace\"} == 1) or vector(0)",
+          "refId": "A",
+          "legendFormat": "Up",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(up{namespace=~\"$namespace\"} == 0) or vector(0)",
+          "refId": "B",
+          "legendFormat": "Down",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "description": "WHAT: Every ServiceMonitor/PodMonitor target, split by whether the last scrape succeeded.\nWHY: Distinguishes 'metric is really zero' from 'we have no data' across every other panel on this dashboard.\nNORMAL: All Up (one wedge).\nPROBLEM: Any Down wedge appears - a component's /metrics endpoint is unreachable (NetworkPolicy, pod down, port change).\nNEXT: Prometheus Self-Monitoring row: check `up{job=...}` for the specific job, then NetworkPolicy/pod status.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "pieType": "donut",
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 18,
+        "y": 1,
+        "w": 6,
+        "h": 8
       }
     },
     {
@@ -261,193 +369,11 @@
         "colorMode": "value",
         "graphMode": "area"
       },
-      "id": 5,
-      "gridPos": {
-        "x": 12,
-        "y": 1,
-        "w": 4,
-        "h": 4
-      }
-    },
-    {
-      "title": "Prometheus Targets Down",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "count(up{namespace=~\"$namespace\"} == 0) or vector(0)",
-          "refId": "A",
-          "instant": true
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "description": "WHAT: Targets Prometheus could not scrape at all.\nWHY: Distinguishes 'metric is really zero' from 'we have no data'.\nNORMAL: 0\nPROBLEM: > 0 - a component's /metrics endpoint is unreachable (NetworkPolicy, pod down, port change).\nNEXT: Prometheus Self-Monitoring row: check `up{job=...}` for the specific job, then NetworkPolicy/pod status.",
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "area"
-      },
       "id": 6,
       "gridPos": {
-        "x": 16,
-        "y": 1,
-        "w": 4,
-        "h": 4
-      }
-    },
-    {
-      "title": "Cluster CPU request allocation %",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=~\"$namespace\"}) / sum(kube_node_status_allocatable{resource=\"cpu\"}) * 100",
-          "refId": "A",
-          "instant": true
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 90
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "description": "WHAT: Sum of CPU *requests* for this stack as a % of total cluster-wide allocatable CPU (this is a single-node CRC lab, so cluster == node here; see the per-node table in Node Health for the multi-node-portable version).\nWHY: This CRC node has repeatedly hit >90% requested, causing liveness-probe timeouts across every pod (Grafana, Prometheus, Connect, Control Center all observed flapping under this condition).\nNORMAL: < 70%\nPROBLEM: > 90% sustained -> scheduler starves even trivial health-check handlers.\nNEXT: Reduce component resource requests, or raise CRC's `crc config set cpus/memory` allocation and restart CRC.",
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "area"
-      },
-      "id": 7,
-      "gridPos": {
-        "x": 20,
-        "y": 1,
-        "w": 4,
-        "h": 4
-      }
-    },
-    {
-      "title": "Cluster memory request allocation %",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=~\"$namespace\"}) / sum(kube_node_status_allocatable{resource=\"memory\"}) * 100",
-          "refId": "A",
-          "instant": true
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 75
-              },
-              {
-                "color": "red",
-                "value": 90
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "description": "WHAT: Sum of memory *requests* for this stack as a % of total cluster-wide allocatable memory.\nWHY: Same overcommit risk as CPU - this node has been observed at 99-100% memory requests.\nNORMAL: < 75%\nPROBLEM: > 90%\nNEXT: Same remediation as Cluster CPU request allocation %.",
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "area"
-      },
-      "id": 8,
-      "gridPos": {
         "x": 0,
-        "y": 5,
-        "w": 4,
+        "y": 9,
+        "w": 24,
         "h": 4
       }
     },
@@ -461,9 +387,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 13
       },
-      "id": 9,
+      "id": 7,
       "panels": [],
       "title": "Node Health",
       "type": "row"
@@ -521,17 +447,17 @@
           "mode": "multi"
         }
       },
-      "id": 10,
+      "id": 8,
       "gridPos": {
         "x": 0,
-        "y": 10,
+        "y": 14,
         "w": 12,
         "h": 8
       }
     },
     {
-      "title": "Per-node CPU/memory: used, requested, allocatable",
-      "type": "table",
+      "title": "Node CPU: requested / allocatable %, by node",
+      "type": "bargauge",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -542,86 +468,100 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (node) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", container!=\"\"}[5m]))",
+          "expr": "sum by (node) (kube_pod_container_resource_requests{resource=\"cpu\", namespace=~\"$namespace\"}) / on(node) max by (node) (kube_node_status_allocatable{resource=\"cpu\"}) * 100",
           "refId": "A",
-          "instant": true,
-          "format": "table"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum by (node) (kube_pod_container_resource_requests{resource=\"cpu\", namespace=~\"$namespace\"})",
-          "refId": "B",
-          "instant": true,
-          "format": "table"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "max by (node) (kube_node_status_allocatable{resource=\"cpu\"})",
-          "refId": "C",
-          "instant": true,
-          "format": "table"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum by (node) (container_memory_working_set_bytes{namespace=~\"$namespace\", container!=\"\"})",
-          "refId": "D",
-          "instant": true,
-          "format": "table"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum by (node) (kube_pod_container_resource_requests{resource=\"memory\", namespace=~\"$namespace\"})",
-          "refId": "E",
-          "instant": true,
-          "format": "table"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "max by (node) (kube_node_status_allocatable{resource=\"memory\"})",
-          "refId": "F",
-          "instant": true,
-          "format": "table"
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "min": 0
         },
         "overrides": []
       },
-      "description": "WHAT: Per-node breakdown of CPU/memory used vs requested vs allocatable - written to generalize cleanly to a real multi-node cluster (this CRC lab only has one node, 'crc', so it's a table with one row today).\nWHY: The multi-node-portable version of the cluster-wide allocation % stat panels above - on a real cluster this is where you'd spot one specific overloaded worker.\nNORMAL: request sums well under each node's allocatable column\nPROBLEM: a specific node's request/allocatable ratio much higher than its peers\nNEXT: Reschedule/rebalance workloads off that node, or add capacity.",
-      "transformations": [
-        {
-          "id": "joinByField",
-          "options": {
-            "byField": "node",
-            "mode": "outer"
-          }
-        }
-      ],
+      "description": "WHAT: Per-node CPU requested as a % of that node's allocatable - written to generalize cleanly to a real multi-node cluster (this CRC lab only has one node, 'crc', so it's a single bar today).\nWHY: The multi-node-portable, ranked version of the cluster-wide allocation % pie above - on a real cluster this is where you'd spot one specific overloaded worker.\nNORMAL: well under 70% for every node\nPROBLEM: a specific node's bar much higher than its peers\nNEXT: Reschedule/rebalance workloads off that node, or add capacity.",
       "options": {
-        "showHeader": true
+        "orientation": "horizontal",
+        "displayMode": "gradient"
       },
-      "id": 11,
+      "id": 9,
       "gridPos": {
         "x": 12,
-        "y": 10,
-        "w": 12,
+        "y": 14,
+        "w": 6,
+        "h": 8
+      }
+    },
+    {
+      "title": "Node Memory: requested / allocatable %, by node",
+      "type": "bargauge",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (node) (kube_pod_container_resource_requests{resource=\"memory\", namespace=~\"$namespace\"}) / on(node) max by (node) (kube_node_status_allocatable{resource=\"memory\"}) * 100",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "description": "WHAT: Per-node memory requested as a % of that node's allocatable.\nWHY: Same overcommit risk as CPU, ranked by node instead of summed cluster-wide.\nNORMAL: well under 75% for every node\nPROBLEM: a specific node's bar much higher than its peers\nNEXT: Same remediation as Node CPU: requested / allocatable %.",
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient"
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 18,
+        "y": 14,
+        "w": 6,
         "h": 8
       }
     },
@@ -655,10 +595,10 @@
       "options": {
         "showHeader": true
       },
-      "id": 12,
+      "id": 11,
       "gridPos": {
         "x": 0,
-        "y": 18,
+        "y": 22,
         "w": 24,
         "h": 6
       }
@@ -673,9 +613,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 28
       },
-      "id": 13,
+      "id": 12,
       "panels": [],
       "title": "Pod Operational Table",
       "type": "row"
@@ -748,10 +688,10 @@
       "options": {
         "showHeader": true
       },
-      "id": 14,
+      "id": 13,
       "gridPos": {
         "x": 0,
-        "y": 25,
+        "y": 29,
         "w": 24,
         "h": 9
       }
@@ -766,9 +706,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 39
       },
-      "id": 17,
+      "id": 16,
       "title": "Namespace Capacity",
       "description": "CPU/memory usage vs requests vs limits, broken out per namespace.",
       "type": "row",
@@ -826,7 +766,7 @@
               "mode": "multi"
             }
           },
-          "id": 15,
+          "id": 14,
           "gridPos": {
             "x": 0,
             "y": 0,
@@ -887,7 +827,7 @@
               "mode": "multi"
             }
           },
-          "id": 16,
+          "id": 15,
           "gridPos": {
             "x": 12,
             "y": 0,
@@ -907,9 +847,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 38
+        "y": 42
       },
-      "id": 21,
+      "id": 20,
       "title": "Pod CPU",
       "description": "Per-pod CPU usage, limit ratio, and CFS throttling.",
       "type": "row",
@@ -949,7 +889,7 @@
               "mode": "multi"
             }
           },
-          "id": 18,
+          "id": 17,
           "gridPos": {
             "x": 0,
             "y": 0,
@@ -959,7 +899,7 @@
         },
         {
           "title": "CPU usage / limit %, by pod",
-          "type": "timeseries",
+          "type": "bargauge",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -972,27 +912,39 @@
               },
               "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"$pod\", container!=\"\"}[5m])) / sum by (pod) (kube_pod_container_resource_limits{resource=\"cpu\", namespace=~\"$namespace\", pod=~\"$pod\"}) * 100",
               "refId": "A",
-              "legendFormat": "{{pod}}"
+              "instant": true
             }
           ],
           "fieldConfig": {
             "defaults": {
               "unit": "percent",
-              "custom": {}
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 80
+                  },
+                  {
+                    "color": "red",
+                    "value": 90
+                  }
+                ]
+              },
+              "min": 0
             },
             "overrides": []
           },
-          "description": "WHAT: CPU usage as a % of the pod's own CPU limit.\nWHY: This is what actually triggers CFS throttling, not the node-wide %.\nNORMAL: < 80%\nPROBLEM: Sustained > 90-100%\nNEXT: Consider raising the CR's podTemplate.resources.limits.cpu.",
+          "description": "WHAT: CPU usage as a % of each pod's own CPU limit, ranked.\nWHY: This is what actually triggers CFS throttling, not the node-wide %.\nNORMAL: < 80%\nPROBLEM: Sustained > 90-100%\nNEXT: Consider raising the CR's podTemplate.resources.limits.cpu.",
           "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": {
-              "mode": "multi"
-            }
+            "orientation": "horizontal",
+            "displayMode": "gradient"
           },
-          "id": 19,
+          "id": 18,
           "gridPos": {
             "x": 12,
             "y": 0,
@@ -1002,7 +954,7 @@
         },
         {
           "title": "CPU throttling %, by pod",
-          "type": "timeseries",
+          "type": "bargauge",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1015,13 +967,12 @@
               },
               "expr": "sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{namespace=~\"$namespace\", pod=~\"$pod\", container!=\"\"}[5m])) / sum by (pod) (rate(container_cpu_cfs_periods_total{namespace=~\"$namespace\", pod=~\"$pod\", container!=\"\"}[5m])) * 100",
               "refId": "A",
-              "legendFormat": "{{pod}}"
+              "instant": true
             }
           ],
           "fieldConfig": {
             "defaults": {
               "unit": "percent",
-              "custom": {},
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1038,21 +989,17 @@
                     "value": 25
                   }
                 ]
-              }
+              },
+              "min": 0
             },
             "overrides": []
           },
-          "description": "WHAT: % of CFS scheduling periods where this container was throttled (hit its CPU limit and got paused mid-period).\nWHY: A pod can look fine on the plain CPU-usage graph while still being throttled - usage caps at the limit, throttling is what actually happens above it.\nNORMAL: 0%\nPROBLEM: Sustained > 10-25% - the pod is CPU-limited even though usage looks flat at the ceiling.\nNEXT: Raise the CR's podTemplate.resources.limits.cpu, or investigate why that component needs more CPU than expected.",
+          "description": "WHAT: % of CFS scheduling periods where this container was throttled (hit its CPU limit and got paused mid-period), ranked across pods.\nWHY: A pod can look fine on the plain CPU-usage graph while still being throttled - usage caps at the limit, throttling is what actually happens above it.\nNORMAL: 0%\nPROBLEM: Sustained > 10-25% - the pod is CPU-limited even though usage looks flat at the ceiling.\nNEXT: Raise the CR's podTemplate.resources.limits.cpu, or investigate why that component needs more CPU than expected.",
           "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": {
-              "mode": "multi"
-            }
+            "orientation": "horizontal",
+            "displayMode": "gradient"
           },
-          "id": 20,
+          "id": 19,
           "gridPos": {
             "x": 0,
             "y": 8,
@@ -1072,9 +1019,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 45
       },
-      "id": 24,
+      "id": 23,
       "title": "Pod Memory",
       "description": "Per-pod memory usage and limit ratio.",
       "type": "row",
@@ -1114,7 +1061,7 @@
               "mode": "multi"
             }
           },
-          "id": 22,
+          "id": 21,
           "gridPos": {
             "x": 0,
             "y": 0,
@@ -1124,7 +1071,7 @@
         },
         {
           "title": "Memory usage / limit %, by pod",
-          "type": "timeseries",
+          "type": "bargauge",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1137,13 +1084,12 @@
               },
               "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=~\"$namespace\", pod=~\"$pod\", container!=\"\"}) / sum by (pod) (kube_pod_container_resource_limits{resource=\"memory\", namespace=~\"$namespace\", pod=~\"$pod\"}) * 100",
               "refId": "A",
-              "legendFormat": "{{pod}}"
+              "instant": true
             }
           ],
           "fieldConfig": {
             "defaults": {
               "unit": "percent",
-              "custom": {},
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1160,21 +1106,17 @@
                     "value": 90
                   }
                 ]
-              }
+              },
+              "min": 0
             },
             "overrides": []
           },
-          "description": "WHAT: Memory usage as a % of the pod's own memory limit.\nWHY: Crossing 100% here is an OOMKill, not a graceful slowdown like CPU throttling.\nNORMAL: < 75%\nPROBLEM: > 90%\nNEXT: OOMKilled panel below; consider raising the CR's memory limit.",
+          "description": "WHAT: Memory usage as a % of each pod's own memory limit, ranked.\nWHY: Crossing 100% here is an OOMKill, not a graceful slowdown like CPU throttling.\nNORMAL: < 75%\nPROBLEM: > 90%\nNEXT: OOMKilled panel below; consider raising the CR's memory limit.",
           "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": {
-              "mode": "multi"
-            }
+            "orientation": "horizontal",
+            "displayMode": "gradient"
           },
-          "id": 23,
+          "id": 22,
           "gridPos": {
             "x": 12,
             "y": 0,
@@ -1194,9 +1136,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 44
+        "y": 48
       },
-      "id": 27,
+      "id": 26,
       "title": "Pod / Node Network",
       "description": "Per-pod network throughput and errors/drops.",
       "type": "row",
@@ -1245,7 +1187,7 @@
               "mode": "multi"
             }
           },
-          "id": 25,
+          "id": 24,
           "gridPos": {
             "x": 0,
             "y": 0,
@@ -1297,7 +1239,7 @@
               "mode": "multi"
             }
           },
-          "id": 26,
+          "id": 25,
           "gridPos": {
             "x": 12,
             "y": 0,
@@ -1317,7 +1259,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 47
+        "y": 51
       },
       "id": 30,
       "title": "Persistent Storage",
@@ -1325,8 +1267,76 @@
       "type": "row",
       "panels": [
         {
-          "title": "PVC utilization %",
-          "type": "timeseries",
+          "title": "Storage: Used vs Free (all PVCs, $namespace)",
+          "type": "piechart",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kubelet_volume_stats_used_bytes{namespace=~\"$namespace\"})",
+              "refId": "A",
+              "legendFormat": "Used",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "clamp_min(sum(kubelet_volume_stats_capacity_bytes{namespace=~\"$namespace\"}) - sum(kubelet_volume_stats_used_bytes{namespace=~\"$namespace\"}), 0)",
+              "refId": "B",
+              "legendFormat": "Free",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Aggregate used vs free bytes across every PVC in scope (kafka data0-*, kraftcontroller data0-*, controlcenter data0-*/prometheus-data-*, this stack's own Prometheus PVC).\nWHY: One glance at overall storage headroom before drilling into which specific PVC is driving it.\nNORMAL: Free wedge clearly visible.\nPROBLEM: Free wedge near-zero.\nNEXT: The per-PVC bar gauge below to find which specific volume is full.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "pieType": "donut",
+            "displayLabels": [
+              "percent"
+            ],
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "values": [
+                "value",
+                "percent"
+              ]
+            },
+            "tooltip": {
+              "mode": "single"
+            }
+          },
+          "id": 27,
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 8,
+            "h": 8
+          }
+        },
+        {
+          "title": "PVC utilization %, by volume",
+          "type": "bargauge",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1339,13 +1349,13 @@
               },
               "expr": "kubelet_volume_stats_used_bytes{namespace=~\"$namespace\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"$namespace\"} * 100",
               "refId": "A",
+              "instant": true,
               "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}"
             }
           ],
           "fieldConfig": {
             "defaults": {
               "unit": "percent",
-              "custom": {},
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1362,25 +1372,21 @@
                     "value": 85
                   }
                 ]
-              }
+              },
+              "min": 0
             },
             "overrides": []
           },
-          "description": "WHAT: PVC used/capacity, per volume (kafka data0-*, kraftcontroller data0-*, controlcenter data0-*/prometheus-data-*, this stack's own Prometheus PVC).\nWHY: A full PVC on a Kafka broker stops it accepting writes.\nNORMAL: < 70%\nPROBLEM: > 85%\nNEXT: The growth panel below to estimate days-to-full, then expand the PVC or trim retention.",
+          "description": "WHAT: PVC used/capacity, ranked per volume.\nWHY: A full PVC on a Kafka broker stops it accepting writes.\nNORMAL: < 70%\nPROBLEM: > 85%\nNEXT: The growth panel below to estimate days-to-full, then expand the PVC or trim retention.",
           "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": {
-              "mode": "multi"
-            }
+            "orientation": "horizontal",
+            "displayMode": "gradient"
           },
           "id": 28,
           "gridPos": {
-            "x": 0,
+            "x": 8,
             "y": 0,
-            "w": 12,
+            "w": 16,
             "h": 8
           }
         },
@@ -1421,9 +1427,9 @@
           },
           "id": 29,
           "gridPos": {
-            "x": 12,
-            "y": 0,
-            "w": 12,
+            "x": 0,
+            "y": 8,
+            "w": 24,
             "h": 8
           }
         }
@@ -1439,7 +1445,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 54
       },
       "id": 34,
       "title": "Kubernetes Scheduling / Failures",
@@ -1447,8 +1453,8 @@
       "type": "row",
       "panels": [
         {
-          "title": "Pods not Running (Pending+Failed+Unknown)",
-          "type": "stat",
+          "title": "Pods: Running vs Not Running",
+          "type": "piechart",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1459,31 +1465,29 @@
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(kube_pod_status_phase{namespace=~\"$namespace\", phase=~\"Pending|Failed|Unknown\"} or vector(0))",
+              "expr": "sum(kube_pod_status_phase{namespace=~\"$namespace\", phase=\"Running\"})",
               "refId": "A",
+              "legendFormat": "Running",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kube_pod_status_phase{namespace=~\"$namespace\", phase=~\"Pending|Failed|Unknown\"} or vector(0))",
+              "refId": "B",
+              "legendFormat": "Not Running",
               "instant": true
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "short",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 1
-                  }
-                ]
-              }
+              "unit": "short"
             },
             "overrides": []
           },
-          "description": "WHAT: Any platform pod not in Running phase.\nWHY: Single combined signal for scheduling/crash problems.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: Pod Operational Table above, then oc describe pod for the specific pod.",
+          "description": "WHAT: Any platform pod not in Running phase, as a share of the whole.\nWHY: Single combined signal for scheduling/crash problems.\nNORMAL: All Running (one wedge).\nPROBLEM: Not Running wedge appears.\nNEXT: Pod Operational Table above, then oc describe pod for the specific pod.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -1492,16 +1496,28 @@
               "fields": "",
               "values": false
             },
-            "textMode": "auto",
-            "colorMode": "value",
-            "graphMode": "area"
+            "pieType": "donut",
+            "displayLabels": [
+              "percent"
+            ],
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "values": [
+                "value",
+                "percent"
+              ]
+            },
+            "tooltip": {
+              "mode": "single"
+            }
           },
           "id": 31,
           "gridPos": {
             "x": 0,
             "y": 0,
             "w": 6,
-            "h": 5
+            "h": 6
           }
         },
         {
@@ -1559,7 +1575,7 @@
             "x": 6,
             "y": 0,
             "w": 6,
-            "h": 5
+            "h": 6
           }
         },
         {
@@ -1602,157 +1618,6 @@
             "x": 12,
             "y": 0,
             "w": 12,
-            "h": 5
-          }
-        }
-      ]
-    },
-    {
-      "collapsed": true,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 53
-      },
-      "id": 37,
-      "title": "StatefulSet / Deployment Health",
-      "description": "Desired-vs-ready replica convergence for every Confluent StatefulSet and operator Deployment.",
-      "type": "row",
-      "panels": [
-        {
-          "title": "Confluent StatefulSets: desired vs ready",
-          "type": "table",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kube_statefulset_replicas{namespace=\"confluent\"}",
-              "refId": "A",
-              "instant": true,
-              "format": "table"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kube_statefulset_status_replicas_ready{namespace=\"confluent\"}",
-              "refId": "B",
-              "instant": true,
-              "format": "table"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kube_statefulset_status_replicas_current{namespace=\"confluent\"}",
-              "refId": "C",
-              "instant": true,
-              "format": "table"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "description": "WHAT: Desired vs ready vs current replica counts for kafka, kraftcontroller, connect, schemaregistry, controlcenter, kafkarestproxy StatefulSets.\nWHY: CFK manages every Confluent component as a StatefulSet - this is the CR-level health signal, distinct from pod-level status.\nNORMAL: ready == desired for all six\nPROBLEM: ready < desired sustained\nNEXT: oc get pods -n confluent -l app=<component>; check the CFK operator's own logs.",
-          "transformations": [
-            {
-              "id": "joinByField",
-              "options": {
-                "byField": "statefulset",
-                "mode": "outer"
-              }
-            }
-          ],
-          "options": {
-            "showHeader": true
-          },
-          "id": 35,
-          "gridPos": {
-            "x": 0,
-            "y": 0,
-            "w": 24,
-            "h": 7
-          }
-        },
-        {
-          "title": "Operators and Flink job: desired vs ready replicas",
-          "type": "table",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kube_deployment_spec_replicas{namespace=~\"confluent-operator|flink-operator|cmf-operator\"}",
-              "refId": "A",
-              "instant": true,
-              "format": "table"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kube_deployment_status_replicas_ready{namespace=~\"confluent-operator|flink-operator|cmf-operator\"}",
-              "refId": "B",
-              "instant": true,
-              "format": "table"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "kube_deployment_status_replicas_ready{namespace=\"flink-jobs\"}",
-              "refId": "C",
-              "instant": true,
-              "format": "table"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "description": "WHAT: Desired vs ready replicas for the CFK operator, Flink Kubernetes operator, CMF operator, and the Flink job's own Deployment (statefarm-claims-processor).\nWHY: A ready operator pod does NOT mean the CRs it manages are healthy - see Dashboard 2 for actual Kafka/Connect/etc. health.\nNORMAL: ready == desired for all\nPROBLEM: ready < desired\nNEXT: oc get pods -n <operator-namespace>; oc logs on the operator pod.",
-          "transformations": [
-            {
-              "id": "joinByField",
-              "options": {
-                "byField": "deployment",
-                "mode": "outer"
-              }
-            }
-          ],
-          "options": {
-            "showHeader": true
-          },
-          "id": 36,
-          "gridPos": {
-            "x": 0,
-            "y": 7,
-            "w": 24,
             "h": 6
           }
         }
@@ -1768,7 +1633,130 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 56
+        "y": 57
+      },
+      "id": 37,
+      "title": "StatefulSet / Deployment Health",
+      "description": "Desired-vs-ready replica convergence for every Confluent StatefulSet and operator Deployment.",
+      "type": "row",
+      "panels": [
+        {
+          "title": "Confluent StatefulSets: ready / desired %",
+          "type": "bargauge",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kube_statefulset_status_replicas_ready{namespace=\"confluent\"} / on(statefulset) kube_statefulset_replicas{namespace=\"confluent\"} * 100",
+              "refId": "A",
+              "instant": true,
+              "legendFormat": "{{statefulset}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 100
+                  }
+                ]
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Ready replicas as a % of desired, per StatefulSet (kafka, kraftcontroller, connect, schemaregistry, controlcenter, kafkarestproxy).\nWHY: CFK manages every Confluent component as a StatefulSet - this is the CR-level health signal, distinct from pod-level status.\nNORMAL: 100% for all six\nPROBLEM: < 100% sustained\nNEXT: oc get pods -n confluent -l app=<component>; check the CFK operator's own logs.",
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient"
+          },
+          "id": 35,
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 7
+          }
+        },
+        {
+          "title": "Operators and Flink job: ready / desired %",
+          "type": "bargauge",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kube_deployment_status_replicas_ready{namespace=~\"confluent-operator|flink-operator|cmf-operator|flink-jobs\"} / on(deployment, namespace) kube_deployment_spec_replicas{namespace=~\"confluent-operator|flink-operator|cmf-operator|flink-jobs\"} * 100",
+              "refId": "A",
+              "instant": true,
+              "legendFormat": "{{namespace}}/{{deployment}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 100
+                  }
+                ]
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Ready replicas as a % of desired, per Deployment - the CFK operator, Flink Kubernetes operator, CMF operator, and the Flink job's own Deployment (statefarm-claims-processor).\nWHY: A ready operator pod does NOT mean the CRs it manages are healthy - see Dashboard 2 for actual Kafka/Connect/etc. health.\nNORMAL: 100% for all\nPROBLEM: < 100%\nNEXT: oc get pods -n <operator-namespace>; oc logs on the operator pod.",
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient"
+          },
+          "id": 36,
+          "gridPos": {
+            "x": 12,
+            "y": 0,
+            "w": 12,
+            "h": 7
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": true,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 60
       },
       "id": 41,
       "title": "Prometheus Self-Monitoring",
@@ -1911,7 +1899,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 63
       },
       "id": 43,
       "title": "OpenShift Security / Platform State",
@@ -1919,8 +1907,8 @@
       "type": "row",
       "panels": [
         {
-          "title": "TLS certificate expiry (cert-manager issued)",
-          "type": "timeseries",
+          "title": "TLS certificate days remaining (cert-manager issued)",
+          "type": "bargauge",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1933,13 +1921,13 @@
               },
               "expr": "(certmanager_certificate_expiration_timestamp_seconds - time()) / 86400",
               "refId": "A",
+              "instant": true,
               "legendFormat": "{{namespace}}/{{name}} ({{issuer_name}})"
             }
           ],
           "fieldConfig": {
             "defaults": {
               "unit": "d",
-              "custom": {},
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1956,19 +1944,15 @@
                     "value": 30
                   }
                 ]
-              }
+              },
+              "min": 0
             },
             "overrides": []
           },
-          "description": "WHAT: Days until each cert-manager-issued certificate expires (platform-ca-issuer chain, plus every operator's self-signed serving cert - Flink operator, CMF, etc.).\nWHY: An expired cert silently breaks TLS-dependent internal traffic (Kafka listeners, Argo CD, webhooks) with no other obvious symptom.\nNORMAL: > 30 days remaining, decreasing linearly then jumping back up on cert-manager's automatic renewal.\nPROBLEM: < 14 days remaining and NOT renewing (a flat/non-renewing line close to 0).\nNEXT: oc describe certificate -A for the specific cert; check cert-manager pod logs for renewal failures.",
+          "description": "WHAT: Days until each cert-manager-issued certificate expires (platform-ca-issuer chain, plus every operator's self-signed serving cert - Flink operator, CMF, etc.), ranked worst-first.\nWHY: An expired cert silently breaks TLS-dependent internal traffic (Kafka listeners, Argo CD, webhooks) with no other obvious symptom.\nNORMAL: > 30 days remaining for every cert, decreasing linearly then jumping back up on cert-manager's automatic renewal.\nPROBLEM: < 14 days remaining and NOT renewing (a flat/non-renewing bar close to 0).\nNEXT: oc describe certificate -A for the specific cert; check cert-manager pod logs for renewal failures.",
           "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": {
-              "mode": "multi"
-            }
+            "orientation": "horizontal",
+            "displayMode": "gradient"
           },
           "id": 42,
           "gridPos": {
@@ -1990,7 +1974,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 62
+        "y": 66
       },
       "id": 54,
       "title": "OpenShift Control Plane & Network Fabric (Layer 1B)",
