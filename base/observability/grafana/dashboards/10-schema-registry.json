@@ -990,7 +990,8 @@
           "legendFormat": "{{pod}}-{{client_id}} io ratio"
         }
       ],
-      "title": "Active Connections / IO Ratio",
+      "title": "SR's own Kafka client: connections / IO ratio",
+      "description": "WHAT: connections SR itself holds TO the Kafka brokers (for its _schemas topic), and that client's IO ratio - NOT the number of REST clients calling SR's HTTP API. WHY: mislabeled 'Active Connections' previously read as REST traffic; corrected to avoid confusing SR-as-Kafka-client with SR-as-HTTP-server (see the new 'Jetty (REST API)' panel below for the actual API-facing connection count). NORMAL: matches the number of brokers SR talks to. PROBLEM: drops to 0 (SR lost its Kafka connection). NEXT: check SR's dependencies.kafka config and broker health.",
       "type": "timeseries"
     },
     {
@@ -1619,6 +1620,57 @@
       ],
       "title": "Time spent in GC",
       "type": "timeseries"
+    },
+    {
+      "id": 26,
+      "title": "Jetty (REST API): active connections & request queue size",
+      "description": "WHAT: the actual HTTP-server-side signal - how many REST clients are connected to SR and how many requests are queued waiting for a Jetty thread. WHY: this, not the Kafka-client connection count above, is the real 'is SR's REST API under load' signal. NORMAL: request queue size at 0. PROBLEM: request queue size sustained > 0 means Jetty's thread pool is saturated. NEXT: check busy_thread_count vs thread_pool_usage, then SR pod CPU in Dashboard 1.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 47
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "schemaregistry_confluent_jetty_metrics_connections_active{job=\"schemaregistry\"}",
+          "refId": "A",
+          "legendFormat": "{{pod}} active connections"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "schemaregistry_confluent_jetty_metrics_request_queue_size{job=\"schemaregistry\"}",
+          "refId": "B",
+          "legendFormat": "{{pod}} request queue size"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "schemaregistry_confluent_jetty_metrics_thread_pool_usage{job=\"schemaregistry\"}",
+          "refId": "C",
+          "legendFormat": "{{pod}} thread pool usage"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
     }
   ]
 }

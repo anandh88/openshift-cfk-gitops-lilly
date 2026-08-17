@@ -1,10 +1,11 @@
 {
-  "uid": "platform-overview",
-  "title": "01 - Streaming Platform Overview",
-  "description": "NOC/SRE landing page - is the streaming platform healthy? All panels use metrics confirmed live on this cluster (see docs/prometheus-metrics-guide.md). Flink/SQL Server panels are intentionally absent - see docs/observability-architecture.md for why (no Flink Prometheus endpoint / no in-cluster SQL Server yet).",
+  "uid": "confluent-component-operations",
+  "title": "01 - Confluent Component Operations",
+  "description": "Dashboard 2 of 3 (Platform -> Component -> Workload). Golden-signal index across every Confluent/Flink component, each row backed by real metrics verified live against this cluster's Prometheus. Deep-dive panel-level detail lives in the linked per-component dashboards (02, 08, 10, 23, 24) rather than being duplicated here - a single dashboard covering Kafka+KRaft+Connect+SR+C3+RestProxy+Flink in full depth would violate the 'no 100 series on one chart' / 'no redundant graphs' guidance this build follows.",
   "tags": [
     "platform",
-    "overview"
+    "confluent",
+    "dashboard-2"
   ],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -16,15 +17,62 @@
   },
   "panels": [
     {
+      "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
-      "title": "Brokers Up",
-      "type": "stat",
+      "panels": [],
+      "title": "Drill-down",
+      "type": "row"
+    },
+    {
+      "title": "Deep-dive dashboards",
+      "type": "text",
+      "options": {
+        "mode": "markdown",
+        "content": "[<- Dashboard 1: CFK Platform / Kubernetes Operations](/d/cfk-platform-operations)\n\n[02 - Kafka Platform (KRaft + Brokers + Topics) - full deep dive](/d/kafka-platform-kraft)\n\n[08 - Connect Platform - full deep dive](/d/connect-platform)\n\n[10 - Schema Registry - full deep dive](/d/schema-registry)\n\n[23 - JVM Deep Dive (cross-component)](/d/jvm-deep-dive)\n\n[24 - Flink - full deep dive (checkpoints, backpressure, skew, RocksDB)](/d/flink-mvp)\n\n[Dashboard 3: Streaming Workload Operations ->](/d/streaming-workload-operations)"
+      },
+      "description": "This dashboard is the golden-signal index across every Confluent/Flink component. Each row below links to the full deep-dive dashboard for that component.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "id": 2,
       "gridPos": {
         "x": 0,
-        "y": 0,
-        "w": 4,
-        "h": 4
+        "y": 1,
+        "w": 24,
+        "h": 5
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
       },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 3,
+      "panels": [],
+      "title": "Kafka",
+      "type": "row"
+    },
+    {
+      "title": "Brokers Up",
+      "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -36,35 +84,49 @@
             "uid": "prometheus"
           },
           "expr": "count(up{job=\"kafka\"} == 1)",
-          "refId": "A"
+          "refId": "A",
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "description": "Kafka brokers currently scrapeable",
+      "description": "WHAT: Kafka broker pods currently scrapeable.\nWHY: The most basic cluster-health signal.\nNORMAL: 3 (this deployment runs 3 brokers)\nPROBLEM: < 3\nNEXT: 02 - Kafka Platform dashboard.",
       "options": {
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": "",
+          "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 4,
+        "h": 4
       }
     },
     {
-      "id": 2,
       "title": "Active Controllers",
       "type": "stat",
-      "gridPos": {
-        "x": 4,
-        "y": 0,
-        "w": 4,
-        "h": 4
-      },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -76,7 +138,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_controller_kafkacontroller_value{name=\"ActiveControllerCount\"})",
-          "refId": "A"
+          "refId": "A",
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -102,26 +165,30 @@
         },
         "overrides": []
       },
-      "description": "",
+      "description": "WHAT: KRaft active controller count.\nWHY: Exactly one controller must be active for the metadata quorum to make progress.\nNORMAL: 1\nPROBLEM: 0 or >1\nNEXT: 02 - Kafka Platform -> KRaft Controller row.",
       "options": {
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": "",
+          "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 4,
+        "y": 7,
+        "w": 4,
+        "h": 4
       }
     },
     {
-      "id": 3,
       "title": "Offline Partitions",
       "type": "stat",
-      "gridPos": {
-        "x": 8,
-        "y": 0,
-        "w": 4,
-        "h": 4
-      },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -133,7 +200,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_controller_kafkacontroller_value{name=\"OfflinePartitionsCount\"})",
-          "refId": "A"
+          "refId": "A",
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -143,42 +211,42 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "green",
                 "value": null
               },
               {
-                "color": "yellow",
+                "color": "red",
                 "value": 1
-              },
-              {
-                "color": "green",
-                "value": 3
               }
             ]
           }
         },
         "overrides": []
       },
-      "description": "",
+      "description": "WHAT: Partitions with no leader.\nWHY: Producers/consumers for that partition are fully blocked.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: 02 - Kafka Platform -> Platform Health row.",
       "options": {
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": "",
+          "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 8,
+        "y": 7,
+        "w": 4,
+        "h": 4
       }
     },
     {
-      "id": 4,
       "title": "Under-Replicated Partitions",
       "type": "stat",
-      "gridPos": {
-        "x": 12,
-        "y": 0,
-        "w": 4,
-        "h": 4
-      },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -190,7 +258,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_server_replicamanager_value{name=\"UnderReplicatedPartitions\"})",
-          "refId": "A"
+          "refId": "A",
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -200,7 +269,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "green",
                 "value": null
               },
               {
@@ -208,7 +277,7 @@
                 "value": 1
               },
               {
-                "color": "green",
+                "color": "red",
                 "value": 3
               }
             ]
@@ -216,106 +285,30 @@
         },
         "overrides": []
       },
-      "description": "",
+      "description": "WHAT: Partitions whose replicas are not fully synchronized.\nWHY: Indicates broker failure, disk/network saturation, or replica recovery in progress.\nNORMAL: 0\nPROBLEM: Sustained > 0\nNEXT: 02 - Kafka Platform -> broker CPU/disk/network panels.",
       "options": {
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": "",
+          "values": false
         },
-        "textMode": "auto"
-      }
-    },
-    {
-      "id": 5,
-      "title": "Connect Workers Up",
-      "type": "stat",
-      "gridPos": {
-        "x": 16,
-        "y": 0,
-        "w": 4,
-        "h": 4
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
       },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "count(up{job=\"connect\"} == 1)",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "description": "",
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "textMode": "auto"
-      }
-    },
-    {
-      "id": 6,
-      "title": "Schema Registry Up",
-      "type": "stat",
-      "gridPos": {
-        "x": 20,
-        "y": 0,
-        "w": 4,
-        "h": 4
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "count(up{job=\"schemaregistry\"} == 1)",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "description": "",
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "textMode": "auto"
-      }
-    },
-    {
       "id": 7,
-      "title": "Cluster Throughput (bytes/sec)",
-      "type": "timeseries",
       "gridPos": {
-        "x": 0,
-        "y": 4,
-        "w": 12,
-        "h": 8
-      },
+        "x": 12,
+        "y": 7,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "title": "Cluster throughput (bytes/sec)",
+      "type": "timeseries",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -342,22 +335,32 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "Bps"
+          "unit": "Bps",
+          "custom": {}
         },
         "overrides": []
       },
-      "description": ""
+      "description": "WHAT: Cluster-wide produce/fetch byte rate.\nWHY: Traffic golden signal for Kafka.\nNORMAL: Matches expected workload volume\nPROBLEM: Unexpected drop to zero or spike\nNEXT: Dashboard 3 -> Kafka Topics row for per-topic breakdown.",
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 16,
+        "y": 7,
+        "w": 4,
+        "h": 4
+      }
     },
     {
-      "id": 8,
-      "title": "Messages In/sec",
-      "type": "timeseries",
-      "gridPos": {
-        "x": 12,
-        "y": 4,
-        "w": 12,
-        "h": 8
-      },
+      "title": "Request latency (mean ms): Produce / FetchConsumer",
+      "type": "bargauge",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -368,29 +371,350 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(kafka_server_brokertopicmetrics_count{name=\"MessagesInPerSec\"})",
+          "expr": "kafka_network_requestmetrics_mean{name=\"TotalTimeMs\", request=~\"Produce|FetchConsumer\"}",
           "refId": "A",
-          "legendFormat": "messages/sec"
+          "instant": true,
+          "legendFormat": "{{request}}"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "min": 0
         },
         "overrides": []
       },
-      "description": ""
+      "description": "WHAT: Mean end-to-end request time.\nWHY: Latency golden signal.\nNORMAL: Single-digit to low tens of ms on a lab cluster\nPROBLEM: Climbing sustained latency\nNEXT: 02 - Kafka Platform -> Broker Request Latency Breakdown row.",
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient"
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 20,
+        "y": 7,
+        "w": 4,
+        "h": 4
+      }
     },
     {
-      "id": 9,
-      "title": "Connectors Failed",
+      "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "id": 10,
+      "panels": [],
+      "title": "KRaft Controller",
+      "type": "row"
+    },
+    {
+      "title": "Current Leader (node id)",
       "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kafka_server_raft_metrics_current_leader{job=\"kraftcontroller\"}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: KRaft quorum leader's node id.\nWHY: Confirms which controller node is driving metadata.\nNORMAL: A stable single id\nPROBLEM: Frequent changes\nNEXT: 02 - Kafka Platform -> KRaft Controller row.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 11,
       "gridPos": {
         "x": 0,
         "y": 12,
         "w": 4,
         "h": 4
+      }
+    },
+    {
+      "title": "Current Epoch",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
       },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kafka_server_raft_metrics_current_epoch{job=\"kraftcontroller\"}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: KRaft leader epoch.\nWHY: Increments on every leader election.\nNORMAL: Stable, rarely changing\nPROBLEM: Rapidly incrementing\nNEXT: Indicates repeated controller elections - check controller pod stability.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 4,
+        "y": 12,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "title": "Fenced Brokers",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(kafka_controller_kafkacontroller_value{name=\"FencedBrokerCount\", job=\"kraftcontroller\"})",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: Brokers the controller has fenced (lost contact with).\nWHY: A fenced broker can't lead partitions.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: Check that broker's pod/network health in Dashboard 1.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 13,
+      "gridPos": {
+        "x": 8,
+        "y": 12,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "title": "Raft append/fetch record rate",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kafka_server_raft_metrics_append_records_rate{job=\"kraftcontroller\"}",
+          "refId": "A",
+          "legendFormat": "append"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kafka_server_raft_metrics_fetch_records_rate{job=\"kraftcontroller\"}",
+          "refId": "B",
+          "legendFormat": "fetch"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "description": "WHAT: Metadata log append/fetch throughput.\nWHY: Confirms the metadata quorum is actively making progress.\nNORMAL: Non-zero, tracking cluster activity\nPROBLEM: Flatlines at zero\nNEXT: 02 - Kafka Platform -> KRaft Controller row.",
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 15,
+      "panels": [],
+      "title": "Kafka Connect",
+      "type": "row"
+    },
+    {
+      "title": "Workers Up",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(up{job=\"connect\"} == 1)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: Connect worker pods currently scrapeable.\nWHY: Basic Connect cluster health.\nNORMAL: 1 (this deployment runs 1 worker)\nPROBLEM: 0\nNEXT: 08 - Connect Platform dashboard.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 16,
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "title": "Connectors Failed",
+      "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -402,7 +726,8 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_failed_task_count)",
-          "refId": "A"
+          "refId": "A",
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -412,42 +737,42 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "green",
                 "value": null
               },
               {
-                "color": "yellow",
+                "color": "red",
                 "value": 1
-              },
-              {
-                "color": "green",
-                "value": 3
               }
             ]
           }
         },
         "overrides": []
       },
-      "description": "",
+      "description": "WHAT: Tasks in FAILED state across all connectors.\nWHY: Direct data-pipeline breakage signal.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: 08 - Connect Platform -> Task Errors metrics row, then Dashboard 3 -> Connect Business Workload.",
       "options": {
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": "",
+          "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 17,
+      "gridPos": {
+        "x": 4,
+        "y": 17,
+        "w": 4,
+        "h": 4
       }
     },
     {
-      "id": 10,
-      "title": "Connect Running Tasks",
+      "title": "Tasks Running",
       "type": "stat",
-      "gridPos": {
-        "x": 4,
-        "y": 12,
-        "w": 4,
-        "h": 4
-      },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -459,35 +784,49 @@
             "uid": "prometheus"
           },
           "expr": "sum(kafka_connect_connect_worker_metrics_connector_running_task_count)",
-          "refId": "A"
+          "refId": "A",
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "description": "",
+      "description": "WHAT: Tasks currently RUNNING.\nWHY: Should match the configured connector/task count.\nNORMAL: Matches expected task count\nPROBLEM: Below expected\nNEXT: 08 - Connect Platform -> General row.",
       "options": {
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": "",
+          "values": false
         },
-        "textMode": "auto"
-      }
-    },
-    {
-      "id": 11,
-      "title": "Kafka CPU (cores)",
-      "type": "stat",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 18,
       "gridPos": {
         "x": 8,
-        "y": 12,
+        "y": 17,
         "w": 4,
         "h": 4
-      },
+      }
+    },
+    {
+      "title": "Rebalancing",
+      "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -498,36 +837,71 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"confluent\",pod=~\"kafka-.*\",container=\"kafka\"}[5m]))",
-          "refId": "A"
+          "expr": "sum(kafka_connect_connect_worker_rebalance_metrics_rebalancing)",
+          "refId": "A",
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "description": "",
+      "description": "WHAT: Whether the Connect group is currently rebalancing.\nWHY: Rebalances pause task processing.\nNORMAL: 0\nPROBLEM: 1 for an extended period\nNEXT: 08 - Connect Platform -> Coordinator & Rebalance row.",
       "options": {
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": "",
+          "values": false
         },
-        "textMode": "auto"
-      }
-    },
-    {
-      "id": 12,
-      "title": "Kafka Memory (GiB)",
-      "type": "stat",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 19,
       "gridPos": {
         "x": 12,
-        "y": 12,
+        "y": 17,
         "w": 4,
         "h": 4
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
       },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "id": 20,
+      "panels": [],
+      "title": "Schema Registry",
+      "type": "row"
+    },
+    {
+      "title": "Instances Up",
+      "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -538,76 +912,381 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"confluent\",pod=~\"kafka-.*\",container=\"kafka\"})/1024/1024/1024",
-          "refId": "A"
+          "expr": "count(up{job=\"schemaregistry\"} == 1)",
+          "refId": "A",
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "description": "",
+      "description": "WHAT: Schema Registry pods currently scrapeable.\nWHY: Basic SR health.\nNORMAL: 1\nPROBLEM: 0\nNEXT: 10 - Schema Registry dashboard.",
       "options": {
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": "",
+          "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 21,
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 4,
+        "h": 4
       }
     },
     {
-      "id": 13,
-      "title": "Connect CPU (cores)",
+      "title": "Request rate",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kafka_schema_registry_kafka_schema_registry_metrics_request_rate{job=\"schemaregistry\"}",
+          "refId": "A",
+          "legendFormat": "requests/sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "description": "WHAT: SR client-request rate (its own Kafka-client metrics, used for its backing topic).\nWHY: Traffic golden signal.\nNORMAL: Steady low rate\nPROBLEM: Spikes or drop to zero\nNEXT: 10 - Schema Registry -> REST API Traffic row.",
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 22,
+      "gridPos": {
+        "x": 4,
+        "y": 22,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "title": "JVM Heap Used %",
       "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "java_lang_memory_heapmemoryusage_used{job=\"schemaregistry\"} / java_lang_memory_heapmemoryusage_max{job=\"schemaregistry\"} * 100",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: SR JVM heap utilization.\nWHY: Saturation golden signal.\nNORMAL: < 70%\nPROBLEM: > 90%\nNEXT: 23 - JVM Deep Dive dashboard.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 23,
+      "gridPos": {
+        "x": 8,
+        "y": 22,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "id": 24,
+      "panels": [],
+      "title": "Control Center (Next Gen)",
+      "type": "row"
+    },
+    {
+      "title": "Up",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(up{job=\"controlcenter\"} == 1)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: Control Center pod currently scrapeable.\nWHY: Basic C3 health.\nNORMAL: 1\nPROBLEM: 0\nNEXT: oc logs -n confluent controlcenter-0.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 25,
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "title": "Cluster Offline (healthcheck)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(rest_utils_healthcheck_cluster_offline{job=\"controlcenter\"}) or vector(0)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: C3's own healthcheck flag for 'is the Kafka cluster it monitors offline'.\nWHY: C3 evaluates cluster reachability itself - this is its own opinion, not just an up/down proxy.\nNORMAL: 0\nPROBLEM: 1\nNEXT: Check C3's dependencies.kafka connection in base/confluent-platform/controlcenter.yaml.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 26,
+      "gridPos": {
+        "x": 4,
+        "y": 27,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "title": "C3 volume usage %",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "io_confluent_caas_volumemetrics_percentused{job=\"controlcenter\"}",
+          "refId": "A",
+          "legendFormat": "{{path}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "description": "WHAT: Disk volume usage as reported by C3's own CaaS volume-metrics probe.\nWHY: Independent cross-check against Dashboard 1's kubelet-based PVC utilization panel.\nNORMAL: < 70%\nPROBLEM: > 85%\nNEXT: Dashboard 1 -> Persistent Storage row.",
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 27,
+      "gridPos": {
+        "x": 8,
+        "y": 27,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "title": "CPU (cores)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"confluent\", pod=~\"controlcenter-.*\"}[5m]))",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "Control Center pod CPU usage.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 28,
       "gridPos": {
         "x": 16,
-        "y": 12,
+        "y": 27,
         "w": 4,
         "h": 4
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"confluent\",pod=~\"connect-.*\",container=\"connect\"}[5m]))",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "description": "",
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "textMode": "auto"
       }
     },
     {
-      "id": 14,
-      "title": "Connect Memory (GiB)",
+      "title": "Memory (GiB)",
       "type": "stat",
-      "gridPos": {
-        "x": 20,
-        "y": 12,
-        "w": 4,
-        "h": 4
-      },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -618,13 +1297,200 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"confluent\",pod=~\"connect-.*\",container=\"connect\"})/1024/1024/1024",
-          "refId": "A"
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"confluent\", pod=~\"controlcenter-.*\"}) / 1024/1024/1024",
+          "refId": "A",
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "Control Center pod memory working set.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 29,
+      "gridPos": {
+        "x": 20,
+        "y": 27,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 31
+      },
+      "id": 30,
+      "panels": [],
+      "title": "Kafka REST Proxy",
+      "type": "row"
+    },
+    {
+      "title": "Up",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(up{job=\"kafkarestproxy\"} == 1)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: REST Proxy pod currently scrapeable.\nWHY: Basic health.\nNORMAL: 1\nPROBLEM: 0\nNEXT: oc logs -n confluent kafkarestproxy-0.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 31,
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "title": "topics/list v2 request rate & errors",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kafkarestproxy_confluent_jersey_metrics_topics_list_v2_request_rate{job=\"kafkarestproxy\"}",
+          "refId": "A",
+          "legendFormat": "request rate"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kafkarestproxy_confluent_jersey_metrics_topics_list_v2_request_error_rate{job=\"kafkarestproxy\"}",
+          "refId": "B",
+          "legendFormat": "error rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "description": "WHAT: Traffic/error rate for the v2 topics-list endpoint - the endpoint with real traffic in this deployment (REST Proxy exposes each API endpoint as its own metric name rather than a label, so only endpoints that have actually been called ever have series - see docs/observability/METRIC-MAPPING.md).\nWHY: Confirms the REST Proxy is actually being used and answering successfully.\nNORMAL: error rate == 0\nPROBLEM: error rate > 0\nNEXT: oc logs -n confluent kafkarestproxy-0 for the specific error.",
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 32,
+      "gridPos": {
+        "x": 4,
+        "y": 32,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "title": "CPU (cores)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"confluent\", pod=~\"kafkarestproxy-.*\"}[5m]))",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
@@ -633,10 +1499,332 @@
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": "",
+          "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 33,
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 4,
+        "h": 4
       }
+    },
+    {
+      "title": "Memory (GiB)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"confluent\", pod=~\"kafkarestproxy-.*\"}) / 1024/1024/1024",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 34,
+      "gridPos": {
+        "x": 16,
+        "y": 32,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 35,
+      "panels": [],
+      "title": "Apache Flink",
+      "type": "row"
+    },
+    {
+      "title": "Jobs Running",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(flink_jobmanager_numRunningJobs)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: Running Flink jobs.\nWHY: Basic Flink health.\nNORMAL: >= 1\nPROBLEM: 0\nNEXT: 24 - Flink dashboard -> Cluster Overview row.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 36,
+      "gridPos": {
+        "x": 0,
+        "y": 37,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "title": "Full Restarts",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(flink_jobmanager_job_fullRestarts)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: Full job restarts since the job started.\nWHY: Each one is a recovery-from-failure event, not a normal event.\nNORMAL: 0\nPROBLEM: > 0 / climbing\nNEXT: 24 - Flink -> Job Lifecycle row for restart cause.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 37,
+      "gridPos": {
+        "x": 4,
+        "y": 37,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "title": "Records in/out per sec (job total)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(flink_taskmanager_job_task_numRecordsInPerSecond)",
+          "refId": "A",
+          "legendFormat": "records in"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(flink_taskmanager_job_task_numRecordsOutPerSecond)",
+          "refId": "B",
+          "legendFormat": "records out"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "description": "WHAT: Total Flink job throughput.\nWHY: Traffic golden signal; in vs out reveals filtering/backpressure.\nNORMAL: in ~= out (allowing for filtering logic)\nPROBLEM: out falling while in holds steady\nNEXT: 24 - Flink -> Backpressure row, or Dashboard 3 -> Flink Business Workload.",
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 38,
+      "gridPos": {
+        "x": 8,
+        "y": 37,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "title": "Checkpoint failures",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(flink_jobmanager_job_numberOfFailedCheckpoints)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: Failed checkpoints.\nWHY: Repeated failures mean the job can't durably checkpoint state - a recovery-time risk.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: 24 - Flink -> Checkpointing row.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "id": 39,
+      "gridPos": {
+        "x": 16,
+        "y": 37,
+        "w": 4,
+        "h": 4
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "Dashboard 1: CFK Platform / Kubernetes Operations",
+      "type": "link",
+      "url": "/d/cfk-platform-operations",
+      "icon": "dashboard"
+    },
+    {
+      "title": "Dashboard 3: Streaming Workload Operations",
+      "type": "link",
+      "url": "/d/streaming-workload-operations",
+      "icon": "dashboard"
     }
   ]
 }

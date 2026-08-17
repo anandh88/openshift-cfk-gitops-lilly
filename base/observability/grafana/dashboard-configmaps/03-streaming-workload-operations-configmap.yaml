@@ -1,0 +1,853 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: observability-dashboard-03-streaming-workload-operations
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  03-streaming-workload-operations.json: |
+    {
+      "uid": "streaming-workload-operations",
+      "title": "03 - Streaming Workload Operations",
+      "description": "Dashboard 3 of 3 (Platform -> Component -> Workload). Is business data actually flowing correctly through Kafka, Connect, and Flink? True per-consumer-group lag (a Burrow/kafka-lag-exporter style breakdown) is NOT available in this deployment - only client-reported lag and the broker's own aggregate lag-emitter percentiles are, and both are used here honestly rather than faking a per-group view (see docs/observability/METRIC-MAPPING.md).",
+      "tags": [
+        "platform",
+        "workload",
+        "dashboard-3"
+      ],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "panels": [
+        {
+          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1,
+          "panels": [],
+          "title": "Drill-down",
+          "type": "row"
+        },
+        {
+          "title": "Related dashboards",
+          "type": "text",
+          "options": {
+            "mode": "markdown",
+            "content": "[<- Dashboard 1: CFK Platform / Kubernetes Operations](/d/cfk-platform-operations)\n\n[<- Dashboard 2: Confluent Component Operations](/d/confluent-component-operations)\n\n[08 - Connect Platform (source task detail for the JDBC connector)](/d/connect-platform)\n\n[24 - Flink (full backpressure/skew/RocksDB/checkpoint detail)](/d/flink-mvp)"
+          },
+          "description": "Business-workload view: is data actually flowing correctly through Kafka, Connect, and Flink?",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "id": 2,
+          "gridPos": {
+            "x": 0,
+            "y": 1,
+            "w": 24,
+            "h": 5
+          }
+        },
+        {
+          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 6
+          },
+          "id": 3,
+          "panels": [],
+          "title": "Kafka Topics",
+          "type": "row"
+        },
+        {
+          "title": "Bytes in/out by topic",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (topic) (rate(kafka_server_brokertopicmetrics_count{name=\"BytesInPerSec\", topic=~\"$topic\"}[5m]))",
+              "refId": "A",
+              "legendFormat": "{{topic}} in"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (topic) (rate(kafka_server_brokertopicmetrics_count{name=\"BytesOutPerSec\", topic=~\"$topic\"}[5m]))",
+              "refId": "B",
+              "legendFormat": "{{topic}} out"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps",
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Per-topic produce/fetch byte rate.\nWHY: Identifies which topic is driving cluster throughput.\nNORMAL: Matches expected per-topic workload\nPROBLEM: One topic dominating unexpectedly\nNEXT: Kafka Connect / Flink rows below to find the producer/consumer.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "id": 4,
+          "gridPos": {
+            "x": 0,
+            "y": 7,
+            "w": 12,
+            "h": 8
+          }
+        },
+        {
+          "title": "Log size by topic (bytes, current)",
+          "type": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (topic) (kafka_log_log_value{job=\"kafka\", name=\"Size\", topic=~\"$topic\"})",
+              "refId": "A",
+              "instant": true,
+              "format": "table"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Current on-disk log size per topic, summed across partitions/brokers.\nWHY: Identifies the largest topics - the ones most likely to drive PVC exhaustion.\nNORMAL: Matches expected retention x throughput\nPROBLEM: Unexpectedly large/fast-growing topic\nNEXT: Dashboard 1 -> Persistent Storage row for the underlying PVC trend.",
+          "transformations": [],
+          "options": {
+            "showHeader": true
+          },
+          "id": 5,
+          "gridPos": {
+            "x": 12,
+            "y": 7,
+            "w": 12,
+            "h": 8
+          }
+        },
+        {
+          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 15
+          },
+          "id": 6,
+          "panels": [],
+          "title": "Consumer / Client Lag",
+          "type": "row"
+        },
+        {
+          "title": "Client-reported lag (max), by client/topic/partition",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_consumer_consumer_fetch_manager_metrics_records_lag_max{topic=~\"$topic\"}",
+              "refId": "A",
+              "legendFormat": "{{client_id}} / {{topic}}-{{partition}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Max records-lag as reported by each JMX-instrumented Kafka consumer client running inside a broker/Connect/Flink JVM (this includes the brokers' own internal consumers, e.g. the license consumer on `_confluent-command`, not only application consumer groups).\nWHY: This is the real per-client lag signal exposed on this cluster.\nNORMAL: Near 0\nPROBLEM: Growing without bound\nNEXT: Check that client's producer/consumer rate below, or its pod health in Dashboard 1.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "id": 7,
+          "gridPos": {
+            "x": 0,
+            "y": 16,
+            "w": 12,
+            "h": 8
+          }
+        },
+        {
+          "title": "Broker-side consumer-lag percentiles (group coordinator)",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_coordinator_group_consumer_lag_emitter_99thpercentile{name=\"ClassicMemberSize\"}",
+              "refId": "A",
+              "legendFormat": "p99 - classic members"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_coordinator_group_consumer_lag_emitter_95thpercentile{name=\"ClassicMemberSize\"}",
+              "refId": "B",
+              "legendFormat": "p95 - classic members"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Confluent's own group-coordinator lag-emitter telemetry (cluster-wide percentile, not broken out per consumer group - no per-group Burrow-style lag exporter is deployed in this lab, see docs/observability/METRIC-MAPPING.md).\nWHY: The closest cluster-wide lag signal available without adding a dedicated lag exporter.\nNORMAL: Low and flat\nPROBLEM: Climbing\nNEXT: Add a Burrow/kafka-lag-exporter deployment for true per-consumer-group breakdown - documented as a follow-up, not faked here.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "id": 8,
+          "gridPos": {
+            "x": 12,
+            "y": 16,
+            "w": 12,
+            "h": 8
+          }
+        },
+        {
+          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 24
+          },
+          "id": 9,
+          "panels": [],
+          "title": "Kafka Connect: Business Workload (source/sink task detail)",
+          "type": "row"
+        },
+        {
+          "title": "Source record poll/write rate, by connector",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (connector) (kafka_connect_source_task_metrics_source_record_poll_rate{connector=~\"$connector\"})",
+              "refId": "A",
+              "legendFormat": "{{connector}} poll"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (connector) (kafka_connect_source_task_metrics_source_record_write_rate{connector=~\"$connector\"})",
+              "refId": "B",
+              "legendFormat": "{{connector}} write"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Records/sec the source connector polls from its source system vs. writes to Kafka.\nWHY: poll >> write sustained means Kafka-side backpressure; write >> poll is impossible (would mean data invented).\nNORMAL: poll ~= write\nPROBLEM: poll and write both near zero (source system slow) vs. poll healthy but write lagging (Kafka-side slow)\nNEXT: poll_batch time panel below to tell source-system-slow from Connect-processing-slow.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "id": 10,
+          "gridPos": {
+            "x": 0,
+            "y": 25,
+            "w": 12,
+            "h": 8
+          }
+        },
+        {
+          "title": "Poll batch time (avg/max, ms), by connector",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_connect_source_task_metrics_poll_batch_avg_time_ms{connector=~\"$connector\"}",
+              "refId": "A",
+              "legendFormat": "{{connector}} avg"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_connect_source_task_metrics_poll_batch_max_time_ms{connector=~\"$connector\"}",
+              "refId": "B",
+              "legendFormat": "{{connector}} max"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Time spent per poll batch against the source system (e.g. the SQL Server JDBC source).\nWHY: High poll-batch time points at the source system, not Kafka or Connect itself.\nNORMAL: Low, stable\nPROBLEM: Climbing\nNEXT: Check the source system's own health (e.g. SQL Server/AD tunnel health for the Kerberos JDBC connector).",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "id": 11,
+          "gridPos": {
+            "x": 12,
+            "y": 25,
+            "w": 12,
+            "h": 8
+          }
+        },
+        {
+          "title": "Task errors/retries/skipped, by connector",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_connect_task_error_metrics_total_record_errors{connector=~\"$connector\"}",
+              "refId": "A",
+              "legendFormat": "{{connector}} errors"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_connect_task_error_metrics_total_retries{connector=~\"$connector\"}",
+              "refId": "B",
+              "legendFormat": "{{connector}} retries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "kafka_connect_task_error_metrics_total_records_skipped{connector=~\"$connector\"}",
+              "refId": "C",
+              "legendFormat": "{{connector}} skipped"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Cumulative error/retry/skip counters per connector task.\nWHY: Direct data-quality signal - retries hide transient problems, skips silently drop records.\nNORMAL: Flat (no growth)\nPROBLEM: Any upward slope\nNEXT: 08 - Connect Platform -> Task Errors metrics row for the DLQ detail.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "id": 12,
+          "gridPos": {
+            "x": 0,
+            "y": 33,
+            "w": 24,
+            "h": 8
+          }
+        },
+        {
+          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 41
+          },
+          "id": 13,
+          "panels": [],
+          "title": "Apache Flink: Business Workload",
+          "type": "row"
+        },
+        {
+          "title": "Records in/out per sec, by operator",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (task_name) (flink_taskmanager_job_task_numRecordsInPerSecond)",
+              "refId": "A",
+              "legendFormat": "{{task_name}} in"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (task_name) (flink_taskmanager_job_task_numRecordsOutPerSecond)",
+              "refId": "B",
+              "legendFormat": "{{task_name}} out"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Per-operator record throughput for the running Flink job (statefarm-claims-processor).\nWHY: Where in the pipeline a slowdown originates - compare consecutive operators.\nNORMAL: Downstream operator's 'in' ~= upstream operator's 'out'\nPROBLEM: A gap opening up between them\nNEXT: 24 - Flink -> Backpressure & Task Time Breakdown row to find the exact bottleneck operator/subtask.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "id": 14,
+          "gridPos": {
+            "x": 0,
+            "y": 42,
+            "w": 12,
+            "h": 8
+          }
+        },
+        {
+          "title": "Busy / backpressured time (ms/sec), by task",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "flink_taskmanager_job_task_busyTimeMsPerSecond",
+              "refId": "A",
+              "legendFormat": "{{task_name}} busy"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "flink_taskmanager_job_task_backPressuredTimeMsPerSecond",
+              "refId": "B",
+              "legendFormat": "{{task_name}} backpressured"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "description": "WHAT: How much of each second a task spent busy vs. backpressured by a downstream operator.\nWHY: The standard Flink signal for 'which operator is the bottleneck'.\nNORMAL: Backpressured time near 0\nPROBLEM: Backpressured time approaching 1000ms/sec (fully blocked)\nNEXT: 24 - Flink -> Flink Skew Detection (subtask-level) to find which specific subtask.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "id": 15,
+          "gridPos": {
+            "x": 12,
+            "y": 42,
+            "w": 12,
+            "h": 8
+          }
+        },
+        {
+          "title": "Checkpoints: completed",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(flink_jobmanager_job_numberOfCompletedCheckpoints)",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "Total successful checkpoints for the running job.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "colorMode": "value",
+            "graphMode": "area"
+          },
+          "id": 16,
+          "gridPos": {
+            "x": 0,
+            "y": 50,
+            "w": 4,
+            "h": 4
+          }
+        },
+        {
+          "title": "Checkpoints: failed",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(flink_jobmanager_job_numberOfFailedCheckpoints)",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Total failed checkpoints.\nWHY: Repeated failure risks unbounded recovery time on the next restart.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: 24 - Flink -> Checkpointing row.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "colorMode": "value",
+            "graphMode": "area"
+          },
+          "id": 17,
+          "gridPos": {
+            "x": 4,
+            "y": 50,
+            "w": 4,
+            "h": 4
+          }
+        },
+        {
+          "title": "Last checkpoint size (bytes)",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "flink_jobmanager_job_lastCheckpointSize",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "Size of the most recent checkpoint - the state growth trend to watch.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "colorMode": "value",
+            "graphMode": "area"
+          },
+          "id": 18,
+          "gridPos": {
+            "x": 8,
+            "y": 50,
+            "w": 8,
+            "h": 4
+          }
+        },
+        {
+          "title": "Kafka source consumer lag (Flink's own Kafka client)",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "flink_taskmanager_job_task_operator_KafkaSourceReader_KafkaConsumer_records_lag_max",
+              "refId": "A",
+              "legendFormat": "{{task_name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "description": "WHAT: Lag on the Kafka topic Flink's KafkaSource reads from, as reported by Flink's own embedded Kafka consumer client.\nWHY: The most direct 'is Flink keeping up with its input topic' signal.\nNORMAL: Near 0\nPROBLEM: Growing\nNEXT: Busy/backpressured panel above to see if Flink itself is the bottleneck.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "id": 19,
+          "gridPos": {
+            "x": 16,
+            "y": 50,
+            "w": 8,
+            "h": 4
+          }
+        }
+      ],
+      "links": [
+        {
+          "title": "Dashboard 1: CFK Platform / Kubernetes Operations",
+          "type": "link",
+          "url": "/d/cfk-platform-operations",
+          "icon": "dashboard"
+        },
+        {
+          "title": "Dashboard 2: Confluent Component Operations",
+          "type": "link",
+          "url": "/d/confluent-component-operations",
+          "icon": "dashboard"
+        }
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "topic",
+            "type": "query",
+            "label": "Topic",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "query": "label_values(kafka_log_log_value{job=\"kafka\"}, topic)",
+            "refresh": 2,
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            },
+            "sort": 1
+          },
+          {
+            "name": "connector",
+            "type": "query",
+            "label": "Connector",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "query": "label_values(kafka_connect_connector_task_metrics_batch_size_avg{job=\"connect\"}, connector)",
+            "refresh": 2,
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            },
+            "sort": 1
+          }
+        ]
+      }
+    }
