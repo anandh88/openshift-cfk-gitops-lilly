@@ -25,7 +25,7 @@ metadata:
 type: Opaque
 stringData:
   type: git
-  url: https://github.com/mkurre/openshift-cfk-gitops.git
-  username: mkurre
+  url: https://github.com/anandh88/openshift-cfk-gitops-lilly.git
+  username: anandh88
   password: ${GITHUB_PAT}
 

@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # --- Configuration -----------------------------------------------------
-GITHUB_REPO="https://github.com/mkurre/openshift-cfk-gitops"
+GITHUB_REPO="https://github.com/anandh88/openshift-cfk-gitops-lilly"
 ARGOCD_VERSION="v2.10.0"
 OCP_DOMAIN="apps-crc.testing"
 CERT_MANAGER_VERSION="v1.14.0"

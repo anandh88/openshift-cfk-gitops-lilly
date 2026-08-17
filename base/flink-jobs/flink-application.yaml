@@ -21,7 +21,7 @@ spec:
   flinkEnvironment: statefarm-flink-env
   flinkVersion: "v1_19"
   mode: native
-  image: ghcr.io/mkurre/flink-jobs/claims-processor:latest
+  image: ghcr.io/anandh88/flink-jobs/claims-processor:latest
   serviceAccount: flink-service-account
   job:
     jarURI: local:///opt/flink/usrlib/claims-processor.jar

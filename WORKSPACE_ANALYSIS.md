@@ -290,7 +290,7 @@ Push to branch
 
 3. **Image metadata** - Via `docker/metadata-action`
    - Tags: Short SHA, branch name, semver
-   - Example: `ghcr.io/mkurre/flink-jobs/claims-processor:sha-a1b2c3d`
+   - Example: `ghcr.io/anandh88/flink-jobs/claims-processor:sha-a1b2c3d`
 
 4. **Build & push** - Multi-platform aware
    - Context: `flink-jobs/claims-processor` (Dockerfile there)
@@ -666,7 +666,7 @@ Connect pod → SSH reverse tunnel → Docker Desktop (Mac)
 - **Source:** Kafka topic `sqlserver-claims-topic` (populated by Connect JDBC source)
 - **Processing:** Stream claims through Flink stateful processing
 - **Sink:** Output topic (TBD in repo)
-- **Image:** `ghcr.io/mkurre/flink-jobs/claims-processor:sha-<GIT_SHA>` (auto-updated by ci-flink-build.yaml)
+- **Image:** `ghcr.io/anandh88/flink-jobs/claims-processor:sha-<GIT_SHA>` (auto-updated by ci-flink-build.yaml)
 
 **Deployment Flow:**
 ```

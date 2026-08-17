@@ -4,7 +4,7 @@
 
 1. Add/update the job's source under `flink-jobs/<job-name>/` (Maven project).
 2. Push to `main` with changes under `flink-jobs/**` — `ci-flink-build.yaml`
-   builds the jar, builds/pushes the image to `ghcr.io/mkurre/flink-jobs/<job-name>`,
+   builds the jar, builds/pushes the image to `ghcr.io/anandh88/flink-jobs/<job-name>`,
    and auto-commits the new tag into `base/flink-jobs/flink-application.yaml`.
 3. If it's a brand-new job (not an update to `claims-processor`), copy
    `base/flink-jobs/flink-application.yaml` to a new file, update `metadata.name`,
