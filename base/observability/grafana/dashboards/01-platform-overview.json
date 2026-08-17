@@ -1,5 +1,5 @@
 {
-  "uid": "confluent-component-operations",
+  "uid": "platform-overview",
   "title": "01 - Confluent Component Operations",
   "description": "Dashboard 2 of 3 (Platform -> Component -> Workload). Golden-signal index across every Confluent/Flink component, each row backed by real metrics verified live against this cluster's Prometheus. Deep-dive panel-level detail lives in the linked per-component dashboards (02, 08, 10, 23, 24) rather than being duplicated here - a single dashboard covering Kafka+KRaft+Connect+SR+C3+RestProxy+Flink in full depth would violate the 'no 100 series on one chart' / 'no redundant graphs' guidance this build follows.",
   "tags": [

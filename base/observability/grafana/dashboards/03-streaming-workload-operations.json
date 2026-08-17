@@ -38,7 +38,7 @@
       "type": "text",
       "options": {
         "mode": "markdown",
-        "content": "[<- Dashboard 1: CFK Platform / Kubernetes Operations](/d/cfk-platform-operations)\n\n[<- Dashboard 2: Confluent Component Operations](/d/confluent-component-operations)\n\n[08 - Connect Platform (source task detail for the JDBC connector)](/d/connect-platform)\n\n[24 - Flink (full backpressure/skew/RocksDB/checkpoint detail)](/d/flink-mvp)"
+        "content": "[<- Dashboard 1: CFK Platform / Kubernetes Operations](/d/cfk-platform-operations)\n\n[<- Dashboard 2: Confluent Component Operations](/d/platform-overview)\n\n[08 - Connect Platform (source task detail for the JDBC connector)](/d/connect-platform)\n\n[24 - Flink (full backpressure/skew/RocksDB/checkpoint detail)](/d/flink-mvp)"
       },
       "description": "Business-workload view: is data actually flowing correctly through Kafka, Connect, and Flink?",
       "fieldConfig": {
@@ -795,7 +795,7 @@
     {
       "title": "Dashboard 2: Confluent Component Operations",
       "type": "link",
-      "url": "/d/confluent-component-operations",
+      "url": "/d/platform-overview",
       "icon": "dashboard"
     }
   ],
