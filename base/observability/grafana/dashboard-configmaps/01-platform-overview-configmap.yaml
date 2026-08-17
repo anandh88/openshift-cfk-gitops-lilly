@@ -47,7 +47,7 @@ data:
           "type": "text",
           "options": {
             "mode": "markdown",
-            "content": "[<- Dashboard 1: CFK Platform / Kubernetes Operations](/d/cfk-platform-operations)\n\n[02 - Kafka Platform (KRaft + Brokers + Topics) - full deep dive](/d/kafka-platform-kraft)\n\n[08 - Connect Platform - full deep dive](/d/connect-platform)\n\n[10 - Schema Registry - full deep dive](/d/schema-registry)\n\n[23 - JVM Deep Dive (cross-component)](/d/jvm-deep-dive)\n\n[24 - Flink - full deep dive (checkpoints, backpressure, skew, RocksDB)](/d/flink-mvp)\n\n[Dashboard 3: Streaming Workload Operations ->](/d/streaming-workload-operations)"
+            "content": "[<- Dashboard 1: CFK Platform / Kubernetes Operations](/d/cfk-platform-operations)\n\n[Expand a collapsed row below for full Kafka/KRaft/Connect/Schema Registry/JVM/Flink detail](#)\n\n[Dashboard 3: Streaming Workload Operations ->](/d/streaming-workload-operations)"
           },
           "description": "This dashboard is the golden-signal index across every Confluent/Flink component. Each row below links to the full deep-dive dashboard for that component.",
           "fieldConfig": {

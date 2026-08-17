@@ -16,4 +16,3 @@ resources:
   - grafana/dashboard-configmaps/00-cfk-platform-operations-configmap.yaml
   - grafana/dashboard-configmaps/01-platform-overview-configmap.yaml
   - grafana/dashboard-configmaps/03-streaming-workload-operations-configmap.yaml
-  - grafana/dashboard-configmaps/10-schema-registry-configmap.yaml
