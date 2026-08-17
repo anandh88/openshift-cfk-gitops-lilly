@@ -1,0 +1,35 @@
+# See kafka-servicemonitor.yaml for the full rationale - same port 7778
+# JMX-Prometheus-exporter endpoint, confirmed live on controlcenter-0.
+# NOTE: Control Center's OWN embedded Prometheus/Alertmanager sidecars
+# (services controlcenter-prometheus:9090 / controlcenter-alertmanager:9093,
+# see base/confluent-platform/controlcenter.yaml) are a separate, internal
+# concern for C3's own dashboards - not scraped here, and not something this
+# stack should scrape into (would just be Prometheus scraping itself twice
+# once C3 is included via port 7778 for its own JVM/process metrics).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: controlcenter
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - confluent
+  selector:
+    matchLabels:
+      type: controlcenter
+  endpoints:
+    - port: prometheus
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 15s
+      relabelings:
+        # CFK creates a per-pod "<name>-0-internal" Service with identical
+        # labels alongside the headless "<name>" one this ServiceMonitor is
+        # meant to select - both would otherwise get scraped, doubling every
+        # series. Drop the per-pod one, keep the headless one.
+        - sourceLabels: [__meta_kubernetes_service_name]
+          regex: '.*-[0-9]+-internal'
+          action: drop

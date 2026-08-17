@@ -1,0 +1,48 @@
+# Kafka Connect alerting rules - metric names confirmed live on connect-0's
+# port 7778 endpoint (kafka_connect_connect_worker_metrics_* /
+# kafka_connect_task_error_metrics_*).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: observability-connect-rules
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  groups:
+    - name: connect.alerts
+      rules:
+        - alert: KafkaConnectWorkerDown
+          expr: up{job="connect"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Connect worker {{ $labels.pod }} is unreachable"
+            description: "This is the same connect-0 worker running the Kerberos JDBC Source Connector."
+
+        - alert: KafkaConnectorFailed
+          expr: kafka_connect_connect_worker_metrics_connector_failed_task_count > 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $value }} failed connector task(s) on {{ $labels.pod }}"
+            description: "Check `curl -sk https://connect.apps-crc.testing/connectors/<name>/status` for the failure trace."
+
+        - alert: KafkaConnectorTaskFailed
+          expr: increase(kafka_connect_task_error_metrics_total_record_failures[5m]) > 0
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Task on {{ $labels.pod }} logged {{ $value }} record failure(s) in the last 5m"
+
+        - alert: KafkaConnectNoRunningTasks
+          expr: kafka_connect_connect_worker_metrics_connector_total_task_count > 0 and kafka_connect_connect_worker_metrics_connector_running_task_count == 0
+          for: 3m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.pod }} has tasks configured but none are RUNNING"
+            description: "Every configured task is paused, failed, or unassigned - no records are flowing."

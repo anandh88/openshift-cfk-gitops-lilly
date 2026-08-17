@@ -112,4 +112,20 @@ echo "    -> base/flink-jobs/flink-kafka-sasl-sealed.yaml created"
 # credentials/keytab are no longer sealed here at all.
 echo "==> Skipping connect-keytab - see scripts/kerberos/04-seal-keytabs.sh"
 
+# --- grafana-admin (monitoring) -----------------------------------------
+echo "==> Sealing grafana-admin"
+kubeseal --cert "${CERT_PATH}" --format yaml \
+  <<EOF > base/observability/secrets/grafana-admin-sealed.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-admin
+  namespace: monitoring
+type: Opaque
+stringData:
+  admin-user: admin
+  admin-password: GrafanaAdmin@Local2024!
+EOF
+echo "    -> base/observability/secrets/grafana-admin-sealed.yaml created"
+
 echo "==> All secrets sealed. Review the diffs, then git add/commit/push."

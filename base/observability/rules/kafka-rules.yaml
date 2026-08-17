@@ -1,0 +1,99 @@
+# Kafka/KRaft alerting rules. Every metric name+label below was queried live
+# against this cluster's Prometheus before being written here - none are
+# guessed from memory or documentation (see docs/prometheus-metrics-guide.md).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: observability-kafka-rules
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  groups:
+    - name: kafka.alerts
+      rules:
+        - alert: KafkaBrokerDown
+          expr: up{job=~"kafka|kraftcontroller"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Kafka/KRaft target {{ $labels.job }} on {{ $labels.pod }} is down"
+            description: "Prometheus has not been able to scrape {{ $labels.job }}/{{ $labels.pod }} for 2 minutes."
+
+        - alert: KafkaOfflinePartitions
+          expr: kafka_controller_kafkacontroller_value{name="OfflinePartitionsCount"} > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $value }} offline partition(s) on the active controller"
+            description: "Offline partitions mean some topic-partitions have no leader and are fully unavailable for produce/consume."
+
+        - alert: KafkaUnderReplicatedPartitions
+          expr: kafka_server_replicamanager_value{name="UnderReplicatedPartitions"} > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $value }} under-replicated partition(s) on {{ $labels.pod }}"
+            description: "Persisted for 5m+ - replicas are falling behind their leader on {{ $labels.pod }}."
+
+        - alert: KafkaUnderMinISR
+          expr: kafka_server_replicamanager_value{name="UnderMinIsrPartitionCount"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $value }} partition(s) under min.insync.replicas on {{ $labels.pod }}"
+            description: "Producers using acks=all will start failing for these partitions."
+
+        - alert: KafkaNoActiveController
+          expr: sum(kafka_controller_kafkacontroller_value{name="ActiveControllerCount"}) != 1
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Cluster has {{ $value }} active controllers, expected exactly 1"
+            description: "Either no controller is active (metadata operations stall) or a split-brain has more than one."
+
+        - alert: KafkaHighRequestLatency
+          expr: kafka_network_requestmetrics_99thpercentile{name="TotalTimeMs", request=~"Produce|FetchConsumer"} > 1000
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.request }} p99 latency is {{ $value }}ms on {{ $labels.pod }}"
+            description: "Sustained p99 request latency above 1s for 5m+."
+
+        - alert: KafkaDiskUsageHigh
+          expr: (kubelet_volume_stats_used_bytes{persistentvolumeclaim=~"data0-kafka.*"} / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"data0-kafka.*"}) > 0.80
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Kafka PVC {{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full"
+
+        - alert: KafkaDiskUsageCritical
+          expr: (kubelet_volume_stats_used_bytes{persistentvolumeclaim=~"data0-kafka.*"} / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"data0-kafka.*"}) > 0.90
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Kafka PVC {{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full"
+
+        - alert: KRaftControllerUnavailable
+          expr: up{job=~"kraftcontroller"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "KRaft controller {{ $labels.pod }} is unreachable"
+
+        - alert: SchemaRegistryDown
+          expr: up{job="schemaregistry"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Schema Registry {{ $labels.pod }} is unreachable"

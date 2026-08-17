@@ -1,0 +1,36 @@
+# Scrapes the JMX-Prometheus-exporter endpoint every CFK-managed component
+# already runs on port 7778, no CR/config changes needed - confirmed live
+# via `curl localhost:7778/metrics` inside kafka-0 (real Prometheus
+# exposition text: kafka_server_*, kafka_log_*, jvm_*, confluent_telemetry_*).
+# The Service named "kafka" is headless (ClusterIP: None) with a port
+# literally named "prometheus" -> 7778, which this endpoint targets by name.
+# Lives in the monitoring namespace but selects the Service in confluent via
+# namespaceSelector - requires bootstrap/network-policies.yaml's
+# monitoring-scrape-confluent ingress rule to actually reach it.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kafka
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - confluent
+  selector:
+    matchLabels:
+      type: kafka
+  endpoints:
+    - port: prometheus
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 15s
+      relabelings:
+        # CFK creates a per-pod "<name>-0-internal" Service with identical
+        # labels alongside the headless "<name>" one this ServiceMonitor is
+        # meant to select - both would otherwise get scraped, doubling every
+        # series. Drop the per-pod one, keep the headless one.
+        - sourceLabels: [__meta_kubernetes_service_name]
+          regex: '.*-[0-9]+-internal'
+          action: drop
