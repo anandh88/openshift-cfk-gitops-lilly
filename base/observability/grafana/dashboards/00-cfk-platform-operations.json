@@ -903,6 +903,65 @@
       }
     },
     {
+      "id": 42,
+      "title": "CPU throttling %, by pod",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 46
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{namespace=~\"$namespace\", pod=~\"$pod\", container!=\"\"}[5m])) / sum by (pod) (rate(container_cpu_cfs_periods_total{namespace=~\"$namespace\", pod=~\"$pod\", container!=\"\"}[5m])) * 100",
+          "refId": "A",
+          "legendFormat": "{{pod}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 25
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: % of CFS scheduling periods where this container was throttled (hit its CPU limit and got paused mid-period) - the standard 'CPU throttling ratio' derived from container_cpu_cfs_throttled_periods_total / container_cpu_cfs_periods_total. WHY: a pod can look fine on the plain CPU-usage graph while still being throttled - usage caps at the limit, throttling is what actually happens above it. NORMAL: 0%. PROBLEM: sustained > 10-25% - the pod is CPU-limited even though usage looks flat at the ceiling. NEXT: raise the CR's podTemplate.resources.limits.cpu, or investigate why that component needs more CPU than expected (correlate with Row 1's Node CPU allocation %).",
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
@@ -1727,6 +1786,82 @@
         "y": 94,
         "w": 6,
         "h": 7
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "id": 41,
+      "title": "OpenShift Security / Platform State",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 102
+      },
+      "panels": []
+    },
+    {
+      "id": 40,
+      "title": "TLS certificate expiry (cert-manager issued)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 103
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "(certmanager_certificate_expiration_timestamp_seconds - time()) / 86400",
+          "refId": "A",
+          "legendFormat": "{{namespace}}/{{name}} ({{issuer_name}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "d",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 14
+              },
+              {
+                "color": "green",
+                "value": 30
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "WHAT: days until each cert-manager-issued certificate expires (platform-ca-issuer chain, plus every operator's self-signed serving cert - Flink operator, CMF, etc.). WHY: an expired cert silently breaks TLS-dependent internal traffic (Kafka listeners, Argo CD, webhooks) with no other obvious symptom. NORMAL: > 30 days remaining, decreasing linearly then jumping back up on cert-manager's automatic renewal. PROBLEM: < 14 days remaining and NOT renewing (a flat/non-renewing line close to 0). NEXT: oc describe certificate -A for the specific cert; check cert-manager pod logs for renewal failures.",
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
       }
     }
   ],

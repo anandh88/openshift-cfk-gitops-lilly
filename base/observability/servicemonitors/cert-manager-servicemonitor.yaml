@@ -1,0 +1,24 @@
+# cert-manager exposes real certificate-expiration metrics on its own metrics
+# service with no NetworkPolicy restricting access (confirmed live: no
+# NetworkPolicy object exists in the cert-manager namespace) and no auth
+# required (confirmed live via curl). This closes a Layer 1B gap: TLS
+# certificate expiry for the platform-ca-issuer chain this repo's own
+# bootstrap/cert-manager-issuers.yaml + platform-certificates.yaml create.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cert-manager
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - cert-manager
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cert-manager
+  endpoints:
+    - port: tcp-prometheus-servicemonitor
+      path: /metrics
+      interval: 60s
