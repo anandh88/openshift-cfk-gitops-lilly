@@ -1,0 +1,24 @@
+# Grants the Prometheus ServiceAccount read-only access to the
+# kube-rbac-proxy-gated /metrics endpoints on OpenShift's own control-plane
+# and network components (kube-apiserver, kube-scheduler, CoreDNS,
+# OVN-Kubernetes). Confirmed live before creating this: those endpoints are
+# network-reachable but return "Unauthorized" without a token - this is the
+# exact same built-in ClusterRole (system:monitoring) OpenShift's own
+# cluster-monitoring-operator Prometheus uses; its rules only grant `get` on
+# the /metrics, /healthz, /livez, /readyz nonResourceURLs and nodes/metrics -
+# no write access, no other resources. CRC does not run the full
+# cluster-monitoring/User-Workload-Monitoring stack (no thanos-querier, no
+# separate Prometheus for the control plane), so this is the only way to
+# reach these metrics locally - see docs/observability/GAP-ANALYSIS.md.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: observability-prometheus-system-monitoring
+subjects:
+  - kind: ServiceAccount
+    name: observability-prometheus
+    namespace: monitoring
+roleRef:
+  kind: ClusterRole
+  name: system:monitoring
+  apiGroup: rbac.authorization.k8s.io
