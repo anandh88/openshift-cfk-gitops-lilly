@@ -10,6 +10,7 @@ resources:
   - servicemonitors/restproxy-servicemonitor.yaml
   - servicemonitors/controlcenter-servicemonitor.yaml
   - servicemonitors/cert-manager-servicemonitor.yaml
+  - servicemonitors/platform-control-plane-servicemonitors.yaml
   - podmonitors/flink-podmonitor.yaml
   - rules/recording-rules.yaml
   - rules/kafka-rules.yaml

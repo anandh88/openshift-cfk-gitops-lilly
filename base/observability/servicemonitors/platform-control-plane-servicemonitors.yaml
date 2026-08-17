@@ -1,0 +1,100 @@
+# Layer 1B: OpenShift control-plane and network-fabric metrics. All four
+# endpoints are confirmed live only after the observability-prometheus SA
+# was bound to the built-in system:monitoring ClusterRole (see
+# platform-metrics-rbac.yaml) - without it these all return "Unauthorized".
+# insecureSkipVerify is required because these endpoints serve the
+# cluster's internal service-serving certs, which Prometheus has no CA
+# bundle for; bearerTokenFile uses Prometheus's own in-pod SA token rather
+# than a separate secret.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: coredns
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - openshift-dns
+  selector:
+    matchLabels:
+      dns.operator.openshift.io/owning-dns: default
+  endpoints:
+    - port: metrics
+      path: /metrics
+      scheme: https
+      interval: 60s
+      tlsConfig:
+        insecureSkipVerify: true
+      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kube-scheduler
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - openshift-kube-scheduler
+  selector:
+    matchLabels:
+      prometheus: kube-scheduler
+  endpoints:
+    - port: https
+      path: /metrics
+      scheme: https
+      interval: 60s
+      tlsConfig:
+        insecureSkipVerify: true
+      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kube-apiserver
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      component: apiserver
+      provider: kubernetes
+  endpoints:
+    - port: https
+      path: /metrics
+      scheme: https
+      interval: 60s
+      tlsConfig:
+        insecureSkipVerify: true
+      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ovn-kubernetes-node
+  namespace: monitoring
+  labels:
+    release: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - openshift-ovn-kubernetes
+  selector:
+    matchLabels:
+      app: ovnkube-node
+  endpoints:
+    - port: metrics
+      path: /metrics
+      scheme: https
+      interval: 60s
+      tlsConfig:
+        insecureSkipVerify: true
+      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
