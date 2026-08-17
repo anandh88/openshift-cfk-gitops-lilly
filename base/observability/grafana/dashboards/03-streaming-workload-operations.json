@@ -174,8 +174,87 @@
       },
       "id": 6,
       "panels": [],
-      "title": "Consumer / Client Lag",
+      "title": "Consumer / Client Lag (corrected: native lag-emitter now used as primary source)",
       "type": "row"
+    },
+    {
+      "id": 20,
+      "title": "Top 15 consumer groups/partitions by lag (native Confluent lag emitter)",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "topk(15, kafka_server_tenant_metrics_consumer_lag_offsets{job=\"kafka\", consumer_group=~\"$consumer_group\", topic=~\"$topic\"})",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "description": "WHAT: real per-consumer-group/topic/partition/member lag in offsets, from Kafka's own broker-side consumer-lag-emitter (kafka.server:type=tenant-metrics,attribute=consumer-lag-offsets) - active on this broker with no extra config needed (confirmed live). CORRECTION: an earlier pass in this dashboard's history said true per-consumer-group lag was unavailable and would need a separate Burrow/kafka-lag-exporter deployment - that was wrong; this broker-native metric provides exactly that breakdown. WHY: this is the single most-asked 'is my consumer keeping up' question, now answerable per group/topic/partition/member instead of only in aggregate. NORMAL: near 0, or draining. PROBLEM: large/growing values on a specific group+partition - correlate with that consumer's poll/commit rate and the source system's write rate. NEXT: identify which member/client-id is lagging, then check that specific consumer's health.",
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 21,
+      "title": "Lag trend, by consumer group / topic / partition",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kafka_server_tenant_metrics_consumer_lag_offsets{job=\"kafka\", consumer_group=~\"$consumer_group\", topic=~\"$topic\"}",
+          "refId": "A",
+          "legendFormat": "{{consumer_group}} / {{topic}}-{{partition}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "description": "WHAT: the same native lag-emitter metric as a trend over time, to see whether lag is growing, flat, or draining, not just its current value.",
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
     },
     {
       "title": "Client-reported lag (max), by client/topic/partition",
@@ -215,7 +294,7 @@
       "id": 7,
       "gridPos": {
         "x": 0,
-        "y": 16,
+        "y": 33,
         "w": 12,
         "h": 8
       }
@@ -267,7 +346,7 @@
       "id": 8,
       "gridPos": {
         "x": 12,
-        "y": 16,
+        "y": 33,
         "w": 12,
         "h": 8
       }
@@ -282,7 +361,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 41
       },
       "id": 9,
       "panels": [],
@@ -336,7 +415,7 @@
       "id": 10,
       "gridPos": {
         "x": 0,
-        "y": 25,
+        "y": 42,
         "w": 12,
         "h": 8
       }
@@ -388,13 +467,13 @@
       "id": 11,
       "gridPos": {
         "x": 12,
-        "y": 25,
+        "y": 42,
         "w": 12,
         "h": 8
       }
     },
     {
-      "title": "Task errors/retries/skipped, by connector",
+      "title": "Errors/retries/skipped per sec, by connector",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -406,27 +485,27 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "kafka_connect_task_error_metrics_total_record_errors{connector=~\"$connector\"}",
+          "expr": "sum by (connector) (rate(kafka_connect_task_error_metrics_total_record_errors{connector=~\"$connector\"}[$__rate_interval]))",
           "refId": "A",
-          "legendFormat": "{{connector}} errors"
+          "legendFormat": "{{connector}} errors/sec"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "kafka_connect_task_error_metrics_total_retries{connector=~\"$connector\"}",
+          "expr": "sum by (connector) (rate(kafka_connect_task_error_metrics_total_retries{connector=~\"$connector\"}[$__rate_interval]))",
           "refId": "B",
-          "legendFormat": "{{connector}} retries"
+          "legendFormat": "{{connector}} retries/sec"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "kafka_connect_task_error_metrics_total_records_skipped{connector=~\"$connector\"}",
+          "expr": "sum by (connector) (rate(kafka_connect_task_error_metrics_total_records_skipped{connector=~\"$connector\"}[$__rate_interval]))",
           "refId": "C",
-          "legendFormat": "{{connector}} skipped"
+          "legendFormat": "{{connector}} skipped/sec"
         }
       ],
       "fieldConfig": {
@@ -436,7 +515,7 @@
         },
         "overrides": []
       },
-      "description": "WHAT: Cumulative error/retry/skip counters per connector task.\nWHY: Direct data-quality signal - retries hide transient problems, skips silently drop records.\nNORMAL: Flat (no growth)\nPROBLEM: Any upward slope\nNEXT: 08 - Connect Platform -> Task Errors metrics row for the DLQ detail.",
+      "description": "WHAT: per-second error/retry/skip rate, by connector - corrected from graphing the raw cumulative counters directly (which only ever goes up and hides whether the problem is active right now or happened once months ago). WHY: rate is what tells you if errors are actively occurring. NORMAL: 0. PROBLEM: any sustained nonzero rate. NEXT: 08's Task Errors row (folded into Dashboard 2's Connect section) for DLQ detail, or the source-system/Kafka split above.",
       "options": {
         "legend": {
           "displayMode": "list",
@@ -449,7 +528,7 @@
       "id": 12,
       "gridPos": {
         "x": 0,
-        "y": 33,
+        "y": 50,
         "w": 24,
         "h": 8
       }
@@ -464,7 +543,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 58
       },
       "id": 13,
       "panels": [],
@@ -518,7 +597,7 @@
       "id": 14,
       "gridPos": {
         "x": 0,
-        "y": 42,
+        "y": 59,
         "w": 12,
         "h": 8
       }
@@ -570,7 +649,7 @@
       "id": 15,
       "gridPos": {
         "x": 12,
-        "y": 42,
+        "y": 59,
         "w": 12,
         "h": 8
       }
@@ -588,7 +667,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(flink_jobmanager_job_numberOfCompletedCheckpoints)",
+          "expr": "sum(increase(flink_jobmanager_job_numberOfCompletedCheckpoints[$__range]))",
           "refId": "A",
           "instant": true
         }
@@ -608,7 +687,7 @@
         },
         "overrides": []
       },
-      "description": "Total successful checkpoints for the running job.",
+      "description": "WHAT: successful checkpoints within the CURRENTLY SELECTED time range (not lifetime) - corrected from a flat lifetime sum, which can't distinguish '3 failures 5 minutes ago' from '3 failures 3 months ago'. Change the dashboard time range to look further back or narrower.",
       "options": {
         "reduceOptions": {
           "calcs": [
@@ -624,7 +703,7 @@
       "id": 16,
       "gridPos": {
         "x": 0,
-        "y": 50,
+        "y": 67,
         "w": 4,
         "h": 4
       }
@@ -642,7 +721,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(flink_jobmanager_job_numberOfFailedCheckpoints)",
+          "expr": "sum(increase(flink_jobmanager_job_numberOfFailedCheckpoints[$__range]))",
           "refId": "A",
           "instant": true
         }
@@ -666,7 +745,7 @@
         },
         "overrides": []
       },
-      "description": "WHAT: Total failed checkpoints.\nWHY: Repeated failure risks unbounded recovery time on the next restart.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: 24 - Flink -> Checkpointing row.",
+      "description": "WHAT: failed checkpoints within the currently selected time range (not lifetime) - same correction as Checkpoints: completed. NORMAL: 0. PROBLEM: > 0 in a recent/narrow window means an active problem, not old history.",
       "options": {
         "reduceOptions": {
           "calcs": [
@@ -682,7 +761,7 @@
       "id": 17,
       "gridPos": {
         "x": 4,
-        "y": 50,
+        "y": 67,
         "w": 4,
         "h": 4
       }
@@ -736,7 +815,7 @@
       "id": 18,
       "gridPos": {
         "x": 8,
-        "y": 50,
+        "y": 67,
         "w": 8,
         "h": 4
       }
@@ -779,7 +858,7 @@
       "id": 19,
       "gridPos": {
         "x": 16,
-        "y": 50,
+        "y": 67,
         "w": 8,
         "h": 4
       }
@@ -801,6 +880,25 @@
   ],
   "templating": {
     "list": [
+      {
+        "name": "consumer_group",
+        "type": "query",
+        "label": "Consumer Group",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(kafka_server_tenant_metrics_consumer_lag_offsets{job=\"kafka\"}, consumer_group)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "sort": 1
+      },
       {
         "name": "topic",
         "type": "query",

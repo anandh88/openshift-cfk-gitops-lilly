@@ -224,13 +224,18 @@ dashboard here uses ZooKeeper-era assumptions (no `SessionExpireListener`, no
   `flink_taskmanager_job_task_operator_KafkaSourceReader_KafkaConsumer_*` and
   `...KafkaProducer_*` are Flink's own embedded client metrics — real, but scoped to
   Flink's Kafka I/O only, not a general-purpose producer/consumer fleet view.
-- **No true per-consumer-group lag breakdown exists** in this deployment. The closest
-  real signals are (a) the client-side lag above and (b) the broker's aggregate
-  `kafka_coordinator_group_consumer_lag_emitter_*` percentile histogram (cluster-wide, not
-  per-group). A Burrow or `kafka-lag-exporter` deployment would be required for genuine
-  per-consumer-group/per-partition lag, and is **not implemented here** — documented as a
-  gap in Dashboard 3's own panel description rather than approximated with a misleading
-  substitute.
+- **CORRECTED**: an earlier pass here said true per-consumer-group lag was unavailable and
+  would need a Burrow/`kafka-lag-exporter` deployment. That was wrong. The user pointed at
+  `kafka.server:type=tenant-metrics,attribute=consumer-lag-offsets` (broker-side, requires
+  `confluent.consumer.lag.emitter.enabled=true` per Confluent's docs — not set anywhere in
+  this repo, yet the metric is live anyway, meaning this CFK/CP version enables it by
+  default). Confirmed live: `kafka_server_tenant_metrics_consumer_lag_offsets{consumer_group,
+  topic, partition, member, client_id, group_protocol}` — real per-group/topic/partition/
+  member lag in offsets, no exporter needed. Dashboard 3's "Consumer / Client Lag" row was
+  rebuilt around this as the primary source (Top-15-by-lag table + trend), with the
+  previous client-reported-lag and broker-aggregate-percentile panels kept as secondary
+  context. `kafka_server_tenant_metrics_*` also carries `max-pending-rebalance-time` per
+  group, not yet dashboarded.
 - **No producer-client telemetry** (record-send-rate, record-error-rate, batch-size,
   buffer-pool-wait-time from an actual *application* producer) is available for the SQL
   Server → Kafka pipeline, because that pipeline is a Kafka Connect source connector, not

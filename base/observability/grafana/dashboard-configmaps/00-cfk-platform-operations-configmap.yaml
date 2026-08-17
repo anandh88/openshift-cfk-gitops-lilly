@@ -1872,6 +1872,429 @@ data:
               "mode": "multi"
             }
           }
+        },
+        {
+          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "id": 51,
+          "title": "OpenShift Control Plane & Network Fabric (Layer 1B)",
+          "description": "Unlocked via the observability-prometheus ServiceAccount's system:monitoring ClusterRole binding (see platform-metrics-rbac.yaml) - these endpoints are gated behind kube-rbac-proxy and were unreachable before that grant. etcd is NOT included: confirmed it additionally requires a client certificate beyond the bearer token (see docs/observability/GAP-ANALYSIS.md).",
+          "type": "row",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 112
+          },
+          "panels": []
+        },
+        {
+          "id": 43,
+          "title": "kube-apiserver: request error rate (5xx)",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 113,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rate(apiserver_request_total{code=~\"5..\"}[5m])) / sum(rate(apiserver_request_total[5m])) * 100",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: % of kube-apiserver requests returning a 5xx error. WHY: apiserver errors cascade into every controller/operator in the cluster (CFK operator, ArgoCD, Flink operator). NORMAL: ~0%. PROBLEM: sustained >1-5%. NEXT: oc get --raw /healthz on the apiserver; check node resource pressure (Row 1).",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 44,
+          "title": "kube-apiserver: P99 request latency",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 6,
+            "y": 113,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket[5m])) by (le))",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: P99 latency across all kube-apiserver requests. NORMAL: well under 1s on a healthy cluster. PROBLEM: climbing toward multiple seconds - every oc/kubectl command and controller reconcile loop slows down with it.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 45,
+          "title": "kube-scheduler: pending pods",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 113,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(scheduler_pending_pods)",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: pods waiting to be scheduled. NORMAL: 0, or briefly >0 during a rollout. PROBLEM: sustained >0 - insufficient node capacity or an unsatisfiable scheduling constraint (check Dashboard 1 Row 9).",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 46,
+          "title": "CoreDNS: response rate by rcode",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 18,
+            "y": 113,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rate(coredns_dns_responses_total{rcode!=\"NOERROR\"}[5m])) or vector(0)",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "description": "WHAT: DNS responses per sec that are NOT NOERROR (SERVFAIL, NXDOMAIN, etc.). WHY: broken DNS breaks every Kafka/Connect/SR hostname resolution in the cluster silently. NORMAL: ~0 (NXDOMAIN for genuinely nonexistent names is normal at low volume; a sustained nonzero SERVFAIL rate is not). PROBLEM: sustained SERVFAIL rate. NEXT: oc logs -n openshift-dns.",
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 47,
+          "title": "kube-apiserver request rate, by verb",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 117,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (verb) (rate(apiserver_request_total[5m]))",
+              "refId": "A",
+              "legendFormat": "{{verb}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "description": "WHAT: apiserver request volume by verb (GET/LIST/WATCH/CREATE/UPDATE/DELETE). WHY: a spike in a specific verb (e.g. LIST) often points at a controller doing an expensive full-resync.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 48,
+          "title": "CoreDNS request rate & latency (P99)",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 117,
+            "w": 6,
+            "h": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rate(coredns_dns_requests_total[5m]))",
+              "refId": "A",
+              "legendFormat": "requests/sec"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "description": "WHAT: DNS query volume this cluster's CoreDNS instance is handling. NORMAL: steady, tracking overall pod/service churn. PROBLEM: a sudden spike often correlates with a CrashLoopBackOff pod repeatedly re-resolving on every restart.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 49,
+          "title": "kube-scheduler: pod scheduling attempts & algorithm duration",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 18,
+            "y": 117,
+            "w": 6,
+            "h": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rate(scheduler_pod_scheduling_attempts_count[5m]))",
+              "refId": "A",
+              "legendFormat": "attempts/sec"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "description": "WHAT: rate of scheduling attempts. WHY: a high attempt rate with pods still Pending (see stat panel) means the scheduler is repeatedly failing to place them.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 50,
+          "title": "OVN-Kubernetes node: CNI setup latency & workqueue depth",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 125,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "histogram_quantile(0.99, sum(rate(ovnkube_node_cni_request_duration_seconds_bucket[5m])) by (le))",
+              "refId": "A",
+              "legendFormat": "P99 CNI setup time"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(ovnkube_node_workqueue_depth)",
+              "refId": "B",
+              "legendFormat": "workqueue depth"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "description": "WHAT: how long OVN takes to wire up networking for a new pod (CNI ADD), and its internal controller's backlog. WHY: this is the 'why is my pod stuck ContainerCreating' signal. NORMAL: sub-second CNI setup, workqueue depth near 0. PROBLEM: CNI setup climbing into seconds, or a growing workqueue depth - the node's OVN controller is falling behind.",
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
         }
       ],
       "links": [

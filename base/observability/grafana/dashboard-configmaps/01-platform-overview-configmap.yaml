@@ -9728,7 +9728,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "description": "",
+              "description": "WHAT: per-second rate, corrected from graphing raw cumulative counters directly. NORMAL: 0. PROBLEM: any sustained nonzero rate.",
               "fieldConfig": {
                 "defaults": {
                   "color": {
@@ -9792,7 +9792,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "kafka_connect_task_error_metrics_total_record_failures{job=\"connect\",pod=~\"$pod\"}",
+                  "expr": "rate(kafka_connect_task_error_metrics_total_record_failures{job=\"connect\",pod=~\"$pod\"}[$__rate_interval])",
                   "refId": "A",
                   "legendFormat": "{{connector}}-{{task}} failures"
                 },
@@ -9801,7 +9801,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "kafka_connect_task_error_metrics_total_record_errors{job=\"connect\",pod=~\"$pod\"}",
+                  "expr": "rate(kafka_connect_task_error_metrics_total_record_errors{job=\"connect\",pod=~\"$pod\"}[$__rate_interval])",
                   "refId": "B",
                   "legendFormat": "{{connector}}-{{task}} errors"
                 },
@@ -9810,12 +9810,12 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "kafka_connect_task_error_metrics_total_records_skipped{job=\"connect\",pod=~\"$pod\"}",
+                  "expr": "rate(kafka_connect_task_error_metrics_total_records_skipped{job=\"connect\",pod=~\"$pod\"}[$__rate_interval])",
                   "refId": "C",
                   "legendFormat": "{{connector}}-{{task}} skipped"
                 }
               ],
-              "title": "Total record failures / errors / skipped",
+              "title": "Record failures/errors/skipped per sec",
               "type": "timeseries"
             },
             {
@@ -9823,7 +9823,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "description": "",
+              "description": "WHAT: per-second rate, corrected from graphing raw cumulative counters directly. NORMAL: 0. PROBLEM: any sustained nonzero rate.",
               "fieldConfig": {
                 "defaults": {
                   "color": {
@@ -9887,7 +9887,7 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "kafka_connect_task_error_metrics_total_errors_logged{job=\"connect\",pod=~\"$pod\"}",
+                  "expr": "rate(kafka_connect_task_error_metrics_total_errors_logged{job=\"connect\",pod=~\"$pod\"}[$__rate_interval])",
                   "refId": "A",
                   "legendFormat": "{{connector}}-{{task}} logged"
                 },
@@ -9896,12 +9896,12 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "expr": "kafka_connect_task_error_metrics_total_retries{job=\"connect\",pod=~\"$pod\"}",
+                  "expr": "rate(kafka_connect_task_error_metrics_total_retries{job=\"connect\",pod=~\"$pod\"}[$__rate_interval])",
                   "refId": "B",
                   "legendFormat": "{{connector}}-{{task}} retries"
                 }
               ],
-              "title": "Total errors logged / retries",
+              "title": "Errors logged / retries per sec",
               "type": "timeseries"
             },
             {

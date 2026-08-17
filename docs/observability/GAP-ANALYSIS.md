@@ -114,3 +114,43 @@ internal serving certs, which Prometheus doesn't have the CA for), verify
 `up{job=...}` for each, then build the actual Layer 1B dashboard row.
 etcd would need a separate investigation into client-cert requirements
 before it's worth attempting.
+
+**Update: approved and implemented.** CoreDNS, kube-scheduler, kube-apiserver,
+and OVN-Kubernetes (node) are now scraped and dashboarded in Dashboard 1's new
+"OpenShift Control Plane & Network Fabric (Layer 1B)" row (request error
+rate/P99 latency for the apiserver, pending pods and scheduling-attempt rate
+for the scheduler, non-NOERROR response rate for CoreDNS, CNI setup
+latency/workqueue depth for OVN). etcd remains excluded per the note above.
+
+## Dashboard 3 deep-dive critique (user-supplied, cross-checked against
+## current Confluent docs)
+
+The user reviewed Dashboard 3 against current Confluent documentation and
+raised 12 points. Verified and actioned:
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Native consumer-lag-emitter (`consumer-lag-offsets`) instead of Burrow/kafka-lag-exporter | **Done** — confirmed live, corrected in METRIC-MAPPING.md and rebuilt as Dashboard 3's primary lag view. This was a real factual correction, not a preference. |
+| 9 | Connect error panel graphing raw counters instead of `rate()` | **Done** — fixed in both Dashboard 3 and the equivalent panel in Dashboard 2 (same bug existed in both, inherited from the original 08-connect-platform.json). |
+| 10 | Flink checkpoint counters shown as lifetime totals, not windowed | **Done** — changed to `increase(...[$__range])`, scoped to the dashboard's selected time range instead of all-time. |
+
+Reviewed and **not yet implemented** (real, valuable, but each a substantial
+addition in its own right — listed here rather than silently dropped):
+
+| # | Item | Scope note |
+|---|---|---|
+| 2 | Full chained variable set (environment/cluster/broker/partition/client-id/connect-cluster/task/flink-cluster/operator/subtask) across all three dashboards | This deployment is a single cluster/single environment, so `$environment`/`$cluster` would be constant-value variables (harmless to add, low value here — flagged for when this pattern is reused against a multi-cluster/multi-env Prometheus). `$broker`/`$partition`/`$client_id`/`$task`/`$operator`/`$subtask` are genuine, high-cardinality drill-down variables not yet wired in; `$consumer_group` was added this pass. |
+| 3 | Explicit "Kafka Request Path" diagnostic row (client → request queue → handler → replication → response queue → network, each hop's time as its own panel) | The underlying metrics (RequestQueueTimeMs/LocalTimeMs/RemoteTimeMs/ResponseQueueTimeMs/ResponseSendTimeMs) are already dashboarded in Dashboard 2's "Kafka Broker & Cluster (full detail)" row (imported from the original 02-kafka-platform.json) but as separate per-request-type panels, not assembled into one hop-by-hop diagnostic flow. Worth a dedicated pass. |
+| 4 | Explicit Kafka saturation row (idle %, queues, purgatory, connections, CPU throttling, GC, disk, PVC in one place) | Every individual metric is already dashboarded somewhere (Dashboard 1 has CPU throttling/PVC, Dashboard 2 has idle%/queues/GC); not yet consolidated into one "why is Kafka slow at 45% CPU" purpose-built row. |
+| 5 | Broker Balance/Skew table (leaders, partitions, bytes in/out, disk, CPU per broker, one row per broker) | Not implemented — needs a `joinByField` table merging ~6 per-broker metrics, similar to Dashboard 1's pod table. Real, valuable, not yet built. |
+| 6 | Dedicated Replication Health section with explicit correlation guidance (URP + follower lag + replication traffic + disk latency → storage bottleneck) | URP/ISR/offline partitions are dashboarded individually; `ReplicationBytesInPerSec`/`ReplicationBytesOutPerSec`/reassignment metrics not yet checked for availability in this deployment, and no correlation-guidance panel exists. |
+| 7 | Quotas/throttling promoted to a first-class, prominent row, broken out by user/client-id | The broker-aggregate quota row exists (Dashboard 2); per-client throttle-time is available client-side (`kafka_producer_producer_metrics_produce_throttle_time_*`, `kafka_consumer_..._fetch_throttle_time_*`, found this pass, documented in METRIC-MAPPING.md) but not yet in a panel, and nothing is broken out "by user" (this cluster has no per-user quotas configured, confirmed earlier). |
+| 8 | Explicit server/client/platform/connect/flink telemetry classification in METRIC-MAPPING.md | Partially satisfied — the "Client-side vs. broker-side" section already does this narratively; not reorganized into the exact 5-bucket table structure requested. |
+| 11 | "Top Offenders" panels at every layer (top CPU/memory/restart/throttled pods, top topics/groups/connectors/operators by the relevant bad signal) | Not implemented anywhere yet. This is a real, broadly-applicable UX pattern (topk() queries) that would improve all three dashboards; flagged as the single highest-value next addition after the items above. |
+| 12 | "Incident Correlation" row per major dashboard (latency/CPU/throttling/heap/GC/disk/network/queue/URP/lag/errors/backpressure on one shared time axis) | Not implemented. Would need one row per dashboard stacking ~8-10 already-dashboarded signals as thin sparkline-style panels sharing a time axis — mechanically straightforward given the metrics already exist, just not yet assembled this way. |
+
+None of these were skipped because they're wrong — all are legitimate,
+well-reasoned troubleshooting improvements. They're listed here, not
+implemented in the same pass as the P0 corrections (native lag emitter,
+PromQL rate/window bugs), because each is independently substantial and
+this list should be worked through deliberately rather than rushed.
