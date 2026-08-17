@@ -10,7 +10,7 @@ data:
     {
       "uid": "platform-overview",
       "title": "01 - Confluent Component Operations",
-      "description": "Dashboard 2 of 3 (Platform -> Component -> Workload). Golden-signal index across every Confluent/Flink component, each row backed by real metrics verified live against this cluster's Prometheus. Deep-dive panel-level detail lives in the linked per-component dashboards (02, 08, 10, 23, 24) rather than being duplicated here - a single dashboard covering Kafka+KRaft+Connect+SR+C3+RestProxy+Flink in full depth would violate the 'no 100 series on one chart' / 'no redundant graphs' guidance this build follows.",
+      "description": "Dashboard 01 of 3 (00 Platform -> 01 Component -> 03 Workload). Component-level golden signals for Kafka, KRaft, Connect, Schema Registry, Control Center, REST Proxy, and Flink - each row backed by real metrics verified live against this cluster's Prometheus. The always-expanded rows above are the operational overview; full per-component and JVM deep-dive detail is embedded below as collapsed rows (Kafka Broker & Cluster, KRaft/Metadata Quorum, Kafka Quotas, Kafka Connect, Schema Registry, JVM Cross-Component, Apache Flink) to keep the initial view lightweight rather than as separate dashboards.",
       "tags": [
         "platform",
         "confluent",
@@ -47,7 +47,7 @@ data:
           "type": "text",
           "options": {
             "mode": "markdown",
-            "content": "[<- 00 - CFK Platform / Kubernetes Operations](/d/cfk-platform-operations) - check here first if this dashboard's own golden signals look unhealthy for reasons that might be infrastructure (pod not scheduled, CPU throttled, PVC full).\n\n[Expand a collapsed row below for full Kafka/KRaft/Connect/Schema Registry/JVM/Flink detail](#)\n\n[02 - Streaming Workload Operations ->](/d/streaming-workload-operations) - go here if every component above looks healthy but a specific topic, consumer group, connector, or Flink job is still misbehaving."
+            "content": "[<- 00 - CFK Platform / Kubernetes Operations](/d/cfk-platform-operations) - check here first if this dashboard's own golden signals look unhealthy for reasons that might be infrastructure (pod not scheduled, CPU throttled, PVC full).\n\n[Expand a collapsed row below for full Kafka/KRaft/Connect/Schema Registry/JVM/Flink detail](#)\n\n[03 - Streaming Workload Operations ->](/d/streaming-workload-operations) - go here if every component above looks healthy but a specific topic, consumer group, connector, or Flink job is still misbehaving."
           },
           "description": "This dashboard is the golden-signal index across every Confluent/Flink component. Each row below links to the full deep-dive dashboard for that component.",
           "fieldConfig": {
@@ -116,7 +116,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Kafka broker pods currently scrapeable.\nWHY: The most basic cluster-health signal.\nNORMAL: 3 (this deployment runs 3 brokers)\nPROBLEM: < 3\nNEXT: 02 - Kafka Platform dashboard.",
+          "description": "WHAT: Kafka broker pods currently scrapeable.\nWHY: The most basic cluster-health signal.\nNORMAL: 3 (this deployment runs 3 brokers)\nPROBLEM: < 3\nNEXT: the Kafka Broker & Cluster (full detail) row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -178,7 +178,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: KRaft active controller count.\nWHY: Exactly one controller must be active for the metadata quorum to make progress.\nNORMAL: 1\nPROBLEM: 0 or >1\nNEXT: 02 - Kafka Platform -> KRaft Controller row.",
+          "description": "WHAT: KRaft active controller count.\nWHY: Exactly one controller must be active for the metadata quorum to make progress.\nNORMAL: 1\nPROBLEM: 0 or >1\nNEXT: the KRaft / Metadata Quorum row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -236,7 +236,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Partitions with no leader.\nWHY: Producers/consumers for that partition are fully blocked.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: 02 - Kafka Platform -> Platform Health row.",
+          "description": "WHAT: Partitions with no leader.\nWHY: Producers/consumers for that partition are fully blocked.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: the Kafka Broker & Cluster (full detail) row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -298,7 +298,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Partitions whose replicas are not fully synchronized.\nWHY: Indicates broker failure, disk/network saturation, or replica recovery in progress.\nNORMAL: 0\nPROBLEM: Sustained > 0\nNEXT: 02 - Kafka Platform -> broker CPU/disk/network panels.",
+          "description": "WHAT: Partitions whose replicas are not fully synchronized.\nWHY: Indicates broker failure, disk/network saturation, or replica recovery in progress.\nNORMAL: 0\nPROBLEM: Sustained > 0\nNEXT: the Kafka Broker & Cluster (full detail) row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -414,7 +414,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Mean end-to-end request time.\nWHY: Latency golden signal.\nNORMAL: Single-digit to low tens of ms on a lab cluster\nPROBLEM: Climbing sustained latency\nNEXT: 02 - Kafka Platform -> Broker Request Latency Breakdown row.",
+          "description": "WHAT: Mean end-to-end request time.\nWHY: Latency golden signal.\nNORMAL: Single-digit to low tens of ms on a lab cluster\nPROBLEM: Climbing sustained latency\nNEXT: the Kafka Broker & Cluster (full detail) row below.",
           "options": {
             "orientation": "horizontal",
             "displayMode": "gradient"
@@ -536,7 +536,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: KRaft quorum leader's node id.\nWHY: Confirms which controller node is driving metadata.\nNORMAL: A stable single id\nPROBLEM: Frequent changes\nNEXT: 02 - Kafka Platform -> KRaft Controller row.",
+          "description": "WHAT: KRaft quorum leader's node id.\nWHY: Confirms which controller node is driving metadata.\nNORMAL: A stable single id\nPROBLEM: Frequent changes\nNEXT: the KRaft / Metadata Quorum row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -703,7 +703,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Metadata log append/fetch throughput.\nWHY: Confirms the metadata quorum is actively making progress.\nNORMAL: Non-zero, tracking cluster activity\nPROBLEM: Flatlines at zero\nNEXT: 02 - Kafka Platform -> KRaft Controller row.",
+          "description": "WHAT: Metadata log append/fetch throughput.\nWHY: Confirms the metadata quorum is actively making progress.\nNORMAL: Non-zero, tracking cluster activity\nPROBLEM: Flatlines at zero\nNEXT: the KRaft / Metadata Quorum row below.",
           "options": {
             "legend": {
               "displayMode": "list",
@@ -775,7 +775,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Connect worker pods currently scrapeable.\nWHY: Basic Connect cluster health.\nNORMAL: 1 (this deployment runs 1 worker)\nPROBLEM: 0\nNEXT: 08 - Connect Platform dashboard.",
+          "description": "WHAT: Connect worker pods currently scrapeable.\nWHY: Basic Connect cluster health.\nNORMAL: 1 (this deployment runs 1 worker)\nPROBLEM: 0\nNEXT: the Kafka Connect (full detail) row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -833,7 +833,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Tasks in FAILED state across all connectors.\nWHY: Direct data-pipeline breakage signal.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: 08 - Connect Platform -> Task Errors metrics row, then Dashboard 3 -> Connect Business Workload.",
+          "description": "WHAT: Tasks in FAILED state across all connectors.\nWHY: Direct data-pipeline breakage signal.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: the Kafka Connect (full detail) row below, then 03 - Streaming Workload Operations -> Kafka Connect: Business Workload row.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -887,7 +887,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Tasks currently RUNNING.\nWHY: Should match the configured connector/task count.\nNORMAL: Matches expected task count\nPROBLEM: Below expected\nNEXT: 08 - Connect Platform -> General row.",
+          "description": "WHAT: Tasks currently RUNNING.\nWHY: Should match the configured connector/task count.\nNORMAL: Matches expected task count\nPROBLEM: Below expected\nNEXT: the Kafka Connect (full detail) row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -945,7 +945,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Whether the Connect group is currently rebalancing.\nWHY: Rebalances pause task processing.\nNORMAL: 0\nPROBLEM: 1 for an extended period\nNEXT: 08 - Connect Platform -> Coordinator & Rebalance row.",
+          "description": "WHAT: Whether the Connect group is currently rebalancing.\nWHY: Rebalances pause task processing.\nNORMAL: 0\nPROBLEM: 1 for an extended period\nNEXT: the Kafka Connect (full detail) row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -1020,7 +1020,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Schema Registry pods currently scrapeable.\nWHY: Basic SR health.\nNORMAL: 1\nPROBLEM: 0\nNEXT: 10 - Schema Registry dashboard.",
+          "description": "WHAT: Schema Registry pods currently scrapeable.\nWHY: Basic SR health.\nNORMAL: 1\nPROBLEM: 0\nNEXT: the Schema Registry (full detail) row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -1066,7 +1066,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: SR client-request rate (its own Kafka-client metrics, used for its backing topic).\nWHY: Traffic golden signal.\nNORMAL: Steady low rate\nPROBLEM: Spikes or drop to zero\nNEXT: 10 - Schema Registry -> REST API Traffic row.",
+          "description": "WHAT: SR client-request rate (its own Kafka-client metrics, used for its backing topic).\nWHY: Traffic golden signal.\nNORMAL: Steady low rate\nPROBLEM: Spikes or drop to zero\nNEXT: the Schema Registry (full detail) row below (SR REST API panels).",
           "options": {
             "legend": {
               "displayMode": "list",
@@ -1125,7 +1125,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: SR JVM heap utilization.\nWHY: Saturation golden signal.\nNORMAL: < 70%\nPROBLEM: > 90%\nNEXT: 23 - JVM Deep Dive dashboard.",
+          "description": "WHAT: SR JVM heap utilization.\nWHY: Saturation golden signal.\nNORMAL: < 70%\nPROBLEM: > 90%\nNEXT: the JVM Cross-Component row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -1740,7 +1740,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Running Flink jobs.\nWHY: Basic Flink health.\nNORMAL: >= 1\nPROBLEM: 0\nNEXT: 24 - Flink dashboard -> Cluster Overview row.",
+          "description": "WHAT: Running Flink jobs.\nWHY: Basic Flink health.\nNORMAL: >= 1\nPROBLEM: 0\nNEXT: the Apache Flink (full detail) row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -1802,7 +1802,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Full job restarts since the job started.\nWHY: Each one is a recovery-from-failure event, not a normal event.\nNORMAL: 0\nPROBLEM: > 0 / climbing\nNEXT: 24 - Flink -> Job Lifecycle row for restart cause.",
+          "description": "WHAT: Full job restarts since the job started.\nWHY: Each one is a recovery-from-failure event, not a normal event.\nNORMAL: 0\nPROBLEM: > 0 / climbing\nNEXT: the Apache Flink (full detail) row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -1857,7 +1857,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Total Flink job throughput.\nWHY: Traffic golden signal; in vs out reveals filtering/backpressure.\nNORMAL: in ~= out (allowing for filtering logic)\nPROBLEM: out falling while in holds steady\nNEXT: 24 - Flink -> Backpressure row, or Dashboard 3 -> Flink Business Workload.",
+          "description": "WHAT: Total Flink job throughput.\nWHY: Traffic golden signal; in vs out reveals filtering/backpressure.\nNORMAL: in ~= out (allowing for filtering logic)\nPROBLEM: out falling while in holds steady\nNEXT: the Apache Flink (full detail) row below, or 03 - Streaming Workload Operations -> Apache Flink: Business Workload row.",
           "options": {
             "legend": {
               "displayMode": "list",
@@ -1912,7 +1912,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Failed checkpoints.\nWHY: Repeated failures mean the job can't durably checkpoint state - a recovery-time risk.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: 24 - Flink -> Checkpointing row.",
+          "description": "WHAT: Failed checkpoints.\nWHY: Repeated failures mean the job can't durably checkpoint state - a recovery-time risk.\nNORMAL: 0\nPROBLEM: > 0\nNEXT: the Apache Flink (full detail) row below.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -15332,7 +15332,7 @@ data:
           "icon": "dashboard"
         },
         {
-          "title": "02 - Streaming Workload Operations",
+          "title": "03 - Streaming Workload Operations",
           "type": "link",
           "url": "/d/streaming-workload-operations",
           "icon": "dashboard"
@@ -15341,25 +15341,6 @@ data:
       "templating": {
         "list": [
           {
-            "name": "namespace",
-            "type": "query",
-            "label": "Namespace",
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "query": "label_values(kube_pod_status_phase{namespace=~\"confluent|monitoring|flink-jobs|flink-operator|cmf-operator|confluent-operator\"}, namespace)",
-            "refresh": 2,
-            "multi": true,
-            "includeAll": true,
-            "current": {
-              "selected": true,
-              "text": "All",
-              "value": "$__all"
-            },
-            "sort": 1
-          },
-          {
             "name": "pod",
             "type": "query",
             "label": "Pod",
@@ -15367,7 +15348,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "query": "label_values(kube_pod_status_phase{namespace=~\"$namespace\"}, pod)",
+            "query": "label_values(kube_pod_status_phase{namespace=~\"confluent|monitoring|flink-jobs|flink-operator|cmf-operator|confluent-operator\"}, pod)",
             "refresh": 2,
             "multi": true,
             "includeAll": true,

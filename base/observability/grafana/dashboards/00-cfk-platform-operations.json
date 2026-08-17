@@ -1,7 +1,7 @@
 {
   "uid": "cfk-platform-operations",
   "title": "00 - CFK Platform / Kubernetes Operations",
-  "description": "Dashboard 1 of 3 (Platform -> Component -> Workload). Is Kubernetes/OpenShift infrastructure, scheduling, storage, networking, or an operator causing the problem? All panels use kube-state-metrics, kubelet/cAdvisor, and Prometheus self-metrics only for Layer 1A - no node-exporter is deployed in this single-node CRC lab (deliberately trimmed, see apps/observability-app.yaml), so node-level disk IOPS/latency are not available and are not faked here (federating an OpenShift-platform node-exporter was evaluated and documented as a P1 item in docs/observability/GAP-ANALYSIS.md, not silently dropped). Only the first three rows are expanded by default (golden signals, node health, pod table) - every other row is collapsed to keep the first viewport operational rather than a long scroll.",
+  "description": "Dashboard 00 of 3 (00 Platform -> 01 Component -> 03 Workload). Is Kubernetes/OpenShift infrastructure, scheduling, storage, networking, or an operator causing the problem? All panels use kube-state-metrics, kubelet/cAdvisor, and Prometheus self-metrics only for Layer 1A - no node-exporter is deployed in this single-node CRC lab (deliberately trimmed, see apps/observability-app.yaml), so node-level disk IOPS/latency are not available and are not faked here (federating an OpenShift-platform node-exporter was evaluated and documented as a P1 item in docs/observability/GAP-ANALYSIS.md, not silently dropped). Only the first three rows are expanded by default (golden signals, node health, pod table) - every other row is collapsed to keep the first viewport operational rather than a long scroll. If infrastructure here looks healthy, move to 01 - Confluent Component Operations to check whether a specific Confluent/Flink component is unhealthy for application-level reasons.",
   "tags": [
     "platform",
     "kubernetes",
@@ -756,7 +756,7 @@
             },
             "overrides": []
           },
-          "description": "WHAT: Per-namespace CPU usage against what it asked for (requests) and its ceiling (limits). Requests are a scheduling reservation, not a runtime ceiling - usage running above requests is expected and not itself a problem.\nWHY: A namespace whose usage tracks its limit line is the one starving everyone else; the request line is only useful context for scheduling headroom, not a health boundary.\nNORMAL: usage comfortably under limits (usage vs requests can vary either way)\nPROBLEM: usage approaching or exceeding limits\nNEXT: Pod CPU row for per-pod limit%/throttling detail on the specific namespace.",
+          "description": "WHAT: Per-namespace CPU usage against what it asked for (requests) and its ceiling (limits).\nWHY: A namespace whose usage tracks its limit line is the one starving everyone else; the request line is only useful context for scheduling headroom (it's a reservation), not a health boundary.\nNORMAL: Usage consistent with workload and comfortably below limits.\nWATCH: Usage consistently above requests may indicate sizing should be reviewed, but is not by itself a failure - requests are a scheduling reservation, not a runtime ceiling.\nPROBLEM: Usage approaching or exceeding limits, or sustained CPU throttling (see Pod CPU row).\nNEXT: Pod CPU row for per-pod limit%/throttling detail on the specific namespace.",
           "options": {
             "legend": {
               "displayMode": "list",
@@ -817,7 +817,7 @@
             },
             "overrides": []
           },
-          "description": "WHAT: Per-namespace memory usage against requests/limits. Requests are a scheduling reservation, not a runtime ceiling - usage above requests is normal and expected.\nWHY: OOMKilled events happen when usage crosses the limit line, not the request line - that's the only line that matters for memory health.\nNORMAL: usage comfortably under limits (usage vs requests can vary either way)\nPROBLEM: usage approaching limits\nNEXT: Kubernetes Scheduling/Failures row for OOMKilled detail on the specific pod.",
+          "description": "WHAT: Per-namespace memory usage against requests/limits.\nWHY: OOMKilled events happen when usage crosses the limit line, not the request line - that's the only line that matters for memory health.\nNORMAL: Usage consistent with workload and comfortably below limits.\nWATCH: Usage consistently above requests may indicate sizing should be reviewed, but is not by itself a failure - requests are a scheduling reservation, not a runtime ceiling.\nPROBLEM: Usage approaching limits, OOMKilled events, or node MemoryPressure (see Kubernetes Scheduling/Failures row).\nNEXT: Kubernetes Scheduling/Failures row for OOMKilled detail on the specific pod.",
           "options": {
             "legend": {
               "displayMode": "list",
@@ -867,7 +867,7 @@
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"$pod\", container!=\"\"}[5m]) * on(pod) group_left() kube_pod_owner{owner_name=~\"$component\"})",
+              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"$pod\", container!=\"\"}[5m]) * on(namespace, pod) group_left() ((kube_pod_owner{namespace=~\"$namespace\", owner_kind=\"StatefulSet\", owner_name=~\"$component\"} * 0 + 1) or (kube_pod_owner{namespace=~\"$namespace\", owner_kind=\"Deployment\", owner_name=~\"$component\"} * 0 + 1) or (label_replace(kube_pod_owner{namespace=~\"$namespace\", owner_kind=\"ReplicaSet\"}, \"replicaset\", \"$1\", \"owner_name\", \"(.*)\") * on(namespace, replicaset) group_left() (kube_replicaset_owner{owner_kind=\"Deployment\", owner_name=~\"$component\"} * 0 + 1))))",
               "refId": "A",
               "legendFormat": "{{pod}}"
             }
@@ -879,7 +879,7 @@
             },
             "overrides": []
           },
-          "description": "WHAT: Per-pod CPU usage (cores), filterable by $component (the owning StatefulSet/Deployment - kafka, connect, schemaregistry, etc.) as well as $pod. The request line (see Namespace Capacity row) is a scheduling reservation, not a ceiling - running above it is normal.\nWHY: Identifies which specific pod/component is consuming CPU.\nNORMAL: Flat, well under its limit\nPROBLEM: Sustained climb or spikes toward its limit\nNEXT: CPU usage/limit %% and CPU throttling %% panels below.",
+          "description": "WHAT: Per-pod CPU usage (cores), filterable by $component (the owning StatefulSet, or - resolved through its ReplicaSet where applicable - Deployment: kafka, connect, schemaregistry, confluent-operator, flink-kubernetes-operator, etc.) as well as $pod. Joins on (namespace, pod), not just (pod), since pod names are only unique within a namespace. The request line (see Namespace Capacity row) is a scheduling reservation, not a ceiling - running above it is normal.\nWHY: Identifies which specific pod/component is consuming CPU.\nNORMAL: Flat, well under its limit\nPROBLEM: Sustained climb or spikes toward its limit\nNEXT: CPU usage/limit %% and CPU throttling %% panels below.",
           "options": {
             "legend": {
               "displayMode": "list",
@@ -2180,7 +2180,7 @@
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(rate(coredns_dns_responses_total{rcode!=\"NOERROR\"}[5m])) / sum(rate(coredns_dns_responses_total[5m])) * 100 or vector(0)",
+              "expr": "sum(rate(coredns_dns_responses_total{rcode!=\"NOERROR\"}[5m])) / sum(rate(coredns_dns_responses_total[5m])) * 100",
               "refId": "A",
               "instant": true
             }
@@ -2204,11 +2204,12 @@
                     "value": 20
                   }
                 ]
-              }
+              },
+              "noValue": "NO DATA (CoreDNS unreachable? check Prometheus Targets panel)"
             },
             "overrides": []
           },
-          "description": "WHAT: % of DNS responses that are NOT NOERROR (SERVFAIL/NXDOMAIN/REFUSED), as a ratio of total responses - not a raw rate, so it distinguishes '17 errors out of 20 requests' from '17 out of 200,000'.\nWHY: Broken DNS breaks every Kafka/Connect/SR hostname resolution in the cluster silently.\nNORMAL: low - a nonzero NXDOMAIN ratio for genuinely nonexistent names is normal at low volume\nPROBLEM: a high/climbing SERVFAIL-driven ratio\nNEXT: the rcode breakdown panel below, then oc logs -n openshift-dns.",
+          "description": "WHAT: % of DNS responses that are NOT NOERROR (SERVFAIL/NXDOMAIN/REFUSED), as a ratio of total responses - not a raw rate, so it distinguishes '17 errors out of 20 requests' from '17 out of 200,000'. Deliberately NOT falling back to `or vector(0)`: both sides of this division come from the same counter, so if CoreDNS's target is unreachable the whole expression goes empty - showing 0%% (green) in that case would misreport a telemetry gap as a healthy DNS layer. A genuine No-Data render here is correct; check the CoreDNS row in Prometheus Self-Monitoring's target table to confirm.\nWHY: Broken DNS breaks every Kafka/Connect/SR hostname resolution in the cluster silently.\nNORMAL: low - a nonzero NXDOMAIN ratio for genuinely nonexistent names is normal at low volume\nPROBLEM: a high/climbing SERVFAIL-driven ratio, or No Data (target unreachable)\nNEXT: the rcode breakdown panel below, then oc logs -n openshift-dns.",
           "options": {
             "reduceOptions": {
               "calcs": [
@@ -2519,13 +2520,13 @@
   ],
   "links": [
     {
-      "title": "Dashboard 2: Confluent Component Operations",
+      "title": "01 - Confluent Component Operations",
       "type": "link",
       "url": "/d/platform-overview",
       "icon": "dashboard"
     },
     {
-      "title": "Dashboard 3: Streaming Workload Operations",
+      "title": "03 - Streaming Workload Operations",
       "type": "link",
       "url": "/d/streaming-workload-operations",
       "icon": "dashboard"
@@ -2579,7 +2580,7 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "query": "label_values(kube_pod_owner{namespace=~\"$namespace\"}, owner_name)",
+        "query": "label_values(label_replace(kube_pod_owner{namespace=~\"$namespace\", owner_kind=\"StatefulSet\"}, \"component\", \"$1\", \"owner_name\", \"(.*)\") or label_replace(kube_pod_owner{namespace=~\"$namespace\", owner_kind=\"Deployment\"}, \"component\", \"$1\", \"owner_name\", \"(.*)\") or (label_replace(kube_pod_owner{namespace=~\"$namespace\", owner_kind=\"ReplicaSet\"}, \"replicaset\", \"$1\", \"owner_name\", \"(.*)\") * on(namespace, replicaset) group_left(component) label_replace(kube_replicaset_owner{owner_kind=\"Deployment\"}, \"component\", \"$1\", \"owner_name\", \"(.*)\")), component)",
         "refresh": 2,
         "multi": true,
         "includeAll": true,

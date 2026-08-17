@@ -9,8 +9,8 @@ data:
   03-streaming-workload-operations.json: |
     {
       "uid": "streaming-workload-operations",
-      "title": "02 - Streaming Workload Operations",
-      "description": "Dashboard 3 of 3 (Platform -> Component -> Workload). Is business data actually flowing correctly through Kafka, Connect, and Flink? True per-consumer-group lag (a Burrow/kafka-lag-exporter style breakdown) is NOT available in this deployment - only client-reported lag and the broker's own aggregate lag-emitter percentiles are, and both are used here honestly rather than faking a per-group view (see docs/observability/METRIC-MAPPING.md).",
+      "title": "03 - Streaming Workload Operations",
+      "description": "Dashboard 03 of 3 (00 Platform -> 01 Component -> 03 Workload). Is business data actually flowing correctly through Kafka, Connect, and Flink? Native broker-side per-consumer-group/topic/partition lag IS available (kafka_server_tenant_metrics_consumer_lag_offsets, Confluent's built-in consumer-lag-emitter, active by default) and is the primary signal below. Client-reported lag and the group-coordinator's aggregate lag-emitter percentiles are shown as secondary/cross-check perspectives. A separate Burrow/kafka-lag-exporter deployment is not required for this.",
       "tags": [
         "platform",
         "workload",
@@ -183,7 +183,7 @@ data:
           },
           "id": 6,
           "panels": [],
-          "title": "Consumer / Client Lag (corrected: native lag-emitter now used as primary source)",
+          "title": "Consumer / Client Lag",
           "type": "row"
         },
         {
@@ -218,7 +218,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: real per-consumer-group/topic/partition/member lag in offsets, from Kafka's own broker-side consumer-lag-emitter (kafka.server:type=tenant-metrics,attribute=consumer-lag-offsets) - active on this broker with no extra config needed (confirmed live). CORRECTION: an earlier pass in this dashboard's history said true per-consumer-group lag was unavailable and would need a separate Burrow/kafka-lag-exporter deployment - that was wrong; this broker-native metric provides exactly that breakdown. WHY: this is the single most-asked 'is my consumer keeping up' question, now answerable per group/topic/partition/member instead of only in aggregate. NORMAL: near 0, or draining. PROBLEM: large/growing values on a specific group+partition - correlate with that consumer's poll/commit rate and the source system's write rate. NEXT: identify which member/client-id is lagging, then check that specific consumer's health.",
+          "description": "WHAT: real per-consumer-group/topic/partition/member lag in offsets, from Kafka's own broker-side consumer-lag-emitter (kafka.server:type=tenant-metrics,attribute=consumer-lag-offsets) - active on this broker with no extra config needed (confirmed live).\nWHY: this is the single most-asked 'is my consumer keeping up' question, answerable per group/topic/partition/member, not only in aggregate.\nNORMAL: near 0, or draining.\nPROBLEM: large/growing values on a specific group+partition - correlate with that consumer's poll/commit rate and the source system's write rate.\nNEXT: identify which member/client-id is lagging, then check that specific consumer's health.",
           "options": {
             "showHeader": true
           }
@@ -342,7 +342,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: Confluent's own group-coordinator lag-emitter telemetry (cluster-wide percentile, not broken out per consumer group - no per-group Burrow-style lag exporter is deployed in this lab, see docs/observability/METRIC-MAPPING.md).\nWHY: The closest cluster-wide lag signal available without adding a dedicated lag exporter.\nNORMAL: Low and flat\nPROBLEM: Climbing\nNEXT: Add a Burrow/kafka-lag-exporter deployment for true per-consumer-group breakdown - documented as a follow-up, not faked here.",
+          "description": "WHAT: Confluent's group-coordinator lag-emitter telemetry - a cluster-wide percentile view, not broken out per consumer group.\nWHY: A secondary cross-check against the per-group lag table/trend above - useful for spotting a cluster-wide lag shift even before drilling into which specific group is responsible.\nNORMAL: Low and flat\nPROBLEM: Climbing\nNEXT: The per-group lag table/trend above to find which specific group/partition is driving it.",
           "options": {
             "legend": {
               "displayMode": "list",
@@ -524,7 +524,7 @@ data:
             },
             "overrides": []
           },
-          "description": "WHAT: per-second error/retry/skip rate, by connector - corrected from graphing the raw cumulative counters directly (which only ever goes up and hides whether the problem is active right now or happened once months ago). WHY: rate is what tells you if errors are actively occurring. NORMAL: 0. PROBLEM: any sustained nonzero rate. NEXT: 08's Task Errors row (folded into Dashboard 2's Connect section) for DLQ detail, or the source-system/Kafka split above.",
+          "description": "WHAT: per-second error/retry/skip rate, by connector.\nWHY: rate is what tells you if errors are actively occurring right now, not just that some happened at some point in the counter's lifetime.\nNORMAL: 0\nPROBLEM: any sustained nonzero rate\nNEXT: connector logs for the specific error, or the DLQ panels in Dashboard 01's Kafka Connect (full detail) row.",
           "options": {
             "legend": {
               "displayMode": "list",
@@ -693,7 +693,7 @@ data:
                 },
                 "overrides": []
               },
-              "description": "WHAT: successful checkpoints within the CURRENTLY SELECTED time range (not lifetime) - corrected from a flat lifetime sum, which can't distinguish '3 failures 5 minutes ago' from '3 failures 3 months ago'. Change the dashboard time range to look further back or narrower.",
+              "description": "WHAT: successful checkpoints within the currently selected time range (not lifetime). Change the dashboard time range to look further back or narrower.\nWHY: a lifetime total can't distinguish '3 failures 5 minutes ago' from '3 failures 3 months ago'.\nNORMAL: tracks checkpointing interval\nPROBLEM: n/a by itself - see Checkpoints: failed\nNEXT: Checkpoints: failed panel.",
               "options": {
                 "reduceOptions": {
                   "calcs": [
@@ -751,7 +751,7 @@ data:
                 },
                 "overrides": []
               },
-              "description": "WHAT: failed checkpoints within the currently selected time range (not lifetime) - same correction as Checkpoints: completed. NORMAL: 0. PROBLEM: > 0 in a recent/narrow window means an active problem, not old history.",
+              "description": "WHAT: failed checkpoints within the currently selected time range (not lifetime).\nWHY: a recent/narrow-window failure means an active problem, not old history.\nNORMAL: 0\nPROBLEM: > 0 in a recent/narrow window\nNEXT: Dashboard 01's Apache Flink (full detail) row for JobManager/checkpoint-storage health.",
               "options": {
                 "reduceOptions": {
                   "calcs": [
