@@ -8,8 +8,18 @@ spec:
   podTemplate:
     resources:
       requests:
-        cpu: 100m
+        cpu: 250m
         memory: 256Mi
       limits:
         cpu: 500m
         memory: 512Mi
+    # CRC's contended node made this pod's default liveness patience (~90s)
+    # too tight, causing a full CrashLoopBackOff - same class of issue as
+    # Connect's plugin-scan probe timeout. Widened for headroom.
+    probe:
+      liveness:
+        initialDelaySeconds: 120
+        failureThreshold: 30
+      readiness:
+        initialDelaySeconds: 120
+        failureThreshold: 30
