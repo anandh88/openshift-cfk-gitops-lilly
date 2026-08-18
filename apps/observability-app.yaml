@@ -72,12 +72,16 @@ spec:
           # override below, which did apply. So: explicit UID within the
           # monitoring namespace's actual allocated range
           # (`oc get namespace monitoring -o jsonpath='{.metadata.annotations}'`
-          # -> openshift.io/sa.scc.uid-range: 1000720000/10000) instead of
-          # trying to remove the block.
+          # -> openshift.io/sa.scc.uid-range) instead of trying to remove
+          # the block. NOTE: this range is reallocated by OpenShift every
+          # time the `monitoring` namespace is (re)created, so re-check the
+          # annotation and update these three UIDs after any teardown/
+          # recreate of the namespace - a stale value fails SCC admission
+          # with "not usable by user or serviceaccount" on every pod here.
           securityContext:
-            runAsUser: 1000720000
-            runAsGroup: 1000720000
-            fsGroup: 1000720000
+            runAsUser: 1000710000
+            runAsGroup: 1000710000
+            fsGroup: 1000710000
             runAsNonRoot: true
           admin:
             existingSecret: grafana-admin
@@ -129,9 +133,9 @@ spec:
           tls:
             enabled: false
           securityContext:
-            runAsUser: 1000720000
-            runAsGroup: 1000720000
-            fsGroup: 1000720000
+            runAsUser: 1000710000
+            runAsGroup: 1000710000
+            fsGroup: 1000710000
             runAsNonRoot: true
           resources:
             requests: {cpu: 100m, memory: 128Mi}
@@ -142,9 +146,9 @@ spec:
             create: true
           prometheusSpec:
             securityContext:
-              runAsUser: 1000720000
-              runAsGroup: 1000720000
-              fsGroup: 1000720000
+              runAsUser: 1000710000
+              runAsGroup: 1000710000
+              fsGroup: 1000710000
               runAsNonRoot: true
             retention: 8h
             # Without these, Prometheus only watches ServiceMonitors/
