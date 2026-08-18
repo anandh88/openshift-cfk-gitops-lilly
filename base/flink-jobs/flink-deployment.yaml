@@ -94,6 +94,8 @@ spec:
       - --output-topic=processed-claims
     parallelism: 1
     upgradeMode: stateless
+    # Suspended to free up node CPU/memory while confluent-platform finishes bring-up.
+    state: suspended
   # Shared by both JobManager and TaskManager - required on both, not just
   # TaskManager. In Application Mode the job's main() (which builds the
   # KafkaSource/KafkaSink and reads flink-kafka-sasl/kafka-ca itself) runs on

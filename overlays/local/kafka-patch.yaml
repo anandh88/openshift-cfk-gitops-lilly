@@ -4,7 +4,8 @@ metadata:
   name: kafka
   namespace: confluent
 spec:
-  replicas: 3
+  # Scaled down from 3 to relieve CRC node CPU/memory pressure during bring-up.
+  replicas: 1
   podTemplate:
     affinity: null
     resources:
