@@ -13,3 +13,14 @@ spec:
       limits:
         cpu: 1
         memory: 2Gi
+    # CRC's contended single node makes Connect's reflection-based plugin
+    # scan take 30-90s per plugin dir (vs ms uncontended) - default liveness
+    # patience (~12min) can be exceeded, killing the pod right before it
+    # finishes and forcing a full re-scan. Widened to give it more headroom.
+    probe:
+      liveness:
+        initialDelaySeconds: 300
+        failureThreshold: 60
+      readiness:
+        initialDelaySeconds: 300
+        failureThreshold: 60
