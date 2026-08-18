@@ -2,13 +2,17 @@
 # connect-kerberos-patch.yaml). Auto topic creation is disabled on this
 # cluster (standard governance default), so the connector's own producer
 # gets UNKNOWN_TOPIC_OR_PARTITION until the topic exists - confirmed live.
+# Name is lowercase to match the actual claims_db.claims table/column
+# names (the connector's table.whitelist + topic.prefix produce
+# "sqlserver-claims", not "sqlserver-Claims" - the DB is claims_db, not
+# the older Dev-Lily/Claims naming some docs/scripts still reference).
 apiVersion: platform.confluent.io/v1beta1
 kind: KafkaTopic
 metadata:
   name: sqlserver-claims
   namespace: confluent
 spec:
-  name: sqlserver-Claims
+  name: sqlserver-claims
   replicas: 1
   partitionCount: 1
   kafkaClusterRef:
