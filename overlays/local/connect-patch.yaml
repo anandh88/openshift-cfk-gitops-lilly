@@ -16,11 +16,12 @@ spec:
     # CRC's contended single node makes Connect's reflection-based plugin
     # scan take 30-90s per plugin dir (vs ms uncontended) - default liveness
     # patience (~12min) can be exceeded, killing the pod right before it
-    # finishes and forcing a full re-scan. Widened to give it more headroom.
+    # finishes and forcing a full re-scan. 15min wasn't enough either under
+    # heavier contention - widened further to comfortably cover a slow scan.
     probe:
       liveness:
         initialDelaySeconds: 300
-        failureThreshold: 60
+        failureThreshold: 200
       readiness:
         initialDelaySeconds: 300
-        failureThreshold: 60
+        failureThreshold: 200
